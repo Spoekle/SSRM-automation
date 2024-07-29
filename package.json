@@ -1,5 +1,5 @@
 {
-  "description": "A foundation for scalable desktop apps",
+  "description": "Generate Beatsaber titles and thumbnails in a single click!",
   "keywords": [
     "electron",
     "boilerplate",
@@ -17,19 +17,19 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/electron-react-boilerplate/electron-react-boilerplate.git"
+    "url": "git+https://github.com/spoekle/SSRM-automation.git"
   },
   "license": "MIT",
   "author": {
-    "name": "Electron React Boilerplate Maintainers",
-    "email": "electronreactboilerplate@gmail.com",
-    "url": "https://electron-react-boilerplate.js.org"
+    "name": "Spoekle",
+    "email": "thiangraber@gmail.com",
+    "url": "https://spoekle.com"
   },
   "contributors": [
     {
-      "name": "Amila Welihinda",
-      "email": "amilajack@gmail.com",
-      "url": "https://github.com/amilajack"
+      "name": "Spoekle",
+      "email": "thiangraber@gmail.com",
+      "url": "https://github.com/spoekle"
     }
   ],
   "main": "./src/main/main.ts",
@@ -178,8 +178,8 @@
     "webpack-merge": "^5.9.0"
   },
   "build": {
-    "productName": "ElectronReact",
-    "appId": "org.erb.ElectronReact",
+    "productName": "SSRM Automation",
+    "appId": "org.erb.SSRMautomation",
     "asar": true,
     "asarUnpack": "**\\*.{node,dll}",
     "files": [
@@ -237,8 +237,8 @@
     ],
     "publish": {
       "provider": "github",
-      "owner": "electron-react-boilerplate",
-      "repo": "electron-react-boilerplate"
+      "owner": "SSRM-Automation",
+      "repo": "SSRM-Automation"
     }
   },
   "collective": {
