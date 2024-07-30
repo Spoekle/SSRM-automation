@@ -18,6 +18,15 @@ Start the app in the `dev` environment:
 npm start
 ```
 
+## Building
+
+Run the package command in the `dev` environment:
+
+```bash
+npm package
+```
+
+
 ## License
 
 MIT © [Electron React Boilerplate](https://github.com/electron-react-boilerplate)
