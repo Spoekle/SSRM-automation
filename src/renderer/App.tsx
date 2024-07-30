@@ -5,7 +5,8 @@ import Titles from './pages/Titles';
 import Thumbnails from './pages/Thumbnails';
 import Navbar from './pages/components/Navbar';
 import Footer from './pages/components/Footer';
-import 'tailwindcss/tailwind.css';
+import './App.css';
+
 
 export default function App() {
   return (
