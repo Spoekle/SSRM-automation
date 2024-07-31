@@ -67,11 +67,15 @@ const createWindow = async () => {
 
   mainWindow = new BrowserWindow({
     show: false,
-    width: 1024,
-    height: 668,
+    minWidth: 800,
+    height: 518,
     resizable: false,
+    transparent: true, 
+    frame: false,
     icon: getAssetPath('favicon-32x32.png'),
     webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
       preload: app.isPackaged
         ? path.join(__dirname, 'preload.js')
         : path.join(__dirname, '../../.erb/dll/preload.js'),
@@ -79,6 +83,18 @@ const createWindow = async () => {
   });
 
   mainWindow.loadURL(resolveHtmlPath('index.html'));
+
+  ipcMain.on('minimize-window', () => {
+    if (mainWindow) {
+      mainWindow.minimize();
+    }
+  });
+
+  ipcMain.on('close-window', () => {
+    if (mainWindow) {
+      mainWindow.close();
+    }
+  });
 
   mainWindow.on('ready-to-show', () => {
     if (!mainWindow) {

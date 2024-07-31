@@ -1,127 +1,81 @@
 import axios from 'axios';
-import { time } from 'console';
-import React, { useState, useEffect, useRef } from 'react';
+import MapForm from './components/MapForm';
+import React, { useState } from 'react';
+import { FaClipboard } from 'react-icons/fa';
 
+interface MapInfo {
+  metadata: {
+    songAuthorName: string;
+    songName: string;
+    songSubName: string;
+    levelAuthorName: string;
+  };
+  versions: {
+    coverURL: string;
+  }[];
+}
 
-function Titles() {
-  const [mapId, setMapId] = useState('');
-  const [difficulty, setDifficulty] = useState('Easy');
-  const [player, setPlayer] = useState('Mr_bjo');
-  const [copied, setCopied] = useState(false);
-  const [useSubname, setUseSubname] = useState(false);
-  const [mapInfo, setMapInfo] = useState<any>(null);
+interface CopyAlert {
+  id: number;
+  message: string;
+  fadeOut: boolean;
+}
 
-  const copyToClipboard = (text: string) => {
+const Titles: React.FC = () => {
+  const [mapId, setMapId] = useState<string>('');
+  const [difficulty, setDifficulty] = useState<string>('Easy');
+  const [player, setPlayer] = useState<string>('Mr_bjo');
+  const [copyAlerts, setCopyAlerts] = useState<CopyAlert[]>([]);
+  const [mapInfo, setMapInfo] = useState<MapInfo | null>(null);
+  const [mapFormModal, setMapFormModal] = useState<boolean>(false);
+  const [useSubname, setUseSubname] = useState<boolean>(false);
+
+  const copyToClipboard = (text: string, type: 'title' | 'description') => {
     navigator.clipboard.writeText(text).then(() => {
-      setCopied(true);
+      const id = new Date().getTime();
+      setCopyAlerts([...copyAlerts, { id, message: `Copied ${type} to clipboard!`, fadeOut: false }]);
       setTimeout(() => {
-        setCopied(false);
-      }, 2000);
+        setCopyAlerts(copyAlerts => copyAlerts.map(alert => alert.id === id ? { ...alert, fadeOut: true } : alert));
+        setTimeout(() => {
+          setCopyAlerts(copyAlerts => copyAlerts.filter(alert => alert.id !== id));
+        }, 500);  // Duration of fade-out animation
+      }, 2000);  // Delay before starting fade-out
     }).catch((err) => {
       console.error('Failed to copy: ', err);
     });
   };
 
-  const getMapInfo = async (event: React.FormEvent) => {
-    event.preventDefault();
-    try {
-      const response = await axios.get(`https://api.beatsaver.com/maps/id/${mapId}`);
-      setMapInfo(response.data);
-      if (useSubname === false) {
-        response.data.metadata.songSubName = '';
-      }
-      setDifficulty(difficulty);
-      console.log(response.data);
-    } catch (error) {
-      console.error('Error fetching map info:', error);
-    }
-  };
-
   return (
-    <div className='grid justify-items-center dark:text-neutral-200 bg-neutral-200 dark:bg-neutral-900 p-4 pt-8 justify-center items-center'>
+    <div className='max-h-96 h-96 relative grid justify-items-center dark:text-neutral-200 bg-neutral-200 dark:bg-neutral-900 p-4 pt-8 justify-center items-center overflow-hidden'>
       <div className='items-center justify-items-center'>
         <div className='text-center'>
           <h1 className='text-2xl font-bold'>Titles</h1>
           <p className='text-lg'>Generate your title and description here!</p>
-        </div>
-        <div className='grid grid-cols-2 gap-4 items-center justify-center mt-4'>
-          <div className='w-full justify-items-start bg-neutral-300 dark:bg-neutral-800 mt-4 p-4 rounded-md'>
-            <form onSubmit={getMapInfo}>
-              <div className='flex justify-between'>
-                <label className='text-lg'>Map ID:</label>
-                <input
-                  type='text'
-                  id='mapId'
-                  name='mapId'
-                  className='border border-gray-600 dark:bg-neutral-200 bg-neutral-800 text-neutral-200  dark:text-neutral-950 rounded px-2 py-1 ml-2'
-                  value={mapId}
-                  onChange={(e) => setMapId(e.target.value)}
-                />
-                <label className='text-lg ml-4'>Use Subname?</label>
-                <input
-                  type='checkbox'
-                  id='useSubname'
-                  name='useSubname'
-                  className='ml-2'
-                  value={useSubname.toString()}
-                  onChange={(e) => setUseSubname(e.target.checked)} // Use checked property instead of value
-                />
-              </div>
-              <div className='flex justify-between'>
-                <div>
-                  <label>Difficulty:</label>
-                  <select
-                    id="difficulty"
-                    name="difficulty"
-                    className="border border-gray-600 dark:bg-neutral-200 bg-neutral-800 text-neutral-200  dark:text-neutral-950 rounded px-2 py-1 ml-2"
-                    onChange={(e) => setDifficulty(e.target.value)}
-                    >
-                    <option value="Easy">Easy</option>
-                    <option value="Normal">Normal</option>
-                    <option value="Hard">Hard</option>
-                    <option value="Ex">Expert</option>
-                    <option value="Ex+">Expert+</option>
-                  </select>
-                </div>
-                <div>
-                  <label>Played by:</label>
-                  <select 
-                    id="player" 
-                    name="player" 
-                    className="border border-gray-600 dark:bg-neutral-200 bg-neutral-800 text-neutral-200  dark:text-neutral-950 rounded px-2 py-1 ml-2"
-                    onChange={(e) => setPlayer(e.target.value)}
-                    >
-                    <option value="EASY">Mr_bjo</option>
-                    <option value="NORMAL">yabje</option>
-                  </select>
-                </div>
-              </div>
-              <button type='submit' className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-2 ml-4'>Generate</button>
-            </form>
-          </div>
-          <div className='w-full justify-items-center'>
-            {mapInfo && (
-              <div className='w-full'>
-                <h1 className='text-xl font-bold'>Chosen Map:</h1>
-                <div className='w-full justify-items-start bg-neutral-300 dark:bg-neutral-800 mt-2 p-4 rounded-md'>
+          <button
+            className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mt-4 rounded'
+            onClick={() => setMapFormModal(true)}
+          >
+            Open Map Form
+          </button>
+          {mapInfo && (
+              <div className='absolute left-0 top-0 mt-4 ml-4 z-10 drop-shadow-lg'>
+                <div className='justify-items-start bg-neutral-300 dark:bg-neutral-800 mt-2 p-2 rounded-md drag-div'>
                   <div className='flex'>
                     <img className='w-24 h-24 rounded-md' src={mapInfo.versions[0].coverURL} alt='Cover' />
-                    <div className='flex-col ml-4'>
+                    <div className='flex-col ml-4 hidden'>
                       <h1 className='flex text-md font-semibold'>{mapInfo.metadata.songAuthorName}</h1>
                       <h1 className='flex text-lg font-bold'>{mapInfo.metadata.songName}</h1>
-                      <h1 className='flex text-md'>{mapInfo.metadata.songSubName}</h1>
+                      <h1 className='flex text-md font-light'>{mapInfo.metadata.songSubName}</h1>
                       <h1 className='flex text-md'>Mapped by {mapInfo.metadata.levelAuthorName}</h1>
                     </div>
                   </div>
                 </div>
               </div>
             )}
-          </div>
         </div>
 
         {mapInfo && (
           <div className='grid grid-cols-2 gap-4 mt-4'>
-
             <div className='flex-col w-full text-center'>
               <h1 className='text-xl font-bold'>Title:</h1>
               <div className='flex w-full'>
@@ -132,7 +86,7 @@ function Titles() {
                 </div>
                 <button
                   className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mt-2 rounded-r-xl'
-                  onClick={() => copyToClipboard(`${mapInfo.metadata.songName} ${mapInfo.metadata.songSubName} | ${mapInfo.metadata.songAuthorName} | ${mapInfo.metadata.levelAuthorName} | ${difficulty}`)}
+                  onClick={() => copyToClipboard(`${mapInfo.metadata.songName} ${mapInfo.metadata.songSubName} | ${mapInfo.metadata.songAuthorName} | ${mapInfo.metadata.levelAuthorName} | ${difficulty}`, 'title')}
                 >
                   Copy
                 </button>
@@ -144,31 +98,44 @@ function Titles() {
                 <div className='flex flex-grow bg-neutral-300 dark:bg-neutral-800 mt-2 p-4 rounded-l-md'>
                   <div className='flex-col justify-items-center'>
                     <h1 className='flex text-md'>{mapInfo.metadata.songName} by {mapInfo.metadata.songAuthorName}</h1>
-                    <h1 className='flex text-md'>Mapped by {mapInfo.metadata.levelAuthorName}</h1>
-                    <h1 className='flex text-md'>Map Link: https://beatsaver.com/maps/{mapId}</h1>
-                    <h1 className='flex text-md'>Gameplay by {player}</h1>
+                    <h1 className='flex text-sm'>Mapped by {mapInfo.metadata.levelAuthorName}</h1>
+                    <h1 className='flex text-sm'>Map Link: https://beatsaver.com/maps/{mapId}</h1>
+                    <h1 className='flex text-sm'>Gameplay by {player}</h1>
                   </div>
                 </div>
                 <button
-                      className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mt-2 rounded-r-xl'
-                      onClick={() => copyToClipboard(`${mapInfo.metadata.songName} by ${mapInfo.metadata.songAuthorName}\nMapped by ${mapInfo.metadata.levelAuthorName}\nMap Link: https://beatsaver.com/maps/${mapId}\nGameplay by ${player}`)}
-                    >
-                      Copy
-                    </button>
+                  className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mt-2 rounded-r-xl'
+                  onClick={() => copyToClipboard(`${mapInfo.metadata.songName} by ${mapInfo.metadata.songAuthorName}\nMapped by ${mapInfo.metadata.levelAuthorName}\nMap Link: https://beatsaver.com/maps/${mapId}\nGameplay by ${player}`, 'description')}
+                >
+                  Copy
+                </button>
               </div>
             </div>
           </div>
         )}
       </div>
-      {copied ? (
-        <div className='mt-4 p-4 bg-green-600 rounded-md'>
-          <p>Copied to clipboard!</p>
-        </div>
-      ) : (
-        <div className='mt-4 p-4 rounded-md'>
-          <p>&nbsp;</p>
-        </div>
-      )}
+      <div className='absolute top-0 right-0 mt-4 mr-4 flex flex-col items-end space-y-2'>
+        {copyAlerts.map(alert => (
+          <div key={alert.id} className={`flex items-center justify-center px-4 py-2 bg-green-600 rounded-md drop-shadow-lg animate-fade-left ${alert.fadeOut ? 'animate-fade-out' : ''}`}>
+            <FaClipboard className='text-white mr-2'/>
+            <p className='text-white'>{alert.message}</p>
+          </div>
+        ))}
+      </div>
+      {mapFormModal && (
+        <MapForm
+          mapId={mapId}
+          setMapId={setMapId}
+          difficulty={difficulty}
+          setDifficulty={setDifficulty}
+          useSubname={useSubname}
+          setUseSubname={setUseSubname}
+          player={player}
+          setPlayer={setPlayer}
+          setMapInfo={setMapInfo}
+          setMapFormModal={setMapFormModal}
+        />
+          )}
     </div>
   );
 }

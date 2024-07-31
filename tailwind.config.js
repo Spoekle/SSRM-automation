@@ -7,10 +7,15 @@ module.exports = {
     extend: {
       colors: {
       },
+      animation: {
+        fadeOut: 'fadeOut 2s ease-out forwards',
+      },
     },
   },
   variants: {
     extend: {},
   },
-  plugins: [],
+  plugins: [
+    require('tailwindcss-animated'),
+  ],
 };
