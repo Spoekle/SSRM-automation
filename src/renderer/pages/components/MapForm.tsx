@@ -43,6 +43,8 @@ const MapForm: React.FC<MapFormProps> = ({
         data.metadata.songSubName = '';
       }
       setMapInfo(data);
+      localStorage.setItem('mapId', `${mapId}`);
+      localStorage.setItem('mapInfo', JSON.stringify(data)); // Serialize the mapInfo object
       console.log(data);
       setMapFormModal(false);
     } catch (error) {
