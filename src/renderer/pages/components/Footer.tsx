@@ -25,7 +25,7 @@ function Footer() {
   };
 
   return (
-    <div className='items-center justify-items-center bg-neutral-200 dark:bg-neutral-900 text-neutral-950 dark:text-neutral-200 rounded-b-3xl drop-shadow-xl'>
+    <div className='no-move items-center justify-items-center bg-neutral-200 dark:bg-neutral-900 text-neutral-950 dark:text-neutral-200 rounded-b-3xl drop-shadow-xl'>
       <div className='flex justify-between items-center p-4'>
         <div className='flex text-center justify-between'>
           <p className='text-sm py-2 px-3 mx-3'>Created by Spoekle</p>
