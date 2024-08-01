@@ -13,6 +13,12 @@ function Navbar() {
     ipcRenderer.send('minimize-window');
   };
 
+  const clearAndCloseWindow = () => {
+    localStorage.removeItem('mapId');
+    localStorage.removeItem('mapInfo');
+    ipcRenderer.send('close-window');
+  };
+
   return (
     <div className='drag items-center justify-center bg-neutral-300 dark:bg-neutral-950 text-neutral-950 dark:text-neutral-200 p-4 rounded-t-3xl'>
       <div className='flex text-center justify-between'>
@@ -36,7 +42,7 @@ function Navbar() {
           </button>
           <button 
             className='hover:bg-red-500 hover:text-white rounded-md p-2 transition duration-200' 
-            onClick={() => ipcRenderer.send('close-window')}
+            onClick={clearAndCloseWindow}
           >
             <FaTimes/>
           </button>
