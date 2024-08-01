@@ -45,8 +45,10 @@ const Titles: React.FC = () => {
     });
   };
 
+  const mapLink = `https://beatsaver.com/maps/${mapId}`;
+
   return (
-    <div className='max-h-96 h-96 relative grid justify-items-center dark:text-neutral-200 bg-neutral-200 dark:bg-neutral-900 p-4 pt-8 justify-center items-center overflow-hidden'>
+    <div className='max-h-96 h-96 relative grid no-move justify-items-center dark:text-neutral-200 bg-neutral-200 dark:bg-neutral-900 p-4 pt-8 justify-center items-center overflow-hidden'>
       <div className='items-center justify-items-center'>
         <div className='text-center'>
           <h1 className='text-2xl font-bold'>Titles</h1>
@@ -59,16 +61,8 @@ const Titles: React.FC = () => {
           </button>
           {mapInfo && (
               <div className='absolute left-0 top-0 mt-4 ml-4 z-10 drop-shadow-lg'>
-                <div className='justify-items-start bg-neutral-300 dark:bg-neutral-800 mt-2 p-2 rounded-md drag-div'>
-                  <div className='flex'>
-                    <img className='w-24 h-24 rounded-md' src={mapInfo.versions[0].coverURL} alt='Cover' />
-                    <div className='flex-col ml-4 hidden'>
-                      <h1 className='flex text-md font-semibold'>{mapInfo.metadata.songAuthorName}</h1>
-                      <h1 className='flex text-lg font-bold'>{mapInfo.metadata.songName}</h1>
-                      <h1 className='flex text-md font-light'>{mapInfo.metadata.songSubName}</h1>
-                      <h1 className='flex text-md'>Mapped by {mapInfo.metadata.levelAuthorName}</h1>
-                    </div>
-                  </div>
+                <div className='bg-neutral-300 dark:bg-neutral-800 mt-2 p-2 rounded-md hover:scale-110 transition duration 200'>
+                    <a href={mapLink} target="_blank"><img className='w-24 h-24 rounded-md no-move' src={mapInfo.versions[0].coverURL} alt='Cover' /></a>
                 </div>
               </div>
             )}
@@ -81,12 +75,12 @@ const Titles: React.FC = () => {
               <div className='flex w-full'>
                 <div className='flex flex-grow bg-neutral-300 dark:bg-neutral-800 mt-2 p-4 rounded-l-md'>
                   <div className='justify-items-center'>
-                    <h1 className='flex text-md'>{mapInfo.metadata.songName} {mapInfo.metadata.songSubName} | {mapInfo.metadata.songAuthorName} | {mapInfo.metadata.levelAuthorName} | {difficulty}</h1>
+                    <h1 className='flex text-md'>{mapInfo.metadata.songName} {mapInfo.metadata.songSubName ? `${mapInfo.metadata.songSubName} | ` : ''}{mapInfo.metadata.songAuthorName} | {mapInfo.metadata.levelAuthorName} | {difficulty}</h1>
                   </div>
                 </div>
                 <button
                   className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mt-2 rounded-r-xl'
-                  onClick={() => copyToClipboard(`${mapInfo.metadata.songName} ${mapInfo.metadata.songSubName} | ${mapInfo.metadata.songAuthorName} | ${mapInfo.metadata.levelAuthorName} | ${difficulty}`, 'title')}
+                  onClick={() => copyToClipboard(`${mapInfo.metadata.songName}${mapInfo.metadata.songSubName ? ` ${mapInfo.metadata.songSubName} | ` : ' | '}${mapInfo.metadata.songAuthorName} | ${mapInfo.metadata.levelAuthorName} | ${difficulty}`, 'title')}
                 >
                   Copy
                 </button>
@@ -99,13 +93,13 @@ const Titles: React.FC = () => {
                   <div className='flex-col justify-items-center'>
                     <h1 className='flex text-md'>{mapInfo.metadata.songName} by {mapInfo.metadata.songAuthorName}</h1>
                     <h1 className='flex text-sm'>Mapped by {mapInfo.metadata.levelAuthorName}</h1>
-                    <h1 className='flex text-sm'>Map Link: https://beatsaver.com/maps/{mapId}</h1>
+                    <h1 className='flex text-sm'>Map Link: {mapLink}</h1>
                     <h1 className='flex text-sm'>Gameplay by {player}</h1>
                   </div>
                 </div>
                 <button
                   className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mt-2 rounded-r-xl'
-                  onClick={() => copyToClipboard(`${mapInfo.metadata.songName} by ${mapInfo.metadata.songAuthorName}\nMapped by ${mapInfo.metadata.levelAuthorName}\nMap Link: https://beatsaver.com/maps/${mapId}\nGameplay by ${player}`, 'description')}
+                  onClick={() => copyToClipboard(`${mapInfo.metadata.songName} by ${mapInfo.metadata.songAuthorName}\nMapped by ${mapInfo.metadata.levelAuthorName}\nMap Link: ${mapLink}\nGameplay by ${player}`, 'description')}
                 >
                   Copy
                 </button>
