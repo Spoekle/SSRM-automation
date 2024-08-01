@@ -1,6 +1,6 @@
 import axios from 'axios';
 import MapForm from './components/MapForm';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaClipboard } from 'react-icons/fa';
 
 interface MapInfo {
@@ -30,6 +30,17 @@ const Titles: React.FC = () => {
   const [mapFormModal, setMapFormModal] = useState<boolean>(false);
   const [useSubname, setUseSubname] = useState<boolean>(false);
 
+  useEffect(() => {
+    const storedMapId = localStorage.getItem('mapId');
+    if (storedMapId) {
+      setMapId(storedMapId);
+    }
+    const storedMapInfo = localStorage.getItem('mapInfo');
+    if (storedMapInfo) {
+      setMapInfo(JSON.parse(storedMapInfo)); // Parse the JSON string back into an object
+    }
+  }, []);
+
   const copyToClipboard = (text: string, type: 'title' | 'description') => {
     navigator.clipboard.writeText(text).then(() => {
       const id = new Date().getTime();
@@ -46,7 +57,7 @@ const Titles: React.FC = () => {
   };
 
   const mapLink = `https://beatsaver.com/maps/${mapId}`;
-
+  
   return (
     <div className='max-h-96 h-96 relative grid no-move justify-items-center dark:text-neutral-200 bg-neutral-200 dark:bg-neutral-900 p-4 pt-8 justify-center items-center overflow-hidden'>
       <div className='items-center justify-items-center'>
@@ -75,7 +86,7 @@ const Titles: React.FC = () => {
               <div className='flex w-full'>
                 <div className='flex flex-grow bg-neutral-300 dark:bg-neutral-800 mt-2 p-4 rounded-l-md'>
                   <div className='justify-items-center'>
-                    <h1 className='flex text-md'>{mapInfo.metadata.songName} {mapInfo.metadata.songSubName ? `${mapInfo.metadata.songSubName} | ` : ''}{mapInfo.metadata.songAuthorName} | {mapInfo.metadata.levelAuthorName} | {difficulty}</h1>
+                    <h1 className='flex text-md'>{mapInfo.metadata.songName} {mapInfo.metadata.songSubName ? ` ${mapInfo.metadata.songSubName} | ` : ' | '}{mapInfo.metadata.songAuthorName} | {mapInfo.metadata.levelAuthorName} | {difficulty}</h1>
                   </div>
                 </div>
                 <button
