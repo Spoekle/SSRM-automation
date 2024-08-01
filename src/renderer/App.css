@@ -11,6 +11,14 @@
   -webkit-app-region: no-drag;
 }
 
+.no-move {
+  -webkit-user-drag: none;
+  user-select: none;
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+}
+
 @keyframes fadeOut {
     from {
       opacity: 1;
