@@ -19,6 +19,22 @@
   -ms-user-select: none;
 }
 
+.thumbnail-size {
+  width: 1920px;
+  height: 1080px;
+}
+
+.thumbnail-section-container {
+  width: 800px;
+  transform: scale(0.42); /* 800px * 0.42 ≈ 1920px */
+  transform-origin: top left;
+}
+
+.thumbnail-content {
+  width: 1920px;
+  height: 1080px;
+}
+
 @keyframes fadeOut {
     from {
       opacity: 1;

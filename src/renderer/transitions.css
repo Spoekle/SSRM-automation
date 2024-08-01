@@ -1,0 +1,29 @@
+/* transitions.css */
+.route-container {
+  position: relative;
+  overflow: hidden; /* Hide scrollbars */
+}
+
+.fade-slide-enter {
+  position: absolute;
+  width: 100%;
+  height: 100%; /* Ensure full height */
+  transform: translateY(100%);
+}
+.fade-slide-exit {
+    position: absolute;
+    width: 100%;
+    height: 100%; /* Ensure full height */
+    transform: translateY(0%);
+  }
+
+.fade-slide-enter-active {
+  transform: translateY(0%);
+  transition: transform 500ms ease-in-out;
+}
+
+.fade-slide-exit-active {
+  transform: translateY(-100%);
+  transition: transform 500ms ease-in-out;
+}
+

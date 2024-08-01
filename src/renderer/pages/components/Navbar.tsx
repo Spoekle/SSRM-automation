@@ -1,13 +1,15 @@
-import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
-import React, { useState } from 'react';
-import { FaTimes, FaMinus, FaBars } from 'react-icons/fa';
-import { Link } from 'react-router-dom';
-
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { FaTimes, FaMinus } from 'react-icons/fa';
 import logo from '../../../../assets/icons/logo.svg';
 
 const { ipcRenderer } = window.require('electron');
 
-function Navbar() {
+const Navbar: React.FC = () => {
+  const location = useLocation();
+  const currentPath = location.pathname;
+  const [underlineStyle, setUnderlineStyle] = useState({});
+  const navRef = useRef(null);
 
   const minimizeWindow = () => {
     ipcRenderer.send('minimize-window');
@@ -19,6 +21,18 @@ function Navbar() {
     ipcRenderer.send('close-window');
   };
 
+  useEffect(() => {
+    const currentLink = navRef.current.querySelector(`.active`);
+    if (currentLink) {
+      const { offsetLeft, offsetWidth } = currentLink;
+      setUnderlineStyle({
+        left: `${offsetLeft}px`,
+        width: `${offsetWidth}px`,
+        background: '#ffff00',
+      });
+    }
+  }, [currentPath]);
+
   return (
     <div className='drag items-center justify-center bg-neutral-300 dark:bg-neutral-950 text-neutral-950 dark:text-neutral-200 p-4 rounded-t-3xl'>
       <div className='flex text-center justify-between'>
@@ -27,10 +41,11 @@ function Navbar() {
           <h1 className='text-xl font-bold items-center'>SSRM Automation</h1>
         </div>
         <div className='no-drag flex text-center items-center text-lg'>
-          <div className='no-drag text-center items-center text-lg'>
-            <Link to='/' className='text-neutral-950 dark:text-neutral-200 mr-2 p-2'>Home</Link>
-            <Link to='/titles' className='text-neutral-950 dark:text-neutral-200 mx-2 p-2'>Titles</Link>
-            <Link to='/thumbnails' className='text-neutral-950 dark:text-neutral-200 mx-2 p-2'>Thumbnails</Link>
+          <div className='no-drag text-center items-center text-lg relative' ref={navRef}>
+            <Link to='/' className={`text-neutral-950 dark:text-neutral-200 p-2 mx-2 ${currentPath === '/' ? 'active' : ''}`}>Home</Link>
+            <Link to='/titles' className={`text-neutral-950 dark:text-neutral-200 p-2 mx-2 ${currentPath === '/titles' ? 'active' : ''}`}>Titles</Link>
+            <Link to='/thumbnails' className={`text-neutral-950 dark:text-neutral-200 p-2 mx-2 ${currentPath === '/thumbnails' ? 'active' : ''}`}>Thumbnails</Link>
+            <div className='absolute bottom-0 h-1 transition-all duration-300 rounded-full' style={underlineStyle}></div>
           </div>
         </div>
         <div className='no-drag text-center items-center text-lg'>

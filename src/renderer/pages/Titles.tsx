@@ -37,7 +37,7 @@ const Titles: React.FC = () => {
     }
     const storedMapInfo = localStorage.getItem('mapInfo');
     if (storedMapInfo) {
-      setMapInfo(JSON.parse(storedMapInfo)); // Parse the JSON string back into an object
+      setMapInfo(JSON.parse(storedMapInfo));
     }
   }, []);
 
@@ -49,8 +49,8 @@ const Titles: React.FC = () => {
         setCopyAlerts(copyAlerts => copyAlerts.map(alert => alert.id === id ? { ...alert, fadeOut: true } : alert));
         setTimeout(() => {
           setCopyAlerts(copyAlerts => copyAlerts.filter(alert => alert.id !== id));
-        }, 500);  // Duration of fade-out animation
-      }, 2000);  // Delay before starting fade-out
+        }, 500);
+      }, 2000);
     }).catch((err) => {
       console.error('Failed to copy: ', err);
     });
