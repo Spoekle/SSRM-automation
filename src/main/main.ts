@@ -14,6 +14,7 @@ import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
+import { spawn, ChildProcess } from 'child_process';
 
 class AppUpdater {
   constructor() {
@@ -24,6 +25,7 @@ class AppUpdater {
 }
 
 let mainWindow: BrowserWindow | null = null;
+let backendProcess: ChildProcess | null = null;
 
 ipcMain.on('ipc-example', async (event, arg) => {
   const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
@@ -47,7 +49,7 @@ const installExtensions = async () => {
   return installer
     .default(
       extensions.map((name) => installer[name]),
-      forceDownload,
+      forceDownload
     )
     .catch(console.log);
 };
@@ -70,7 +72,7 @@ const createWindow = async () => {
     minWidth: 800,
     height: 518,
     resizable: false,
-    transparent: true, 
+    transparent: true,
     frame: false,
     icon: getAssetPath('favicon-32x32.png'),
     webPreferences: {
@@ -125,9 +127,15 @@ const createWindow = async () => {
   new AppUpdater();
 };
 
-/**
- * Add event listeners...
- */
+const startBackend = () => {
+  backendProcess = spawn('node', [path.join(__dirname, 'server.js')], {
+    stdio: 'inherit',
+  });
+
+  backendProcess.on('close', (code) => {
+    console.log(`Backend process exited with code ${code}`);
+  });
+};
 
 app.on('window-all-closed', () => {
   // Respect the OSX convention of having the application in memory even
@@ -137,9 +145,16 @@ app.on('window-all-closed', () => {
   }
 });
 
+app.on('quit', () => {
+  if (backendProcess) {
+    backendProcess.kill();
+  }
+});
+
 app
   .whenReady()
   .then(() => {
+    startBackend();
     createWindow();
     app.on('activate', () => {
       // On macOS it's common to re-create a window in the app when the

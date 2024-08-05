@@ -89,11 +89,11 @@ const MapForm: React.FC<MapFormProps> = ({
                           onChange={(e) => setDifficulty(e.target.value)}
                           className='w-24 border rounded p-2 text-neutral-950 mt-1'
                         >
-                          <option value="Easy">Easy</option>
-                          <option value="Normal">Normal</option>
-                          <option value="Hard">Hard</option>
-                          <option value="Expert">Expert</option>
-                          <option value="Expert+">Expert+</option>
+                          <option value="E">Easy</option>
+                          <option value="N">Normal</option>
+                          <option value="H">Hard</option>
+                          <option value="Ex">Expert</option>
+                          <option value="Ex+">Expert+</option>
                         </select>
                     </div>
                     <div className='flex flex-col my-2'>

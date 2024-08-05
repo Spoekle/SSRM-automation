@@ -2,8 +2,6 @@ import axios from 'axios';
 import ThumbnailForm from './components/ThumbnailForm';
 import React, { useEffect, useState } from 'react';
 import { FaClipboard } from 'react-icons/fa';
-import background from '../../../assets/background.png';
-import html2canvas from 'html2canvas';
 
 interface MapInfo {
   metadata: {
@@ -23,6 +21,11 @@ interface CopyAlert {
   fadeOut: boolean;
 }
 
+interface ThumbnailAssets {
+  coverImagePath: string;
+  videoFramePath: string;
+}
+
 const Thumbnails: React.FC = () => {
   const [mapId, setMapId] = useState<string>('');
   const [difficulty, setDifficulty] = useState<string>('Easy');
@@ -31,6 +34,8 @@ const Thumbnails: React.FC = () => {
   const [mapInfo, setMapInfo] = useState<MapInfo | null>(null);
   const [thumbnailFormModal, setThumbnailFormModal] = useState<boolean>(false);
   const [useSubname, setUseSubname] = useState<boolean>(false);
+  const [progress, setProgress] = useState<number>(0);
+  const [thumbnailAssets, setThumbnailAssets] = useState<ThumbnailAssets | null>(null);
 
   const mapLink = `https://beatsaver.com/maps/${mapId}`;
 
@@ -51,9 +56,8 @@ const Thumbnails: React.FC = () => {
         <h1 className='text-2xl font-bold'>Thumbnails <span className='text-sm font-semibold'>(beta)</span></h1>
         <p className='text-lg'>Generate your thumbnail here!</p>
         <button
-          className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mt-4 rounded cursor-not-allowed'
+          className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mt-4 rounded'
           onClick={() => setThumbnailFormModal(true)}
-          disabled
         >
           Open Thumbnail Form
         </button>
@@ -70,7 +74,19 @@ const Thumbnails: React.FC = () => {
         <div className='mt-4'>
           <div className='overflow-auto'>
             <div className='flex-col w-full h-full text-center'>
-              <h1 className='text-xl font-bold px-4 py-2 bg-red-600 rounded-md drop-shadow-lg'>No thumbnail generation possible yet!</h1>
+              {progress > 0 && (
+                <div className='w-full'>
+                  <progress value={progress} max="100" className='w-full'></progress>
+                  <p>{progress}%</p>
+                </div>
+              )}
+              {thumbnailAssets && (
+                <div>
+                  <h2 className='text-lg'>Generated Thumbnail:</h2>
+                  <img src={`http://localhost:3001/download/coverImage?path=${thumbnailAssets.coverImagePath}`} alt="Generated Cover" />
+                  <img src={`http://localhost:3001/download/videoFrame?path=${thumbnailAssets.videoFramePath}`} alt="Generated Frame" />
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -94,11 +110,13 @@ const Thumbnails: React.FC = () => {
           player={player}
           setPlayer={setPlayer}
           setMapInfo={setMapInfo}
-          setMapFormModal={setThumbnailFormModal}
+          setThumbnailFormModal={setThumbnailFormModal}
+          setProgress={setProgress}
+          setThumbnailAssets={setThumbnailAssets}
         />
       )}
     </div>
   );
-}
+};
 
 export default Thumbnails;

@@ -23,7 +23,7 @@ interface CopyAlert {
 
 const Titles: React.FC = () => {
   const [mapId, setMapId] = useState<string>('');
-  const [difficulty, setDifficulty] = useState<string>('Easy');
+  const [difficulty, setDifficulty] = useState<string>('E');
   const [player, setPlayer] = useState<string>('Mr_bjo');
   const [copyAlerts, setCopyAlerts] = useState<CopyAlert[]>([]);
   const [mapInfo, setMapInfo] = useState<MapInfo | null>(null);
