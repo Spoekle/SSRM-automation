@@ -1,9 +1,6 @@
-import axios from 'axios';
 import ThumbnailForm from './components/ThumbnailForm';
 import React, { useEffect, useState } from 'react';
 import { FaClipboard } from 'react-icons/fa';
-import background from '../../../assets/background.png';
-import html2canvas from 'html2canvas';
 
 interface MapInfo {
   metadata: {

@@ -44,7 +44,7 @@ const Navbar: React.FC = () => {
           <div className='no-drag text-center items-center text-lg relative' ref={navRef}>
             <Link to='/' className={`text-neutral-950 dark:text-neutral-200 p-2 mx-2 ${currentPath === '/' ? 'active' : ''}`}>Home</Link>
             <Link to='/titles' className={`text-neutral-950 dark:text-neutral-200 p-2 mx-2 ${currentPath === '/titles' ? 'active' : ''}`}>Titles</Link>
-            <Link to='/mapcards' className={`text-neutral-950 dark:text-neutral-200 p-2 mx-2 ${currentPath === '/mapcards' ? 'active' : ''}`}>MapCards</Link>
+            <Link to='/mapcards' className={`text-neutral-950 dark:text-neutral-200 p-2 mx-2 ${currentPath === '/mapcards' ? 'active' : ''}`}>Mapcards</Link>
             <Link to='/thumbnails' className={`text-neutral-950 dark:text-neutral-200 p-2 mx-2 ${currentPath === '/thumbnails' ? 'active' : ''}`}>Thumbnails</Link>
             <div className='absolute bottom-0 h-1 transition-all duration-200 rounded-full' style={underlineStyle}></div>
           </div>
