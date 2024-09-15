@@ -61,15 +61,23 @@ export async function generateCard(data: MapInfo, starRatings: StarRating): Prom
     ctx.strokeStyle = 'white';
     ctx.lineWidth = 5;
     ctx.stroke();
+    ctx.save();
 
+    // Reset filter and draw the rounded rectangle for background
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'; // Semi-transparent black
+    ctx.fillRect(300, 20, 560, 180);
+    ctx.roundRect(300, 20, 560, 180, 20);
+    ctx.clip();
 
+    // Draw the metadata text
+    ctx.fillStyle = 'white';
     ctx.font = '20px Arial';
+    ctx.textAlign = 'left';
+
     ctx.fillText(`${data.metadata.songAuthorName}`, 300, 50);
     ctx.fillText(`${data.metadata.songName}`, 300, 90);
     ctx.fillText(`${data.metadata.songSubName}`, 300, 130);
-
     ctx.fillText(`${data.metadata.levelAuthorName}`, 300, 170);
-
     ctx.fillText(`${data.metadata.duration}`, 300, 200);
 
     ctx.font = '20px Arial';
