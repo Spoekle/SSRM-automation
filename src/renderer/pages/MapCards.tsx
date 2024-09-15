@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FaDownload } from 'react-icons/fa';
-import MapForm from './components/CardForm';
+import CardForm from './components/CardForm';
+import { generateCard } from '../../main/helper';
 
 interface MapInfo {
   metadata: {
@@ -22,14 +23,22 @@ interface Alert {
   type: 'success' | 'error' | 'alert';
 }
 
+interface StarRatings {
+  ES: string;
+  NOR: string;
+  HARD: string;
+  EXP: string;
+  EXP_PLUS: string;
+}
+
 const MapCards: React.FC = () => {
   const [mapId, setMapId] = useState<string>('');
   const [difficulty, setDifficulty] = useState<string>('EASY');
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [mapInfo, setMapInfo] = useState<MapInfo | null>(null);
-  const [mapFormModal, setMapFormModal] = useState<boolean>(false);
-  const [modifier, setModifier] = useState<string>('');
-  const [mapDuration, setMapDuration] = useState<string>('');
+  const [cardFormModal, setCardFormModal] = useState<boolean>(false);
+  const [starRatings, setStarRatings] = useState<StarRatings>({ ES: "", NOR: "", HARD: "", EXP: "", EXP_PLUS: "" });
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
 
   useEffect(() => {
     const storedMapId = localStorage.getItem('mapId');
@@ -40,19 +49,39 @@ const MapCards: React.FC = () => {
     if (storedMapInfo) {
       setMapInfo(JSON.parse(storedMapInfo));
     }
+    const storedStarRatings = localStorage.getItem('starRatings');
+    if (storedStarRatings) {
+      setStarRatings(JSON.parse(storedStarRatings));
+    }
   }, []);
+
+  useEffect(() => {
+    if (mapInfo && starRatings) {
+      generateCard(mapInfo, starRatings).then(imageUrl => {
+        setImageSrc(imageUrl);
+      });
+    }
+  }, [mapInfo, starRatings]);
 
   const removeMapInfo = () => {
     setMapId('');
     setMapInfo(null);
+    setImageSrc(null);
     localStorage.removeItem('mapId');
     localStorage.removeItem('mapInfo');
+    localStorage.removeItem('starRatings');
     createAlerts('Cleared map info!', 'alert');
   };
 
   const downloadCard = () => {
-    const bs_card = document.querySelector('.bs_card');
-    if (!bs_card) return;
+    const link = document.createElement('a');
+    link.href = imageSrc || '';
+    link.download = `${mapInfo?.metadata.songName} - ${mapInfo?.metadata.songAuthorName} - ${mapInfo?.metadata.levelAuthorName}.png`;
+    document.body.appendChild(link);
+    link.click();
+    createAlerts('Downloaded card!', 'success');
+    document.body.removeChild(link);
+    
   };
   
 
@@ -77,7 +106,7 @@ const MapCards: React.FC = () => {
           <p className='text-lg'>Generate a mapcard in a single click!</p>
           <button
             className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mt-4 rounded-lg hover:scale-110 transition duration-200 drop-shadow-lg'
-            onClick={() => setMapFormModal(true)}
+            onClick={() => setCardFormModal(true)}
           >
             Open Map Form
           </button>
@@ -107,15 +136,18 @@ const MapCards: React.FC = () => {
             </div>
           )}
         </div>
-
-        {mapInfo && (
-          <div className='flex mt-4'>
-            <div className='flex-col text-center'>
+        {imageSrc && (
+          <div className='mt-4 flex justify-center'>
+            <div className='flex flex-col items-center text-center'>
               <h1 className='text-xl font-bold'>Preview:</h1>
+              <div className='w-3/5 flex justify-center'>
+                <img src={imageSrc} alt='Card Preview' className='block mt-2' />
+              </div>
             </div>
           </div>
         )}
       </div>
+
       <div className='absolute top-0 right-0 mt-4 mr-4 flex flex-col items-end space-y-2 overflow-hidden z-60'>
         {alerts.map(alert => (
           <div key={alert.id} className={`flex items-center justify-center px-4 py-2 ${alert.type === 'success' ? 'bg-green-600' : alert.type === 'error' ? 'bg-red-600' : 'bg-blue-600'} rounded-md drop-shadow-lg animate-fade-left ${alert.fadeOut ? 'animate-fade-out' : ''}`}>
@@ -123,19 +155,16 @@ const MapCards: React.FC = () => {
           </div>
         ))}
       </div>
-      {mapFormModal && (
-        <MapForm
+
+      {cardFormModal && (
+        <CardForm
           mapId={mapId}
           setMapId={setMapId}
-          difficulty={difficulty}
-          setDifficulty={setDifficulty}
-          modifier={modifier}
-          setModifier={setModifier}
+          starRatings={starRatings}
+          setStarRatings={setStarRatings}
           setMapInfo={setMapInfo}
-          setMapFormModal={setMapFormModal}
-          setMapDuration={setMapDuration}
-          mapDuration={mapDuration}
-          createAlerts={createAlerts}
+          setCardFormModal={setCardFormModal}
+          setImageSrc={setImageSrc}
         />
       )}
     </div>
