@@ -52,7 +52,7 @@ const Titles: React.FC = () => {
 
   const copyToClipboard = (text: string, type: 'title' | 'description') => {
     navigator.clipboard.writeText(text).then(() => {
-      createAlerts(`$Copied ${type} to clipboard!`, 'success');
+      createAlerts(`Copied ${type} to clipboard!`, 'success');
     }).catch((err) => {
       console.error('Failed to copy: ', err);
     });
