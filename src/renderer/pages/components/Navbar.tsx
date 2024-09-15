@@ -9,7 +9,7 @@ const Navbar: React.FC = () => {
   const location = useLocation();
   const currentPath = location.pathname;
   const [underlineStyle, setUnderlineStyle] = useState({});
-  const navRef = useRef(null);
+  const navRef = useRef<HTMLDivElement>(null);
 
   const minimizeWindow = () => {
     ipcRenderer.send('minimize-window');
@@ -22,7 +22,7 @@ const Navbar: React.FC = () => {
   };
 
   useEffect(() => {
-    const currentLink = navRef.current.querySelector(`.active`);
+    const currentLink = navRef.current?.querySelector('.active') as HTMLAnchorElement | null; // Ensure type safety
     if (currentLink) {
       const { offsetLeft, offsetWidth } = currentLink;
       setUnderlineStyle({
@@ -46,7 +46,7 @@ const Navbar: React.FC = () => {
             <Link to='/titles' className={`text-neutral-950 dark:text-neutral-200 p-2 mx-2 ${currentPath === '/titles' ? 'active' : ''}`}>Titles</Link>
             <Link to='/mapcards' className={`text-neutral-950 dark:text-neutral-200 p-2 mx-2 ${currentPath === '/mapcards' ? 'active' : ''}`}>MapCards</Link>
             <Link to='/thumbnails' className={`text-neutral-950 dark:text-neutral-200 p-2 mx-2 ${currentPath === '/thumbnails' ? 'active' : ''}`}>Thumbnails</Link>
-            <div className='absolute bottom-0 h-1 transition-all duration-500 rounded-full' style={underlineStyle}></div>
+            <div className='absolute bottom-0 h-1 transition-all duration-200 rounded-full' style={underlineStyle}></div>
           </div>
         </div>
         <div className='no-drag text-center items-center text-lg'>

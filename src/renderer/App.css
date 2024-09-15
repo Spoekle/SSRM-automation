@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+.route-container {
+  position: relative;
+  overflow: hidden; /* Hide scrollbars */
+}
 
 .drag {
   -webkit-app-region: drag;
