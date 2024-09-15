@@ -30,6 +30,7 @@ const CardForm: React.FC<CardFormProps> = ({
   setMapInfo,
   setImageSrc
 }) => {
+  const [songName, setSongName] = React.useState('');
 
   const handleClickOutside = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     if ((event.target as HTMLDivElement).classList.contains('modal-overlay')) {
@@ -58,6 +59,19 @@ const CardForm: React.FC<CardFormProps> = ({
     }
 };
 
+  async function getStarRating(hash: string): Promise<StarRatings> {
+    const response = await fetch(`https://scoresaber.com/api/leaderboard/by-hash/${hash}/info?difficulty=1`);
+    if (!response.ok) throw new Error('Failed to fetch star ratings');
+    const data = await response.json();
+    return {
+        ES: data.stars,
+        NOR: data.stars,
+        HARD: data.stars,
+        EXP: data.stars,
+        EXP_PLUS: data.stars,
+    };
+  }
+
   // Function to update the star ratings and allow decimal input as strings
   const handleStarRatingChange = (difficulty: keyof StarRatings, value: string) => {
     // Allow only numbers and a single decimal point or empty input
@@ -68,6 +82,21 @@ const CardForm: React.FC<CardFormProps> = ({
       });
     }
   };
+
+  const fetchName = async (mapId: string) => {
+    if (mapId === '') (
+      setSongName('')
+    )
+    setMapId(mapId)
+    try {
+      const response = await axios.get(`https://api.beatsaver.com/maps/id/${mapId}`);
+      const data = response.data;
+      setSongName(data.metadata.songName);
+      return data.metadata.songName;
+    } catch (error) {
+      console.error('Error fetching map info:', error);
+    }
+  }
 
   // Utility to get numeric rating or default to 0
   const getNumericRating = (rating: string) => {
@@ -89,7 +118,7 @@ const CardForm: React.FC<CardFormProps> = ({
   const renderRatingsBar = () => {
     const colors = {
       ES: 'bg-green-600',
-      NOR: 'bg-blue-600',
+      NOR: 'bg-blue-500',
       HARD: 'bg-orange-500',
       EXP: 'bg-red-600',
       EXP_PLUS: 'bg-purple-700',
@@ -101,7 +130,7 @@ const CardForm: React.FC<CardFormProps> = ({
         {Object.entries(ratings).map(([difficulty, rating]) => {
           const percentage = totalRating > 0 ? (rating / totalRating) * 100 : 0; // Calculate percentage width
           const colorClass = colors[difficulty as keyof typeof colors];
-  
+
           const style = {
             width: `${percentage}%`,
             position: 'absolute',
@@ -109,7 +138,7 @@ const CardForm: React.FC<CardFormProps> = ({
             left: `${accumulatedWidth}%`,
             transition: 'width 0.5s ease', // Animation duration
           };
-  
+
           accumulatedWidth += percentage;
           return <div key={difficulty} className={`${colorClass} absolute`} style={style} />;
         })}
@@ -122,7 +151,13 @@ const CardForm: React.FC<CardFormProps> = ({
       className="modal-overlay fixed inset-0 bg-white/10 backdrop-blur-lg flex justify-center items-center z-50 rounded-3xl animate-fade animate-duration-200"
       onClick={handleClickOutside}
     >
-      <div className="modal-content bg-neutral-200 dark:bg-neutral-900 text-neutral-950 dark:text-neutral-200 p-6 rounded-lg animate-jump-in animate-duration-300">
+      <div className="relative modal-content bg-neutral-200 dark:bg-neutral-900 text-neutral-950 dark:text-neutral-200 p-6 rounded-lg animate-jump-in animate-duration-300">
+        {songName &&
+          <div className='absolute right-0 mr-8 text-right'>
+            <h1 className='text-2xl font-bold'>Chosen Song:</h1>
+            <h1 className='text-lg font-semibold'>{songName}</h1>
+          </div>
+        }
         <form onSubmit={getMapInfo}>
           <h1 className='text-2xl font-bold'>Get Info</h1>
           <div className='flex flex-col justify-center items-center mt-2'>
@@ -131,7 +166,7 @@ const CardForm: React.FC<CardFormProps> = ({
               <input
                 type='text'
                 value={mapId}
-                onChange={(e) => setMapId(e.target.value)}
+                onChange={(e) => fetchName(e.target.value)}
                 className='w-24 border rounded p-2 text-neutral-950 mt-1'
               />
             </div>

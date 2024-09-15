@@ -1,5 +1,5 @@
-import { Canvas, Image, Font } from 'skia-canvas';
-import fs from 'fs';
+import { Canvas, Image, FontLibrary } from 'skia-canvas';
+import { CanvasRenderingContext2D as SkiaCanvasRenderingContext2D } from 'skia-canvas';
 
 interface StarRating {
     ES: string;
@@ -17,10 +17,14 @@ interface MapInfo {
         levelAuthorName: string;
         duration: number;
     };
+    id: string;
     versions: {
         coverURL: string;
+        hash: string;
     }[];
 }
+
+
 
 async function loadImage(url: string): Promise<Image> {
     const response = await fetch(url);
@@ -32,6 +36,12 @@ async function loadImage(url: string): Promise<Image> {
         img.onerror = reject;
         img.src = `data:image/png;base64,${buffer.toString('base64')}`;
     });
+}
+
+function formatDuration(seconds = 0): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
 }
 
 export async function generateCard(data: MapInfo, starRatings: StarRating): Promise<string> {
@@ -47,76 +57,118 @@ export async function generateCard(data: MapInfo, starRatings: StarRating): Prom
     ctx.filter = 'blur(10px)';
     const img = await loadImage(data.versions[0].coverURL);
     ctx.drawImage(img, 0, 0, 900, 300);
-    
-
-    // Reset filter and draw everything else
     ctx.filter = 'none';
-    ctx.fillStyle = 'white';
-    ctx.font = '30px Arial';
-
-    // Draw the cover image again on the left and round it
-    ctx.drawImage(img, 20, 20, 260, 260);
-    ctx.roundRect(20, 20, 260, 260, 10);
-    ctx.clip();
-    ctx.strokeStyle = 'white';
-    ctx.lineWidth = 5;
-    ctx.stroke();
     ctx.save();
 
-    // Reset filter and draw the rounded rectangle for background
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'; // Semi-transparent black
-    ctx.fillRect(300, 20, 560, 180);
-    ctx.roundRect(300, 20, 560, 180, 20);
+    // Draw the rounded cover image
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+    ctx.shadowOffsetX = 10;
+    ctx.shadowOffsetY = 10;
+    ctx.shadowBlur = 5;
+    ctx.beginPath();
+    ctx.roundRect(20, 20, 260, 260, 10); // Rounded corners for the cover
     ctx.clip();
+    ctx.drawImage(img, 20, 20, 260, 260); // Draw the cover image
+    ctx.restore();
+
+    // Draw the rounded rectangle for the semi-transparent background
+    ctx.beginPath();
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'; // Semi-transparent black
+    ctx.roundRect(300, 20, 560, 180, 10); // Rounded corners for background
+    ctx.fill(); // Fill the rounded background
+    ctx.closePath();
 
     // Draw the metadata text
     ctx.fillStyle = 'white';
-    ctx.font = '20px Arial';
     ctx.textAlign = 'left';
 
-    ctx.fillText(`${data.metadata.songAuthorName}`, 300, 50);
-    ctx.fillText(`${data.metadata.songName}`, 300, 90);
-    ctx.fillText(`${data.metadata.songSubName}`, 300, 130);
-    ctx.fillText(`${data.metadata.levelAuthorName}`, 300, 170);
-    ctx.fillText(`${data.metadata.duration}`, 300, 200);
+    const truncateText = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string => {
+      const ellipsis = '...';
+      let truncatedText = text;
 
-    ctx.font = '20px Arial';
+      // Check if text width exceeds the maxWidth
+      while (ctx.measureText(truncatedText + ellipsis).width > maxWidth) {
+        truncatedText = truncatedText.slice(0, -1);
+      }
+
+      return truncatedText + ellipsis;
+    };
+
+    // Maximum width for text
+    const maxWidth = 460;
+
+    // Set up the canvas context
+    ctx.font = '24px Sans-Serif';
+
+    // Check if Song Author Name needs truncation
+    const authorName = data.metadata.songAuthorName;
+    const displayAuthorName = ctx.measureText(authorName).width > maxWidth
+      ? truncateText(ctx, authorName, maxWidth)
+      : authorName;
+    ctx.fillText(displayAuthorName, 320, 55);
+
+    ctx.font = 'bold 30px Sans-Serif';
+    // Check if Song Name needs truncation
+    const songName = data.metadata.songName;
+    const displaySongName = ctx.measureText(songName).width > maxWidth
+      ? truncateText(ctx, songName, maxWidth)
+      : songName;
+    ctx.fillText(displaySongName, 320, 90);
+
+    ctx.font = '20px Sans-Serif';
+    // Check if Song Sub Name needs truncation
+    const subName = data.metadata.songSubName;
+    const displaySubName = ctx.measureText(subName).width > maxWidth
+      ? truncateText(ctx, subName, maxWidth)
+      : subName;
+    ctx.fillText(displaySubName, 320, 120);
+
+    ctx.font = '20px Sans-Serif';
+    // Check if Level Author Name needs truncation
+    const levelAuthorName = `Mapped by ${data.metadata.levelAuthorName}`;
+    const displayLevelAuthorName = ctx.measureText(levelAuthorName).width > maxWidth
+      ? truncateText(ctx, levelAuthorName, maxWidth)
+      : levelAuthorName;
+    ctx.fillText(displayLevelAuthorName, 320, 180);
+
+    // Convert and display duration
+    const durationFormatted = formatDuration(data.metadata.duration);
+    ctx.textAlign = 'right';
+    ctx.fillText(`${data.id}`, 840, 55);
+    ctx.fillText(`Duration: ${durationFormatted}`, 840, 180);
+
+    ctx.font = '20px Sans-Serif';
     ctx.textAlign = 'center';
 
+    // Define the star ratings with their respective colors
+    const ratings = [
+      { rating: starRatings.ES, color: 'rgb(22 163 74)' },
+      { rating: starRatings.NOR, color: 'rgb(59 130 246)' },
+      { rating: starRatings.HARD, color: 'rgb(249 115 22)' },
+      { rating: starRatings.EXP, color: 'rgb(220 38 38)' },
+      { rating: starRatings.EXP_PLUS, color: 'rgb(126 34 206)' }
+    ];
 
-    ctx.fillStyle = 'green';
-    ctx.fillRect(300, 220, 100, 50);
-    ctx.roundRect(300, 220, 100, 50, 20);
-    ctx.clip();
-    ctx.fillStyle = 'white';
-    ctx.fillText(`${starRatings.ES}★`, 350, 255);
+    let x = 300; // Initial x position
 
-    ctx.fillStyle = 'blue';
-    ctx.fillRect(400, 220, 100, 50);
-    ctx.roundRect(400, 220, 100, 50, 20);
-    ctx.clip();
-    ctx.fillStyle = 'white';
-    ctx.fillText(`${starRatings.NOR}★`, 450, 255);
+    // Loop through the ratings and draw each one if not empty
+    ratings.forEach(({ rating, color }) => {
+      if (rating) {
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.roundRect(x, 220, 100, 50, 10); // Draw rounded rectangle
+          ctx.fill();
+          ctx.closePath();
 
-    ctx.fillStyle = 'orange';
-    ctx.fillRect(500, 220, 100, 50);
-    ctx.roundRect(500, 220, 100, 50, 20);
-    ctx.clip();
-    ctx.fillStyle = 'white';
-    ctx.fillText(`${starRatings.HARD}★`, 550, 255);
+          // Draw the text
+          ctx.fillStyle = 'white';
+          ctx.font = 'bold 24px Sans-Serif';
+          ctx.fillText(`${rating} ★`, x + 50, 252);
 
-    ctx.fillStyle = 'red';
-    ctx.fillRect(600, 220, 100, 50);
-    ctx.roundRect(600, 220, 100, 50, 20);
-    ctx.clip();
-    ctx.fillStyle = 'white';
-    ctx.fillText(`${starRatings.EXP}★`, 650, 255);
+          // Move the x position for the next rectangle
+          x += 110; // Adjust spacing between rectangles
+      }
+    });
 
-    ctx.fillStyle = 'purple';
-    ctx.fillRect(700, 220, 100, 50);
-    ctx.roundRect(700, 220, 100, 50, 20);
-    ctx.clip();
-    ctx.fillStyle = 'white';
-    ctx.fillText(`${starRatings.EXP_PLUS}★`, 750, 255);
     return canvas.toDataURL('image/png');
 }
