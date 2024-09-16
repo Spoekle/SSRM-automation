@@ -23,7 +23,7 @@ npm start
 Run the package command in the `dev` environment:
 
 ```bash
-npm package
+npm run package
 ```
 
 
