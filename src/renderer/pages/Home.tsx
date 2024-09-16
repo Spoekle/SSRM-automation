@@ -1,7 +1,3 @@
-import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
-import { Link } from 'react-router-dom';
-
-
 function Home() {
 
   return (

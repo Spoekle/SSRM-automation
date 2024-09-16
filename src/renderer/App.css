@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+.route-container {
+  position: relative;
+  overflow: hidden; /* Hide scrollbars */
+}
 
 .drag {
   -webkit-app-region: drag;
@@ -17,22 +21,6 @@
   -moz-user-select: none;
   -webkit-user-select: none;
   -ms-user-select: none;
-}
-
-.thumbnail-size {
-  width: 1920px;
-  height: 1080px;
-}
-
-.thumbnail-section-container {
-  width: 800px;
-  transform: scale(0.42); /* 800px * 0.42 ≈ 1920px */
-  transform-origin: top left;
-}
-
-.thumbnail-content {
-  width: 1920px;
-  height: 1080px;
 }
 
 @keyframes fadeOut {
