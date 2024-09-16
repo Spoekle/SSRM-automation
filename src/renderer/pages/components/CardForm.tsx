@@ -45,8 +45,7 @@ const CardForm: React.FC<CardFormProps> = ({
         const data = response.data;
         setMapInfo(data);
         localStorage.setItem('mapId', `${mapId}`);
-        localStorage.setItem('mapInfo', JSON.stringify(data)); // Serialize the mapInfo object
-        localStorage.setItem('starRatings', JSON.stringify(starRatings)); // Serialize the starRatings object
+        localStorage.setItem('mapInfo', JSON.stringify(data));
 
         // Generate the image and set it to state
         const image = await generateCard(data, starRatings);
@@ -57,31 +56,37 @@ const CardForm: React.FC<CardFormProps> = ({
     } catch (error) {
         console.error('Error fetching map info:', error);
     }
-};
-
-  async function getStarRating(hash: string): Promise<StarRatings> {
-    const response = await fetch(`https://scoresaber.com/api/leaderboard/by-hash/${hash}/info?difficulty=1`);
-    if (!response.ok) throw new Error('Failed to fetch star ratings');
-    const data = await response.json();
-    return {
-        ES: data.stars,
-        NOR: data.stars,
-        HARD: data.stars,
-        EXP: data.stars,
-        EXP_PLUS: data.stars,
-    };
-  }
-
-  // Function to update the star ratings and allow decimal input as strings
-  const handleStarRatingChange = (difficulty: keyof StarRatings, value: string) => {
-    // Allow only numbers and a single decimal point or empty input
-    if (/^\d*\.?\d*$/.test(value) || value === '') {
-      setStarRatings({
-        ...starRatings,
-        [difficulty]: value // Store the string temporarily
-      });
-    }
   };
+
+  // Get star ratings from ScoreSaber API for 1 3 5 7 9 difficulties
+  async function getStarRating(hash: string): Promise<StarRatings> {
+    let diffs = ['1', '3', '5', '7', '9'];
+    let starRatings: StarRatings = {
+      ES: '',
+      NOR: '',
+      HARD: '',
+      EXP: '',
+      EXP_PLUS: ''
+    };
+
+    for (let i = 0; i < diffs.length; i++) {
+      try {
+        const response = await axios.get(`http://localhost:3000/api/scoresaber/${hash}/${diffs[i]}`);
+        const data = response.data;
+        const key = Object.keys(starRatings)[i] as keyof StarRatings;
+        if (data.stars === 0) {
+          starRatings[key] = 'Unranked';
+        } else {
+          starRatings[key] = data.stars;
+        }
+        localStorage.setItem('starRatings', JSON.stringify(starRatings));
+        console.log(starRatings);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+    return starRatings;
+  }
 
   const fetchName = async (mapId: string) => {
     if (mapId === '') (
@@ -92,6 +97,9 @@ const CardForm: React.FC<CardFormProps> = ({
       const response = await axios.get(`https://api.beatsaver.com/maps/id/${mapId}`);
       const data = response.data;
       setSongName(data.metadata.songName);
+      getStarRating(data.versions[0].hash).then((starRatings) => {
+        setStarRatings(starRatings);
+      });
       return data.metadata.songName;
     } catch (error) {
       console.error('Error fetching map info:', error);
@@ -174,62 +182,47 @@ const CardForm: React.FC<CardFormProps> = ({
               <h1 className='text-2xl font-bold'>Star Ratings:</h1>
               <p className='text-lg'>Enter the star ratings for each difficulty</p>
               {renderRatingsBar()}
-              <div className='grid grid-cols-5 gap-2'>
-                <div className='flex flex-col'>
-                  <label>Easy</label>
-                  <input
-                    type='text'
-                    value={starRatings.ES}
-                    onChange={(e) => handleStarRatingChange('ES', e.target.value)}
-                    className='w-24 border rounded p-2 text-neutral-950 mt-1'
-                    placeholder="Easy"
-                  />
+              <div className='grid grid-cols-5 gap-2 my-4'>
+                <div className='flex flex-col bg-green-600 rounded px-2 py-1'>
+                  <label className='font-bold'>Easy</label>
+                  {starRatings.ES === '' ?
+                   <h1 className='text-lg'>-</h1>
+                   :
+                   <h1 className='text-lg'>{starRatings.ES} ★</h1>}
                 </div>
-                <div className='flex flex-col'>
-                  <label>Normal</label>
-                  <input
-                    type='text'
-                    value={starRatings.NOR}
-                    onChange={(e) => handleStarRatingChange('NOR', e.target.value)}
-                    className='w-24 border rounded p-2 text-neutral-950 mt-1'
-                    placeholder="Normal"
-                  />
+                <div className='flex flex-col bg-blue-500 rounded px-2 py-1'>
+                  <label className='font-bold'>Normal</label>
+                  {starRatings.NOR === '' ?
+                   <h1 className='text-lg'>-</h1>
+                   :
+                   <h1 className='text-lg'>{starRatings.NOR} ★</h1>}
                 </div>
-                <div className='flex flex-col'>
-                  <label>Hard</label>
-                  <input
-                    type='text'
-                    value={starRatings.HARD}
-                    onChange={(e) => handleStarRatingChange('HARD', e.target.value)}
-                    className='w-24 border rounded p-2 text-neutral-950 mt-1'
-                    placeholder="Hard"
-                  />
+                <div className='flex flex-col bg-orange-500 rounded px-2 py-1'>
+                  <label className='font-bold'>Hard</label>
+                  {starRatings.HARD === '' ?
+                   <h1 className='text-lg'>-</h1>
+                   :
+                   <h1 className='text-lg'>{starRatings.HARD} ★</h1>}
                 </div>
-                <div className='flex flex-col'>
-                  <label>Expert</label>
-                  <input
-                    type='text'
-                    value={starRatings.EXP}
-                    onChange={(e) => handleStarRatingChange('EXP', e.target.value)}
-                    className='w-24 border rounded p-2 text-neutral-950 mt-1'
-                    placeholder="Expert"
-                  />
+                <div className='flex flex-col bg-red-600 rounded px-2 py-1'>
+                  <label className='font-bold'>Expert</label>
+                  {starRatings.EXP === '' ?
+                   <h1 className='text-lg'>-</h1>
+                   :
+                   <h1 className='text-lg'>{starRatings.EXP} ★</h1>}
                 </div>
-                <div className='flex flex-col'>
-                  <label>Expert+</label>
-                  <input
-                    type='text'
-                    value={starRatings.EXP_PLUS}
-                    onChange={(e) => handleStarRatingChange('EXP_PLUS', e.target.value)}
-                    className='w-24 border rounded p-2 text-neutral-950 mt-1'
-                    placeholder="Expert+"
-                  />
+                <div className='flex flex-col bg-purple-700 rounded px-2 py-1'>
+                  <label className='font-bold'>Expert+</label>
+                  {starRatings.EXP_PLUS === '' ?
+                   <h1 className='text-lg'>-</h1>
+                   :
+                   <h1 className='text-lg'>{starRatings.EXP_PLUS} ★</h1>}
                 </div>
               </div>
             </div>
           </div>
           <div className='flex flex-col'>
-            <button type="submit" className='bg-blue-500 text-white p-2 rounded mt-2'>Generate</button>
+            <button type="submit" className='bg-blue-500 text-white p-2 rounded'>Generate</button>
           </div>
         </form>
       </div>
