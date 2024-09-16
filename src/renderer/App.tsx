@@ -1,5 +1,4 @@
 import { MemoryRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { CSSTransition, TransitionGroup } from 'react-transition-group';
 import Home from './pages/Home';
 import Titles from './pages/Titles';
 import Thumbnails from './pages/Thumbnails';
