@@ -166,7 +166,7 @@ export async function generateCard(data: MapInfo, starRatings: StarRating): Prom
           ctx.fillText(`${rating} ★`, x + 50, 252);
 
           // Move the x position for the next rectangle
-          x += 110; // Adjust spacing between rectangles
+          x += 115; // Adjust spacing between rectangles
       }
     });
 
