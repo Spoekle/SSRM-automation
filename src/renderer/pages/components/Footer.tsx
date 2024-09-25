@@ -1,4 +1,3 @@
-import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
 import React, { useState, useEffect, useRef } from 'react';
 import { FaSun, FaMoon, FaGithub } from 'react-icons/fa';
 

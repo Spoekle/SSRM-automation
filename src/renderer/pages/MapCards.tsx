@@ -33,7 +33,6 @@ interface StarRatings {
 
 const MapCards: React.FC = () => {
   const [mapId, setMapId] = useState<string>('');
-  const [difficulty, setDifficulty] = useState<string>('EASY');
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [mapInfo, setMapInfo] = useState<MapInfo | null>(null);
   const [cardFormModal, setCardFormModal] = useState<boolean>(false);
@@ -81,9 +80,9 @@ const MapCards: React.FC = () => {
     link.click();
     createAlerts('Downloaded card!', 'success');
     document.body.removeChild(link);
-    
+
   };
-  
+
 
   const createAlerts = (text: string, type: 'success' | 'error' | 'alert') => {
     const id = new Date().getTime();
@@ -140,7 +139,7 @@ const MapCards: React.FC = () => {
           <div className='mt-4 flex justify-center'>
             <div className='flex flex-col items-center text-center'>
               <h1 className='text-xl font-bold'>Preview:</h1>
-              <div className='w-3/5 flex justify-center'>
+              <div className='w-3/5 flex justify-center drop-shadow-lg'>
                 <img src={imageSrc} alt='Card Preview' className='block mt-2' />
               </div>
             </div>

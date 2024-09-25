@@ -1,4 +1,4 @@
-import { MemoryRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import Titles from './pages/Titles';
 import Thumbnails from './pages/Thumbnails';
@@ -8,7 +8,6 @@ import Footer from './pages/components/Footer';
 import './App.css';
 
 const AppContent: React.FC = () => {
-  const location = useLocation();
   return (
     <div className="app-container">
       <Navbar />
