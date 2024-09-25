@@ -46,18 +46,18 @@ const Navbar: React.FC = () => {
             <Link to='/titles' className={`text-neutral-950 dark:text-neutral-200 p-2 mx-2 ${currentPath === '/titles' ? 'active' : ''}`}>Titles</Link>
             <Link to='/mapcards' className={`text-neutral-950 dark:text-neutral-200 p-2 mx-2 ${currentPath === '/mapcards' ? 'active' : ''}`}>Mapcards</Link>
             <Link to='/thumbnails' className={`text-neutral-950 dark:text-neutral-200 p-2 mx-2 ${currentPath === '/thumbnails' ? 'active' : ''}`}>Thumbnails</Link>
-            <div className='absolute bottom-0 h-1 transition-all duration-200 rounded-full' style={underlineStyle}></div>
+            <div className='absolute bottom--1 h-1 transition-all duration-200 rounded-full' style={underlineStyle}></div>
           </div>
         </div>
         <div className='no-drag text-center items-center text-lg'>
-          <button 
-            className='hover:bg-orange-500 hover:text-white rounded-md p-2 mr-2 transition duration-200' 
+          <button
+            className='hover:bg-orange-500 hover:text-white rounded-md p-2 mr-2 transition duration-200'
             onClick={minimizeWindow}
           >
             <FaMinus/>
           </button>
-          <button 
-            className='hover:bg-red-500 hover:text-white rounded-md p-2 transition duration-200' 
+          <button
+            className='hover:bg-red-500 hover:text-white rounded-md p-2 transition duration-200'
             onClick={clearAndCloseWindow}
           >
             <FaTimes/>
