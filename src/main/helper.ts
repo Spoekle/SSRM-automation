@@ -73,8 +73,8 @@ export async function generateCard(data: MapInfo, starRatings: StarRating): Prom
 
     // Draw the rounded rectangle for the semi-transparent background
     ctx.beginPath();
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'; // Semi-transparent black
-    ctx.roundRect(300, 20, 560, 180, 10); // Rounded corners for background
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'; // Semi-transparent black
+    ctx.roundRect(300, 20, 580, 180, 10); // Rounded corners for background
     ctx.fill(); // Fill the rounded background
     ctx.closePath();
 
@@ -95,10 +95,10 @@ export async function generateCard(data: MapInfo, starRatings: StarRating): Prom
     };
 
     // Maximum width for text
-    const maxWidth = 460;
+    const maxWidth = 480;
 
     // Set up the canvas context
-    ctx.font = '24px Sans-Serif';
+    ctx.font = '24px Avenir';
 
     // Check if Song Author Name needs truncation
     const authorName = data.metadata.songAuthorName;
@@ -107,7 +107,7 @@ export async function generateCard(data: MapInfo, starRatings: StarRating): Prom
       : authorName;
     ctx.fillText(displayAuthorName, 320, 55);
 
-    ctx.font = 'bold 30px Sans-Serif';
+    ctx.font = 'bold 30px Avenir-Black';
     // Check if Song Name needs truncation
     const songName = data.metadata.songName;
     const displaySongName = ctx.measureText(songName).width > maxWidth
@@ -115,7 +115,7 @@ export async function generateCard(data: MapInfo, starRatings: StarRating): Prom
       : songName;
     ctx.fillText(displaySongName, 320, 90);
 
-    ctx.font = '20px Sans-Serif';
+    ctx.font = '20px Avenir';
     // Check if Song Sub Name needs truncation
     const subName = data.metadata.songSubName;
     const displaySubName = ctx.measureText(subName).width > maxWidth
@@ -123,7 +123,7 @@ export async function generateCard(data: MapInfo, starRatings: StarRating): Prom
       : subName;
     ctx.fillText(displaySubName, 320, 120);
 
-    ctx.font = '20px Sans-Serif';
+    ctx.font = '20px Avenir-Light';
     // Check if Level Author Name needs truncation
     const levelAuthorName = `Mapped by ${data.metadata.levelAuthorName}`;
     const displayLevelAuthorName = ctx.measureText(levelAuthorName).width > maxWidth
@@ -134,10 +134,16 @@ export async function generateCard(data: MapInfo, starRatings: StarRating): Prom
     // Convert and display duration
     const durationFormatted = formatDuration(data.metadata.duration);
     ctx.textAlign = 'right';
-    ctx.fillText(`${data.id}`, 840, 55);
-    ctx.fillText(`Duration: ${durationFormatted}`, 840, 180);
+    ctx.font = '20px Avenir-Black';
+    ctx.fillText(`BSR:`, 860, 55);
+    ctx.font = '20px Avenir-Light';
+    ctx.fillText(`${data.id}`, 860, 85);
+    ctx.font = '20px Avenir-Black';
+    ctx.fillText(`Song Duration:`, 860, 150);
+    ctx.font = '20px Avenir-Light';
+    ctx.fillText(`${durationFormatted}`, 860, 180);
 
-    ctx.font = '20px Sans-Serif';
+    ctx.font = '20px Avenir';
     ctx.textAlign = 'center';
 
     // Define the star ratings with their respective colors
@@ -156,17 +162,26 @@ export async function generateCard(data: MapInfo, starRatings: StarRating): Prom
       if (rating) {
           ctx.fillStyle = color;
           ctx.beginPath();
-          ctx.roundRect(x, 220, 100, 50, 10); // Draw rounded rectangle
+          if (rating === 'Unranked') {
+              ctx.roundRect(x, 220, 120, 50, 10);
+          }
+          else {
+              ctx.roundRect(x, 220, 100, 50, 10);
+          }
           ctx.fill();
           ctx.closePath();
 
           // Draw the text
           ctx.fillStyle = 'white';
-          ctx.font = 'bold 24px Sans-Serif';
-          ctx.fillText(`${rating} ★`, x + 50, 252);
-
-          // Move the x position for the next rectangle
-          x += 115; // Adjust spacing between rectangles
+          ctx.textBaseline = 'middle'
+          ctx.font = 'bold 20px Avenir-Black';
+          if (rating === 'Unranked') {
+              ctx.fillText(`${rating}`, x + 60, 245);
+              x += 130;
+          } else {
+              ctx.fillText(`${rating} ★`, x + 50, 245);
+              x += 110;
+          }
       }
     });
 
