@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { FaTimes, FaMinus } from 'react-icons/fa';
 import logo from '../../../../assets/icons/logo.svg';
+import yabje from '../../../../assets/images/yabje.jpg';
 
 const { ipcRenderer } = window.require('electron');
 
@@ -10,6 +11,7 @@ const Navbar: React.FC = () => {
   const currentPath = location.pathname;
   const [underlineStyle, setUnderlineStyle] = useState({});
   const navRef = useRef<HTMLDivElement>(null);
+  const [easterEggCounter, setEasterEggCounter] = useState(0);
 
   const minimizeWindow = () => {
     ipcRenderer.send('minimize-window');
@@ -19,6 +21,15 @@ const Navbar: React.FC = () => {
     localStorage.removeItem('mapId');
     localStorage.removeItem('mapInfo');
     ipcRenderer.send('close-window');
+  };
+
+
+  const addToCounter = () => {
+    if (easterEggCounter === 5) {
+      setEasterEggCounter(0);
+      return;
+    }
+    setEasterEggCounter(prevCounter => prevCounter + 1);
   };
 
   useEffect(() => {
@@ -37,7 +48,10 @@ const Navbar: React.FC = () => {
     <div className='drag items-center justify-center bg-neutral-300 dark:bg-neutral-950 text-neutral-950 dark:text-neutral-200 p-4 rounded-t-3xl'>
       <div className='flex text-center justify-between'>
         <div className='flex text-center items-center text-lg'>
-          <img src={logo} className='h-8 mr-2'/>
+          <img src={logo} className='no-drag h-8 mr-2' onClick={addToCounter}/>
+          { easterEggCounter === 5 &&
+            <img src={logo} className='absolute z-50 w-20 h-20 left-5 top-20 animate-fade-right' onClick={addToCounter}/>
+          }
           <h1 className='text-xl font-bold items-center'>SSRM Automation</h1>
         </div>
         <div className='no-drag flex text-center items-center text-lg'>
