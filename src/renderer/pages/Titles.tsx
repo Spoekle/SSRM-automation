@@ -70,7 +70,7 @@ const Titles: React.FC = () => {
   };
 
   const mapLink = `https://beatsaver.com/maps/${mapId}`;
-  
+
   return (
     <div className='max-h-96 h-96 relative grid no-move justify-items-center dark:text-neutral-200 bg-neutral-200 dark:bg-neutral-900 p-4 pt-8 justify-center items-center overflow-hidden'>
       <div className='items-center justify-items-center'>
