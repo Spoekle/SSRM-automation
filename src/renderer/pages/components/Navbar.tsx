@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { FaTimes, FaMinus } from 'react-icons/fa';
 import logo from '../../../../assets/icons/logo.svg';
-import background from '../../../../assets/images/background.png';
+import background from '../../../../assets/images/easter.png';
 
 const { ipcRenderer } = window.require('electron');
 
@@ -50,7 +50,7 @@ const Navbar: React.FC = () => {
         <div className='flex text-center items-center text-lg'>
           <img src={logo} className='no-drag h-8 mr-2' onClick={addToCounter}/>
           { easterEggCounter === 5 &&
-            <img src={background} className='absolute z-50 w-40 h-40 left-5 top-20 animate-fade-right' onClick={addToCounter}/>
+            <img src={background} className='absolute z-50 w-80 h-auto left-56 top-20 animate-jump-in rounded-lg drop-shadow-lg hover:invert' onClick={addToCounter}/>
           }
           <h1 className='text-xl font-bold items-center'>SSRM Automation</h1>
         </div>
