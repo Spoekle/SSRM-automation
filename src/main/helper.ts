@@ -1,4 +1,4 @@
-import { Canvas, Image, FontLibrary } from 'skia-canvas';
+import { Canvas, ExportFormat, Image } from 'skia-canvas';
 import { CanvasRenderingContext2D as SkiaCanvasRenderingContext2D } from 'skia-canvas';
 
 interface StarRating {
@@ -82,7 +82,7 @@ export async function generateCard(data: MapInfo, starRatings: StarRating): Prom
     ctx.fillStyle = 'white';
     ctx.textAlign = 'left';
 
-    const truncateText = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string => {
+    const truncateText = (ctx: SkiaCanvasRenderingContext2D, text: string, maxWidth: number): string => {
       const ellipsis = '...';
       let truncatedText = text;
 
@@ -103,7 +103,7 @@ export async function generateCard(data: MapInfo, starRatings: StarRating): Prom
     // Check if Song Author Name needs truncation
     const authorName = data.metadata.songAuthorName;
     const displayAuthorName = ctx.measureText(authorName).width > maxWidth
-      ? truncateText(ctx, authorName, maxWidth)
+      ? truncateText(ctx as SkiaCanvasRenderingContext2D, authorName, maxWidth)
       : authorName;
     ctx.fillText(displayAuthorName, 320, 55);
 
@@ -111,7 +111,7 @@ export async function generateCard(data: MapInfo, starRatings: StarRating): Prom
     // Check if Song Name needs truncation
     const songName = data.metadata.songName;
     const displaySongName = ctx.measureText(songName).width > maxWidth
-      ? truncateText(ctx, songName, maxWidth)
+      ? truncateText(ctx as SkiaCanvasRenderingContext2D, songName, maxWidth)
       : songName;
     ctx.fillText(displaySongName, 320, 90);
 
@@ -119,7 +119,7 @@ export async function generateCard(data: MapInfo, starRatings: StarRating): Prom
     // Check if Song Sub Name needs truncation
     const subName = data.metadata.songSubName;
     const displaySubName = ctx.measureText(subName).width > maxWidth
-      ? truncateText(ctx, subName, maxWidth)
+      ? truncateText(ctx as SkiaCanvasRenderingContext2D, subName, maxWidth)
       : subName;
     ctx.fillText(displaySubName, 320, 120);
 
@@ -127,7 +127,7 @@ export async function generateCard(data: MapInfo, starRatings: StarRating): Prom
     // Check if Level Author Name needs truncation
     const levelAuthorName = `Mapped by ${data.metadata.levelAuthorName}`;
     const displayLevelAuthorName = ctx.measureText(levelAuthorName).width > maxWidth
-      ? truncateText(ctx, levelAuthorName, maxWidth)
+      ? truncateText(ctx as SkiaCanvasRenderingContext2D, levelAuthorName, maxWidth)
       : levelAuthorName;
     ctx.fillText(displayLevelAuthorName, 320, 180);
 
@@ -185,5 +185,5 @@ export async function generateCard(data: MapInfo, starRatings: StarRating): Prom
       }
     });
 
-    return canvas.toDataURL('image/png');
+    return canvas.toDataURL('image/png' as ExportFormat);
 }
