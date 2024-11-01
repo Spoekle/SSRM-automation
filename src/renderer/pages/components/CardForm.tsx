@@ -148,7 +148,7 @@ const CardForm: React.FC<CardFormProps> = ({
           };
 
           accumulatedWidth += percentage;
-          return <div key={difficulty} className={`${colorClass} absolute`} style={style} />;
+          return <div key={difficulty} className={`${colorClass} absolute`} style={style as React.CSSProperties} />;
         })}
       </div>
     );

@@ -9,7 +9,7 @@ app.get('/api/scoresaber/:hash/:difficulty', async (req, res) => {
   const { hash, difficulty } = req.params;
   try {
     const response = await axios.get(`https://scoresaber.com/api/leaderboard/by-hash/${hash}/info?difficulty=${difficulty}`);
-    res.setHeader('Access-Control-Allow-Origin', '*'); // Adding CORS header
+    res.setHeader('Access-Control-Allow-Origin', '*');
     res.json(response.data);
   } catch (error) {
     console.error(error);

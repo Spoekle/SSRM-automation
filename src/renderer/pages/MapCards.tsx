@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { FaDownload } from 'react-icons/fa';
 import CardForm from './components/CardForm';
 import StarRatingForm from './components/StarRatingForm';
-import { generateCard } from '../../main/helper';
 
 interface MapInfo {
   metadata: {
@@ -11,9 +10,12 @@ interface MapInfo {
     songSubName: string;
     levelAuthorName: string;
     duration: number;
+    bpm: number;
   };
+  id: string;
   versions: {
     coverURL: string;
+    hash: string;
   }[];
 }
 
@@ -39,6 +41,7 @@ const MapCards: React.FC = () => {
   const [cardFormModal, setCardFormModal] = useState<boolean>(false);
   const [starRatingFormModal, setStarRatingFormModal] = useState<boolean>(false);
   const [starRatings, setStarRatings] = useState<StarRatings>({ ES: "", NOR: "", HARD: "", EXP: "", EXP_PLUS: "" });
+  const [oldStarRatings, setOldStarRatings] = useState<StarRatings>({ ES: "", NOR: "", HARD: "", EXP: "", EXP_PLUS: "" });
   const [imageSrc, setImageSrc] = useState<string | null>(null);
 
   useEffect(() => {
@@ -54,15 +57,11 @@ const MapCards: React.FC = () => {
     if (storedStarRatings) {
       setStarRatings(JSON.parse(storedStarRatings));
     }
-  }, []);
-
-  useEffect(() => {
-    if (mapInfo && starRatings) {
-      generateCard(mapInfo, starRatings).then(imageUrl => {
-        setImageSrc(imageUrl);
-      });
+    const storedOldStarRatings = localStorage.getItem('oldStarRatings');
+    if (storedOldStarRatings) {
+      setOldStarRatings(JSON.parse(storedOldStarRatings));
     }
-  }, [mapInfo, starRatings]);
+  }, []);
 
   const removeMapInfo = () => {
     setMapId('');
@@ -71,6 +70,7 @@ const MapCards: React.FC = () => {
     localStorage.removeItem('mapId');
     localStorage.removeItem('mapInfo');
     localStorage.removeItem('starRatings');
+    localStorage.removeItem('oldStarRatings');
     createAlerts('Cleared map info!', 'alert');
   };
 
@@ -117,13 +117,13 @@ const MapCards: React.FC = () => {
           >
             Open Star Rating Form
           </button>
-          {mapInfo && (
+          {imageSrc && (
             <>
               <button
                 className='bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg ml-4 hover:scale-110 transition duration-200 drop-shadow-lg'
                 onClick={() => downloadCard()}
               >
-                <FaDownload className='inline' /> Download Card
+                <FaDownload className='inline' /> Download
               </button>
             </>
           )}
@@ -178,8 +178,10 @@ const MapCards: React.FC = () => {
         <StarRatingForm
           mapId={mapId}
           setMapId={setMapId}
-          starRatings={starRatings}
-          setStarRatings={setStarRatings}
+          oldStarRatings={oldStarRatings}
+          setOldStarRatings={setOldStarRatings}
+          newStarRatings={starRatings}
+          setNewStarRatings={setStarRatings}
           setMapInfo={setMapInfo}
           setStarRatingFormModal={setStarRatingFormModal}
           setImageSrc={setImageSrc}

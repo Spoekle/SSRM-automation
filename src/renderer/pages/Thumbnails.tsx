@@ -65,7 +65,7 @@ const Thumbnails: React.FC = () => {
   return (
     <div className='max-h-96 h-96 relative grid no-move justify-items-center dark:text-neutral-200 bg-neutral-200 dark:bg-neutral-900 p-4 pt-8 justify-center items-center overflow-hidden'>
       <div className='text-center'>
-        <h1 className='text-2xl font-bold'>Thumbnails <span className='text-sm font-semibold'>(beta)</span></h1>
+        <h1 className='text-2xl font-bold'>Thumbnails <span className='text-sm font-semibold'>(soon...)</span></h1>
         <p className='text-lg'>Generate your thumbnail here!</p>
         <button
           className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mt-4 rounded cursor-not-allowed'

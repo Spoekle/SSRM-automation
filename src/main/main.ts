@@ -1,6 +1,10 @@
 /* eslint global-require: off, no-console: off, promise/always-return: off */
 
-import path from 'path';
+import * as path from 'path';
+import * as fs from 'fs';
+import * as os from 'os';
+import axios from 'axios';
+import { exec } from 'child_process';
 import { app, BrowserWindow, shell, ipcMain } from 'electron';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
@@ -73,6 +77,46 @@ const createMainWindow = async () => {
   ipcMain.on('close-window', () => {
     if (mainWindow) {
       mainWindow.close();
+    }
+  });
+
+  ipcMain.handle('update-application', async () => {
+    try {
+      const response = await axios.get('https://api.github.com/repos/Spoekle/SSRM-automation/releases/latest');
+      const latestRelease = response.data;
+      const asset = latestRelease.assets.find((a: any) => a.name.endsWith('.exe'));
+
+      if (!asset) {
+        throw new Error('No executable found in the latest release.');
+      }
+
+      const downloadPath = path.join(os.tmpdir(), asset.name);
+      const writer = fs.createWriteStream(downloadPath);
+
+      const downloadResponse = await axios({
+        url: asset.browser_download_url,
+        method: 'GET',
+        responseType: 'stream',
+      });
+
+      downloadResponse.data.pipe(writer);
+
+      return new Promise((resolve, reject) => {
+        writer.on('finish', () => {
+          exec(`"${downloadPath}"`, (error) => {
+            if (error) {
+              reject(error);
+            } else {
+              resolve('Update started');
+            }
+          });
+        });
+
+        writer.on('error', reject);
+      });
+    } catch (error) {
+      console.error('Error updating application:', error);
+      throw error;
     }
   });
 
