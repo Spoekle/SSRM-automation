@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FaDownload } from 'react-icons/fa';
 import CardForm from './components/CardForm';
+import StarRatingForm from './components/StarRatingForm';
 import { generateCard } from '../../main/helper';
 
 interface MapInfo {
@@ -36,6 +37,7 @@ const MapCards: React.FC = () => {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [mapInfo, setMapInfo] = useState<MapInfo | null>(null);
   const [cardFormModal, setCardFormModal] = useState<boolean>(false);
+  const [starRatingFormModal, setStarRatingFormModal] = useState<boolean>(false);
   const [starRatings, setStarRatings] = useState<StarRatings>({ ES: "", NOR: "", HARD: "", EXP: "", EXP_PLUS: "" });
   const [imageSrc, setImageSrc] = useState<string | null>(null);
 
@@ -104,10 +106,16 @@ const MapCards: React.FC = () => {
           <h1 className='text-2xl font-bold'>Mapcard Generator</h1>
           <p className='text-lg'>Generate a mapcard in a single click!</p>
           <button
-            className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mt-4 rounded-lg hover:scale-110 transition duration-200 drop-shadow-lg'
+            className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mt-4 mx-2 rounded-lg hover:scale-110 transition duration-200 drop-shadow-lg'
             onClick={() => setCardFormModal(true)}
           >
             Open Map Form
+          </button>
+          <button
+            className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mt-4 mx-2 rounded-lg hover:scale-110 transition duration-200 drop-shadow-lg'
+            onClick={() => setStarRatingFormModal(true)}
+          >
+            Open Star Rating Form
           </button>
           {mapInfo && (
             <>
@@ -163,6 +171,17 @@ const MapCards: React.FC = () => {
           setStarRatings={setStarRatings}
           setMapInfo={setMapInfo}
           setCardFormModal={setCardFormModal}
+          setImageSrc={setImageSrc}
+        />
+      )}
+      {starRatingFormModal && (
+        <StarRatingForm
+          mapId={mapId}
+          setMapId={setMapId}
+          starRatings={starRatings}
+          setStarRatings={setStarRatings}
+          setMapInfo={setMapInfo}
+          setStarRatingFormModal={setStarRatingFormModal}
           setImageSrc={setImageSrc}
         />
       )}
