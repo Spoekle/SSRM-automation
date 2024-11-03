@@ -45,7 +45,7 @@ function formatDuration(seconds = 0): string {
   return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
 }
 
-export async function generateCard(data: MapInfo, starRatings: StarRating): Promise<string> {
+export async function generateCard(data: MapInfo, starRatings: StarRating, useBackground: boolean): Promise<string> {
 
     const canvas = new Canvas(900, 300);
     const ctx = canvas.getContext('2d');
@@ -54,12 +54,14 @@ export async function generateCard(data: MapInfo, starRatings: StarRating): Prom
     ctx.fillRect(0, 0, 900, 300);
     ctx.roundRect(0, 0, 900, 300, 20);
     ctx.clip();
-
-    // Apply blur filter and load the cover image
-    ctx.filter = 'blur(10px)';
     const img = await loadImage(data.versions[0].coverURL);
-    ctx.drawImage(img, 0, 0, 900, 300);
-    ctx.filter = 'none';
+
+    if (useBackground) {
+      ctx.filter = 'blur(10px)';
+      ctx.drawImage(img, 0, 0, 900, 300);
+      ctx.filter = 'none';
+    }
+
     ctx.save();
 
     // Draw the rounded cover image
@@ -211,13 +213,11 @@ export interface OldStarRatings {
 }
 
 export async function generateStarChange(data: MapInfo, oldStarRatings: OldStarRatings, newStarRatings: NewStarRatings, chosenDiff: keyof OldStarRatings): Promise<string> {
-  const canvas = new Canvas(800, 300); // Increased canvas height
+  const canvas = new Canvas(800, 270); // Increased canvas height
   const ctx = canvas.getContext('2d');
 
   ctx.fillStyle = 'transparent';
-  ctx.fillRect(0, 0, 800, 300);
-  ctx.roundRect(0, 0, 800, 300, 20);
-  ctx.clip();
+  ctx.fillRect(0, 0, 800, 270);
   ctx.save();
 
   // Draw the rounded cover image
@@ -226,16 +226,16 @@ export async function generateStarChange(data: MapInfo, oldStarRatings: OldStarR
   ctx.shadowOffsetY = 10;
   ctx.shadowBlur = 5;
   ctx.beginPath();
-  ctx.roundRect(20, 20, 260, 260, 10);
+  ctx.roundRect(20, 20, 230, 230, 10);
   ctx.clip();
   const img = await loadImage(data.versions[0].coverURL);
-  ctx.drawImage(img, 20, 20, 260, 260);
+  ctx.drawImage(img, 20, 20, 230, 230);
   ctx.restore();
 
   // Draw the semi-transparent background
   ctx.beginPath();
   ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-  ctx.roundRect(300, 20, 480, 260, 10);
+  ctx.roundRect(270, 20, 480, 230, 10);
   ctx.fill();
   ctx.closePath();
 
@@ -258,35 +258,35 @@ export async function generateStarChange(data: MapInfo, oldStarRatings: OldStarR
   const displayAuthorName = ctx.measureText(authorName).width > maxWidth
     ? truncateText(ctx, authorName, maxWidth)
     : authorName;
-  ctx.fillText(displayAuthorName, 320, 55);
+  ctx.fillText(displayAuthorName, 290, 55);
 
   ctx.font = 'bold 30px Avenir-Black';
   const songName = data.metadata.songName;
   const displaySongName = ctx.measureText(songName).width > maxWidth
     ? truncateText(ctx, songName, maxWidth)
     : songName;
-  ctx.fillText(displaySongName, 320, 90);
+  ctx.fillText(displaySongName, 290, 90);
 
   ctx.font = '20px Avenir';
   const subName = data.metadata.songSubName;
   const displaySubName = ctx.measureText(subName).width > maxWidth
     ? truncateText(ctx, subName, maxWidth)
     : subName;
-  ctx.fillText(displaySubName, 320, 120);
+  ctx.fillText(displaySubName, 290, 120);
 
   ctx.font = '20px Avenir-Light';
   const levelAuthorName = `Mapped by ${data.metadata.levelAuthorName}`;
   const displayLevelAuthorName = ctx.measureText(levelAuthorName).width > maxWidth
     ? truncateText(ctx, levelAuthorName, maxWidth)
     : levelAuthorName;
-  ctx.fillText(displayLevelAuthorName, 320, 180);
+  ctx.fillText(displayLevelAuthorName, 290, 150);
 
   // Display additional info
   ctx.textAlign = 'right';
   ctx.font = '20px Avenir-Black';
-  ctx.fillText(`BSR:`, 760, 55);
+  ctx.fillText(`BSR:`, 730, 55);
   ctx.font = '20px Avenir-Light';
-  ctx.fillText(`${data.id}`, 760, 75);
+  ctx.fillText(`${data.id}`, 730, 75);
 
   ctx.font = '20px Avenir';
   ctx.textAlign = 'center';
@@ -328,14 +328,14 @@ export async function generateStarChange(data: MapInfo, oldStarRatings: OldStarR
   const rating = oldStarRatings[chosenDiff];
   const newRating = newStarRatings[chosenDiff];
 
-  let x = 390; // Initial x position
+  let x = 360; // Initial x position
 
   // Draw the rating if it exists
   if (rating) {
     // Draw combined rating rectangle
     ctx.fillStyle = color;
     ctx.beginPath();
-    ctx.roundRect(x, 200, 100, 60, 10);
+    ctx.roundRect(x, 170, 100, 60, 10);
     ctx.fill();
     ctx.closePath();
 
@@ -343,23 +343,25 @@ export async function generateStarChange(data: MapInfo, oldStarRatings: OldStarR
     ctx.fillStyle = 'white';
     ctx.textBaseline = 'middle';
     ctx.font = 'bold 20px Avenir-Black';
-    ctx.fillText(`${rating} ★`, x + 50, 230);
+    ctx.fillText(`${rating} ★`, x + 50, 200);
 
     // Draw white rounded triangle pointing to the right
     ctx.fillStyle = arrowColor;
     ctx.beginPath();
-    const triangleX = x + 145;
-    const triangleY = 230;
-    ctx.moveTo(triangleX, triangleY - 20);
-    ctx.lineTo(triangleX, triangleY + 20);
-    ctx.lineTo(triangleX + 15, triangleY);
+    const triangleX = x + 140;
+    const triangleY = 200;
+    ctx.moveTo(triangleX, triangleY - 30);
+    ctx.lineTo(triangleX + 10, triangleY - 30);
+    ctx.lineTo(triangleX + 25, triangleY);
+    ctx.lineTo(triangleX + 10, triangleY + 30);
+    ctx.lineTo(triangleX, triangleY + 30);
     ctx.closePath();
     ctx.fill();
 
     // Draw new rating rectangle
     ctx.fillStyle = color;
     ctx.beginPath();
-    ctx.roundRect(x + 200 , 200, 100, 60, 10);
+    ctx.roundRect(x + 200 , 170, 100, 60, 10);
     ctx.fill();
     ctx.closePath();
 
@@ -367,7 +369,7 @@ export async function generateStarChange(data: MapInfo, oldStarRatings: OldStarR
     ctx.fillStyle = 'white';
     ctx.textBaseline = 'middle';
     ctx.font = 'bold 20px Avenir-Black';
-    ctx.fillText(`${newRating} ★`, x + 250, 230);
+    ctx.fillText(`${newRating} ★`, x + 250, 200);
   }
 
   return canvas.toDataURL('image/png' as ExportFormat);

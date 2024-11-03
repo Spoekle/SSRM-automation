@@ -1,6 +1,7 @@
 import React, { FormEvent } from 'react';
 import ReactDOM from 'react-dom';
 import axios from 'axios';
+import Switch from '@mui/material/Switch';
 import { generateCard } from '../../../main/helper';
 
 interface CardFormProps {
@@ -31,11 +32,16 @@ const CardForm: React.FC<CardFormProps> = ({
   setImageSrc
 }) => {
   const [songName, setSongName] = React.useState('');
+  const [useBackground, setUseBackground] = React.useState(true);
 
   const handleClickOutside = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     if ((event.target as HTMLDivElement).classList.contains('modal-overlay')) {
       setCardFormModal(false);
     }
+  };
+
+  const handleSwitch = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setUseBackground(event.target.checked);
   };
 
   const getMapInfo = async (event: FormEvent) => {
@@ -48,7 +54,7 @@ const CardForm: React.FC<CardFormProps> = ({
         localStorage.setItem('mapInfo', JSON.stringify(data));
 
         // Generate the image and set it to state
-        const image = await generateCard(data, starRatings);
+        const image = await generateCard(data, starRatings, useBackground);
         setImageSrc(image);
 
         console.log(data);
@@ -169,14 +175,20 @@ const CardForm: React.FC<CardFormProps> = ({
         <form onSubmit={getMapInfo}>
           <h1 className='text-2xl font-bold'>Get Info</h1>
           <div className='flex flex-col justify-center items-center mt-2'>
-            <div className='flex flex-col text-center'>
-              <label>Map ID:</label>
-              <input
-                type='text'
-                value={mapId}
-                onChange={(e) => fetchName(e.target.value)}
-                className='w-24 border rounded p-2 text-neutral-950 mt-1'
-              />
+            <div className='flex gap-8 text-center'>
+              <div className='flex flex-col text-center'>
+                <label>Map ID:</label>
+                <input
+                  type='text'
+                  value={mapId}
+                  onChange={(e) => fetchName(e.target.value)}
+                  className='w-24 border rounded p-2 text-neutral-950 mt-1'
+                />
+              </div>
+              <div className='flex flex-col text-center items-center'>
+                <label>Background:</label>
+                <Switch checked={useBackground} onChange={handleSwitch} defaultChecked className='mt-1' />
+              </div>
             </div>
             <div className='flex flex-col text-center'>
               <h1 className='text-2xl font-bold'>Star Ratings:</h1>

@@ -66,9 +66,6 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
         const image = await generateStarChange(data, oldStarRatings, newStarRatings, chosenDiff as keyof OldStarRatings);
         setImageSrc(image);
 
-        const image2 = await generateStarChange(data, oldStarRatings, newStarRatings, chosenDiff as keyof OldStarRatings);
-        setImageSrc(image2);
-        
         console.log(data);
         setStarRatingFormModal(false);
     } catch (error) {
