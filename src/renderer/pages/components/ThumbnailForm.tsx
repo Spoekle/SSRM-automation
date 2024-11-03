@@ -1,116 +1,111 @@
 import React, { FormEvent } from 'react';
 import ReactDOM from 'react-dom';
 import axios from 'axios';
+import { generateThumbnail } from '../../../main/helper';
 
-interface MapFormProps {
+interface ThumbnailFormProps {
   mapId: string;
   setMapId: (id: string) => void;
-  difficulty: string;
-  setDifficulty: (difficulty: string) => void;
-  useSubname: boolean;
-  setUseSubname: (use: boolean) => void;
-  player: string;
-  setPlayer: (player: string) => void;
-  setMapFormModal: (show: boolean) => void;
+  setThumbnailFormModal: (show: boolean) => void;
   setMapInfo: (info: any) => void;
+  setImageSrc: (src: string) => void;
 }
 
-const ThumbnailForm: React.FC<MapFormProps> = ({
+const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
   mapId,
   setMapId,
-  difficulty,
-  setDifficulty,
-  useSubname,
-  setUseSubname,
-  player,
-  setPlayer,
-  setMapFormModal,
-  setMapInfo
+  setThumbnailFormModal,
+  setMapInfo,
+  setImageSrc
 }) => {
+  const [songName, setSongName] = React.useState('');
+  const [chosenDiff, setChosenDiff] = React.useState('ES');
 
   const handleClickOutside = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     if ((event.target as HTMLDivElement).classList.contains('modal-overlay')) {
-      setMapFormModal(false);
+      setThumbnailFormModal(false);
     }
   };
 
   const getMapInfo = async (event: FormEvent) => {
     event.preventDefault();
     try {
+        const response = await axios.get(`https://api.beatsaver.com/maps/id/${mapId}`);
+        const data = response.data;
+        setMapInfo(data);
+        localStorage.setItem('mapId', `${mapId}`);
+        localStorage.setItem('mapInfo', JSON.stringify(data));
+
+        // Generate the image and set it to state
+        const image = await generateThumbnail(data, chosenDiff);
+        setImageSrc(image);
+
+        console.log(data);
+        setThumbnailFormModal(false);
+    } catch (error) {
+        console.error('Error fetching map info:', error);
+    }
+  };
+
+
+  const fetchName = async (mapId: string) => {
+    if (mapId === '') (
+      setSongName('')
+    )
+    setMapId(mapId)
+    try {
       const response = await axios.get(`https://api.beatsaver.com/maps/id/${mapId}`);
       const data = response.data;
-      if (!useSubname) {
-        data.metadata.songSubName = '';
-      }
-      setMapInfo(data);
-      console.log(data);
-      setMapFormModal(false);
+      setSongName(data.metadata.songName);
+      return data.metadata.songName;
     } catch (error) {
       console.error('Error fetching map info:', error);
     }
-  };
+  }
 
   return ReactDOM.createPortal(
     <div
       className="modal-overlay fixed inset-0 bg-white/10 backdrop-blur-lg flex justify-center items-center z-50 rounded-3xl animate-fade animate-duration-200"
       onClick={handleClickOutside}
     >
-      <div className="modal-content bg-neutral-200 dark:bg-neutral-900 text-neutral-950 dark:text-neutral-200 p-6 rounded-lg animate-jump-in animate-duration-300">
+      <div className="relative modal-content bg-neutral-200 dark:bg-neutral-900 text-neutral-950 dark:text-neutral-200 p-6 rounded-lg animate-jump-in animate-duration-300">
+        {songName &&
+          <div className='absolute right-0 mr-8 text-right'>
+            <h1 className='text-2xl font-bold'>Chosen Song:</h1>
+            <h1 className='text-lg font-semibold'>{songName}</h1>
+          </div>
+        }
         <form onSubmit={getMapInfo}>
-            <h1 className='text-2xl font-bold'>Get Info</h1>
-            <div className='flex mt-2'>
-                <div className='flex flex-col mr-2'>
-                    <div className='flex flex-col'>
-                        <label>Map ID:</label>
-                        <input
-                          type='text'
-                          value={mapId}
-                          onChange={(e) => setMapId(e.target.value)}
-                          className='w-24 border rounded p-2 text-neutral-950 mt-1'
-                        />
-                    </div>
-                    <div className='flex flex-col my-2'>
-                        <label>Use Subname?</label>
-                        <input
-                          type='checkbox'
-                          checked={useSubname}
-                          onChange={(e) => setUseSubname(e.target.checked)}
-                          className='w-24 border rounded p-2 text-neutral-950 mt-1'
-                        />
-                    </div>
-                </div>
-                <div className='flex flex-col ml-2'>
-                    <div className='flex flex-col'>
-                        <label>Difficulty:</label>
-                        <select
-                          value={difficulty}
-                          onChange={(e) => setDifficulty(e.target.value)}
-                          className='w-24 border rounded p-2 text-neutral-950 mt-1'
-                        >
-                          <option value="Easy">Easy</option>
-                          <option value="Normal">Normal</option>
-                          <option value="Hard">Hard</option>
-                          <option value="Expert">Expert</option>
-                          <option value="Expert+">Expert+</option>
-                        </select>
-                    </div>
-                    <div className='flex flex-col my-2'>
-                        <label>Player:</label>
-                        <select
-                          value={player}
-                          onChange={(e) => setPlayer(e.target.value)}
-                          className='w-24 border rounded p-2 text-neutral-950 mt-1'
-                        >
-                          <option value="Mr_bjo">Mr_bjo</option>
-                          <option value="yabje">yabje</option>
-                        </select>
-                    </div>
-                </div>
-                
+          <h1 className='text-2xl font-bold'>Reweight Form</h1>
+          <div className='flex flex-col justify-center items-center mt-2'>
+            <div className='flex gap-8 text-center'>
+            <div className='flex flex-col text-center'>
+              <label>Map ID:</label>
+              <input
+                type='text'
+                value={mapId}
+                onChange={(e) => fetchName(e.target.value)}
+                className='w-24 border rounded p-2 text-neutral-950 mt-1'
+              />
             </div>
-            <div className='flex flex-col'>
-                <button type="submit" className='bg-blue-500 text-white p-2 rounded mt-2'>Generate</button>
+            <div className='flex flex-col text-center'>
+              <label>Difficulty:</label>
+              <select
+                className='w-24 border rounded p-2 text-neutral-950 mt-1'
+                onChange={(e) => setChosenDiff(e.target.value)}
+              >
+                <option value='ES'>Easy</option>
+                <option value='NOR'>Normal</option>
+                <option value='HARD'>Hard</option>
+                <option value='EXP'>Expert</option>
+                <option value='EXP_PLUS'>Expert+</option>
+              </select>
             </div>
+            </div>
+          </div>
+          <div className='flex flex-col'>
+            <button type="submit" className='bg-blue-500 text-white p-2 rounded'>Generate</button>
+          </div>
         </form>
       </div>
     </div>,

@@ -374,3 +374,186 @@ export async function generateStarChange(data: MapInfo, oldStarRatings: OldStarR
 
   return canvas.toDataURL('image/png' as ExportFormat);
 }
+
+export async function generateThumbnail(data: MapInfo, chosenDiff: string): Promise<string> {
+
+  const canvas = new Canvas(1920, 1080);
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = 'transparent';
+  ctx.fillRect(0, 0, 1920, 1080);
+  ctx.roundRect(0, 0, 1920, 1080, 50);
+  ctx.clip();
+  const img = await loadImage(data.versions[0].coverURL);
+
+  ctx.filter = 'blur(10px)';
+  ctx.drawImage(img, 0, 0, 1920, 1080);
+  ctx.filter = 'none';
+  ctx.save();
+
+  // Draw the rounded rectangle for the background
+  ctx.beginPath();
+  ctx.fillStyle = 'rgba(20, 20, 20, 1)'; // Semi-transparent black
+  ctx.roundRect(0, 0, 640, 1080, 50); // Rounded corners for background
+  ctx.fill(); // Fill the rounded background
+  ctx.closePath();
+
+  // Draw the rounded cover image
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+  ctx.shadowOffsetX = 10;
+  ctx.shadowOffsetY = 10;
+  ctx.shadowBlur = 5;
+  ctx.beginPath();
+  ctx.roundRect(25, 465, 590, 590, 50); // Rounded corners for the cover
+  ctx.clip();
+  ctx.drawImage(img, 25, 465, 590, 590); // Draw the cover image
+  ctx.restore();
+
+  // Draw the metadata text
+  ctx.fillStyle = 'white';
+  ctx.textAlign = 'left';
+
+  const truncateText = (ctx: SkiaCanvasRenderingContext2D, text: string, maxWidth: number): string => {
+    const ellipsis = '...';
+    let truncatedText = text;
+
+    // Check if text width exceeds the maxWidth
+    while (ctx.measureText(truncatedText + ellipsis).width > maxWidth) {
+      truncatedText = truncatedText.slice(0, -1);
+    }
+
+    return truncatedText + ellipsis;
+  };
+
+  // Maximum width for text
+  const maxWidth = 590;
+
+  // Set up the canvas context
+  ctx.font = '48px Avenir';
+
+  // Check if Song Author Name needs truncation
+  const authorName = data.metadata.songAuthorName;
+  const displayAuthorName = ctx.measureText(authorName).width > maxWidth
+    ? truncateText(ctx as SkiaCanvasRenderingContext2D, authorName, maxWidth)
+    : authorName;
+  ctx.fillText(displayAuthorName, 50, 75);
+
+  ctx.font = 'bold 56px Avenir-Black';
+  // Check if Song Name needs truncation
+  const songName = data.metadata.songName;
+  const displaySongName = ctx.measureText(songName).width > maxWidth
+    ? truncateText(ctx as SkiaCanvasRenderingContext2D, songName, maxWidth)
+    : songName;
+  ctx.fillText(displaySongName, 50, 125);
+
+  ctx.font = '48px Avenir';
+  // Check if Song Sub Name needs truncation
+  const subName = data.metadata.songSubName;
+  const displaySubName = ctx.measureText(subName).width > maxWidth
+    ? truncateText(ctx as SkiaCanvasRenderingContext2D, subName, maxWidth)
+    : subName;
+  ctx.fillText(displaySubName, 50, 175);
+
+  ctx.font = '40px Avenir-Light';
+  // Check if Level Author Name needs truncation
+  const levelAuthorName = `Mapped by ${data.metadata.levelAuthorName}`;
+  const displayLevelAuthorName = ctx.measureText(levelAuthorName).width > maxWidth
+    ? truncateText(ctx as SkiaCanvasRenderingContext2D, levelAuthorName, maxWidth)
+    : levelAuthorName;
+  ctx.fillText(displayLevelAuthorName, 50, 225);
+
+  ctx.textAlign = 'center';
+
+  let color = '';
+  let difficulty = '';
+  switch (chosenDiff) {
+    case 'ES':
+      color = 'rgb(22 163 74)';
+      difficulty = 'Easy';
+      break;
+    case 'NOR':
+      color = 'rgb(59 130 246)';
+      difficulty = 'Normal';
+      break;
+    case 'HARD':
+      color = 'rgb(249 115 22)';
+      difficulty = 'Hard';
+      break;
+    case 'EXP':
+      color = 'rgb(220 38 38)';
+      difficulty = 'Expert';
+      break;
+    case 'EXP_PLUS':
+      color = 'rgb(126 34 206)';
+      difficulty = 'Expert+';
+      break;
+    default:
+      color = 'gray';
+  }
+
+  const diff = chosenDiff;
+
+  let x = 50; // Initial x position
+
+  // Draw the rating if it exists
+  if (diff) {
+    // Draw combined rating rectangle
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.roundRect(x, 340, 200, 100, 25);
+    ctx.fill();
+    ctx.closePath();
+
+    // Draw old rating text at the top
+    ctx.fillStyle = 'white';
+    ctx.textBaseline = 'middle';
+    ctx.font = 'bold 48px Avenir-Black';
+    ctx.fillText(`${difficulty}`, x + 100, 390);
+
+  }
+
+  // Create a dot Path2D object
+  let dot = new Path2D();
+  dot.arc(0, 0, 5, 0, 2 * Math.PI); // 5px radius for 10px diameter
+  dot.closePath();
+
+  // Function to draw arcs using different markers
+  function drawArc(x: number, y: number, radius: number, startAngle: number, endAngle: number, color: string) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 4;
+    ctx.setLineDash([10, 25]); // 5px dash, 25px space
+    ctx.lineDashOffset = 0; // Start the dash pattern at the beginning
+
+    // Draw the arc
+    ctx.beginPath();
+    ctx.arc(x, y, radius, startAngle, endAngle);
+    ctx.stroke();
+  }
+
+  // Function to draw a dotted line
+  function drawDottedLine(x1: number, y1: number, x2: number, y2: number, color: string) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 10;
+    ctx.setLineDash([10, 25]); // 0 length dash, 25px space
+    ctx.lineDashOffset = 0; // Start the dash pattern at the beginning
+
+    // Draw the line
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+
+
+
+    // Draw the first arc from (590, 0) to (640, 50)
+    drawArc(615, 25, 25, Math.PI, 2 * Math.PI, color);
+
+    // Draw the line from (640, 50) to (640, 1030)
+    drawDottedLine(640, 50, 640, 1030, color);
+
+    // Draw the second arc from (640, 1030) to (590, 1080)
+    drawArc(615, 1055, 25, 0, Math.PI, color);
+
+  return canvas.toDataURL('image/png' as ExportFormat);
+}
