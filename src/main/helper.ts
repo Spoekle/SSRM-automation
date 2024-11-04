@@ -375,7 +375,7 @@ export async function generateStarChange(data: MapInfo, oldStarRatings: OldStarR
   return canvas.toDataURL('image/png' as ExportFormat);
 }
 
-export async function generateThumbnail(data: MapInfo, chosenDiff: string): Promise<string> {
+export async function generateThumbnail(data: MapInfo, chosenDiff: keyof StarRating, starRatings: StarRating): Promise<string> {
 
   const canvas = new Canvas(1920, 1080);
   const ctx = canvas.getContext('2d');
@@ -492,6 +492,7 @@ export async function generateThumbnail(data: MapInfo, chosenDiff: string): Prom
   }
 
   const diff = chosenDiff;
+  const rating = starRatings[chosenDiff];
 
   let x = 50; // Initial x position
 
@@ -500,7 +501,7 @@ export async function generateThumbnail(data: MapInfo, chosenDiff: string): Prom
     // Draw combined rating rectangle
     ctx.fillStyle = color;
     ctx.beginPath();
-    ctx.roundRect(x, 340, 200, 100, 25);
+    ctx.roundRect(x, 340, 540, 100, 25);
     ctx.fill();
     ctx.closePath();
 
@@ -508,52 +509,39 @@ export async function generateThumbnail(data: MapInfo, chosenDiff: string): Prom
     ctx.fillStyle = 'white';
     ctx.textBaseline = 'middle';
     ctx.font = 'bold 48px Avenir-Black';
-    ctx.fillText(`${difficulty}`, x + 100, 390);
+    ctx.fillText(`${difficulty} ${rating && `${rating} ★`}`, x + 270, 390);
 
   }
 
-  // Create a dot Path2D object
+
   let dot = new Path2D();
-  dot.arc(0, 0, 5, 0, 2 * Math.PI); // 5px radius for 10px diameter
+  dot.arc(0, 0, 15, 0, 2 * Math.PI);
   dot.closePath();
 
-  // Function to draw arcs using different markers
-  function drawArc(x: number, y: number, radius: number, startAngle: number, endAngle: number, color: string) {
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 4;
-    ctx.setLineDash([10, 25]); // 5px dash, 25px space
-    ctx.lineDashOffset = 0; // Start the dash pattern at the beginning
-
-    // Draw the arc
-    ctx.beginPath();
-    ctx.arc(x, y, radius, startAngle, endAngle);
-    ctx.stroke();
-  }
-
-  // Function to draw a dotted line
   function drawDottedLine(x1: number, y1: number, x2: number, y2: number, color: string) {
     ctx.strokeStyle = color;
     ctx.lineWidth = 10;
-    ctx.setLineDash([10, 25]); // 0 length dash, 25px space
-    ctx.lineDashOffset = 0; // Start the dash pattern at the beginning
+    ctx.setLineDash([]);
 
-    // Draw the line
-    ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-    ctx.stroke();
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    const dotSpacing = 60;
+    const dotCount = Math.floor(distance / dotSpacing);
+
+    for (let i = 0; i <= dotCount; i++) {
+      const t = i / dotCount;
+      const x = x1 + t * dx;
+      const y = y1 + t * dy;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.fillStyle = color;
+      ctx.fill(dot);
+      ctx.restore();
+    }
   }
 
-
-
-    // Draw the first arc from (590, 0) to (640, 50)
-    drawArc(615, 25, 25, Math.PI, 2 * Math.PI, color);
-
-    // Draw the line from (640, 50) to (640, 1030)
     drawDottedLine(640, 50, 640, 1030, color);
-
-    // Draw the second arc from (640, 1030) to (590, 1080)
-    drawArc(615, 1055, 25, 0, Math.PI, color);
 
   return canvas.toDataURL('image/png' as ExportFormat);
 }
