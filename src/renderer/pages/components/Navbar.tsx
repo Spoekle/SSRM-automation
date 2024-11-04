@@ -12,6 +12,7 @@ const Navbar: React.FC = () => {
   const [underlineStyle, setUnderlineStyle] = useState({});
   const navRef = useRef<HTMLDivElement>(null);
   const [easterEggCounter, setEasterEggCounter] = useState(0);
+  const [os, setOS] = useState('');
 
   const minimizeWindow = () => {
     ipcRenderer.send('minimize-window');
@@ -21,6 +22,12 @@ const Navbar: React.FC = () => {
     localStorage.removeItem('mapId');
     localStorage.removeItem('mapInfo');
     ipcRenderer.send('close-window');
+  };
+
+  //get machine os
+  const getOS = () => {
+    const os = window.require('os');
+    setOS(os.platform());
   };
 
 
@@ -42,6 +49,7 @@ const Navbar: React.FC = () => {
         background: '#ffff00',
       });
     }
+    getOS();
   }, [currentPath]);
 
   return (
@@ -63,20 +71,25 @@ const Navbar: React.FC = () => {
             <div className='absolute bottom--1 h-1 transition-all duration-200 rounded-full' style={underlineStyle}></div>
           </div>
         </div>
-        <div className='no-drag text-center items-center text-lg'>
-          <button
-            className='hover:bg-orange-500 hover:text-white rounded-md p-2 mr-2 transition duration-200'
-            onClick={minimizeWindow}
-          >
-            <FaMinus/>
-          </button>
-          <button
-            className='hover:bg-red-500 hover:text-white rounded-md p-2 transition duration-200'
-            onClick={clearAndCloseWindow}
-          >
-            <FaTimes/>
-          </button>
-        </div>
+        {os !== 'darwin' ? (
+          <div className='no-drag text-center items-center text-lg'>
+            <button
+              className='hover:bg-orange-500 hover:text-white rounded-md p-2 mr-2 transition duration-200'
+              onClick={minimizeWindow}
+            >
+              <FaMinus/>
+            </button>
+            <button
+              className='hover:bg-red-500 hover:text-white rounded-md p-2 transition duration-200'
+              onClick={clearAndCloseWindow}
+            >
+              <FaTimes/>
+            </button>
+          </div>
+        ) : (
+          <div className='no-drag text-center items-center text-lg'>
+          </div>
+        )}
       </div>
     </div>
   );
