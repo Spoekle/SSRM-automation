@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FaDownload } from 'react-icons/fa';
 import ThumbnailForm from './components/ThumbnailForm';
+import ThumbnailPreview from './components/ThumbnailPreview';
 
 interface MapInfo {
   metadata: {
@@ -33,8 +34,10 @@ const Thumbnails: React.FC = () => {
   const [mapId, setMapId] = useState<string>('');
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [mapInfo, setMapInfo] = useState<MapInfo | null>(null);
+  const [starRatings, setStarRatings] = useState<StarRatings>({ ES: "", NOR: "", HARD: "", EXP: "", EXP_PLUS: "" });
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [thumbnailFormModal, setThumbnailFormModal] = useState<boolean>(false);
+  const [thumbnailPreviewModal, setThumbnailPreviewModal] = useState<boolean>(false);
 
   useEffect(() => {
     const storedMapId = localStorage.getItem('mapId');
@@ -44,6 +47,10 @@ const Thumbnails: React.FC = () => {
     const storedMapInfo = localStorage.getItem('mapInfo');
     if (storedMapInfo) {
       setMapInfo(JSON.parse(storedMapInfo));
+    }
+    const storedStarRatings = localStorage.getItem('starRatings');
+    if (storedStarRatings) {
+      setStarRatings(JSON.parse(storedStarRatings));
     }
   }, []);
 
@@ -67,6 +74,10 @@ const Thumbnails: React.FC = () => {
     createAlerts('Downloaded card!', 'success');
     document.body.removeChild(link);
 
+  };
+
+  const openThumbnailPreview = () => {
+    setThumbnailPreviewModal(true);
   };
 
   const mapLink = `https://beatsaver.com/maps/${mapId}`;
@@ -124,8 +135,8 @@ const Thumbnails: React.FC = () => {
           <div className='mt-4 flex justify-center'>
             <div className='flex flex-col items-center text-center'>
               <h1 className='text-xl font-bold'>Preview:</h1>
-                <div className='flex justify-center drop-shadow-lg max-h-96'>
-                  <img src={imageSrc} alt='Card Preview' className='flex mt-2 max-w-full max-h-full object-contain' />
+                <div className='flex mt-2 justify-center drop-shadow-lg object-contain'>
+                  <img src={imageSrc} alt='Card Preview' className='h-auto w-80 hover:cursor-pointer hover:scale-110 transition duration-200' onClick={() => openThumbnailPreview()}/>
                 </div>
             </div>
           </div>
@@ -146,6 +157,14 @@ const Thumbnails: React.FC = () => {
           setMapInfo={setMapInfo}
           setThumbnailFormModal={setThumbnailFormModal}
           setImageSrc={setImageSrc}
+          starRatings={starRatings}
+          setStarRatings={setStarRatings}
+        />
+      )}
+      {thumbnailPreviewModal && (
+        <ThumbnailPreview
+          setThumbnailPreviewModal={setThumbnailPreviewModal}
+          imageSrc={imageSrc}
         />
       )}
     </div>
