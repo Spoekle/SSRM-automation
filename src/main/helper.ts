@@ -247,7 +247,7 @@ export async function generateStarChange(data: MapInfo, oldStarRatings: OldStarR
     const ellipsis = '...';
     let truncatedText = text;
     while (ctx.measureText(truncatedText + ellipsis).width > maxWidth) {
-      truncatedText = truncatedText.slice(0, -1);
+      truncatedText = text.slice(0, -1);
     }
     return truncatedText + ellipsis;
   };
@@ -375,26 +375,39 @@ export async function generateStarChange(data: MapInfo, oldStarRatings: OldStarR
   return canvas.toDataURL('image/png' as ExportFormat);
 }
 
-export async function generateThumbnail(data: MapInfo, chosenDiff: keyof StarRating, starRatings: StarRating): Promise<string> {
+export async function generateThumbnail(data: MapInfo, chosenDiff: keyof StarRating, starRatings: StarRating, background: string | ArrayBuffer | null): Promise<string> {
 
   const canvas = new Canvas(1920, 1080);
   const ctx = canvas.getContext('2d');
 
-  ctx.fillStyle = 'transparent';
+  const gradient = ctx.createLinearGradient(0, 0, 1920, 1080);
+  gradient.addColorStop(0, 'blue');
+  gradient.addColorStop(1, 'red');
+
+  ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, 1920, 1080);
-  ctx.roundRect(0, 0, 1920, 1080, 50);
-  ctx.clip();
+
   const img = await loadImage(data.versions[0].coverURL);
+  const backgroundImg = background ? await loadImage(background as string) : null;
+  // Create a clipping path to constrain the background image
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(20, 20, 1880, 1040, 50);
+  ctx.clip();
 
   ctx.filter = 'blur(10px)';
-  ctx.drawImage(img, 0, 0, 1920, 1080);
+  if (backgroundImg) {
+    ctx.drawImage(backgroundImg, 20, 20, 1880, 1040);
+  } else {
+    ctx.drawImage(img, 20, 20, 1880, 1040);
+  }
   ctx.filter = 'none';
-  ctx.save();
+
 
   // Draw the rounded rectangle for the background
   ctx.beginPath();
   ctx.fillStyle = 'rgba(20, 20, 20, 1)'; // Semi-transparent black
-  ctx.roundRect(0, 0, 640, 1080, 50); // Rounded corners for background
+  ctx.roundRect(20, 20, 620, 1040, 50); // Rounded corners for background
   ctx.fill(); // Fill the rounded background
   ctx.closePath();
 
@@ -404,10 +417,26 @@ export async function generateThumbnail(data: MapInfo, chosenDiff: keyof StarRat
   ctx.shadowOffsetY = 10;
   ctx.shadowBlur = 5;
   ctx.beginPath();
-  ctx.roundRect(25, 465, 590, 590, 50); // Rounded corners for the cover
+  ctx.roundRect(75, 495, 510, 510, 50); // Rounded corners for the cover
   ctx.clip();
-  ctx.drawImage(img, 25, 465, 590, 590); // Draw the cover image
+  ctx.drawImage(img, 75, 495, 510, 510); // Draw the cover image
   ctx.restore();
+
+  // Draw outline around the image
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = 10;
+  ctx.beginPath();
+  ctx.roundRect(75, 495, 510, 510, 50);
+  ctx.stroke();
+  ctx.closePath();
+
+  // Draw outline around the canvas
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = 10;
+  ctx.beginPath();
+  ctx.roundRect(20, 20, 1880, 1040, 50);
+  ctx.stroke();
+  ctx.closePath();
 
   // Draw the metadata text
   ctx.fillStyle = 'white';
@@ -426,7 +455,7 @@ export async function generateThumbnail(data: MapInfo, chosenDiff: keyof StarRat
   };
 
   // Maximum width for text
-  const maxWidth = 590;
+  const maxWidth = 580;
 
   // Set up the canvas context
   ctx.font = '48px Avenir';
@@ -436,7 +465,7 @@ export async function generateThumbnail(data: MapInfo, chosenDiff: keyof StarRat
   const displayAuthorName = ctx.measureText(authorName).width > maxWidth
     ? truncateText(ctx as SkiaCanvasRenderingContext2D, authorName, maxWidth)
     : authorName;
-  ctx.fillText(displayAuthorName, 50, 75);
+  ctx.fillText(displayAuthorName, 50, 95);
 
   ctx.font = 'bold 56px Avenir-Black';
   // Check if Song Name needs truncation
@@ -444,7 +473,7 @@ export async function generateThumbnail(data: MapInfo, chosenDiff: keyof StarRat
   const displaySongName = ctx.measureText(songName).width > maxWidth
     ? truncateText(ctx as SkiaCanvasRenderingContext2D, songName, maxWidth)
     : songName;
-  ctx.fillText(displaySongName, 50, 125);
+  ctx.fillText(displaySongName, 50, 160);
 
   ctx.font = '48px Avenir';
   // Check if Song Sub Name needs truncation
@@ -452,7 +481,7 @@ export async function generateThumbnail(data: MapInfo, chosenDiff: keyof StarRat
   const displaySubName = ctx.measureText(subName).width > maxWidth
     ? truncateText(ctx as SkiaCanvasRenderingContext2D, subName, maxWidth)
     : subName;
-  ctx.fillText(displaySubName, 50, 175);
+  ctx.fillText(displaySubName, 50, 220);
 
   ctx.font = '40px Avenir-Light';
   // Check if Level Author Name needs truncation
@@ -460,7 +489,7 @@ export async function generateThumbnail(data: MapInfo, chosenDiff: keyof StarRat
   const displayLevelAuthorName = ctx.measureText(levelAuthorName).width > maxWidth
     ? truncateText(ctx as SkiaCanvasRenderingContext2D, levelAuthorName, maxWidth)
     : levelAuthorName;
-  ctx.fillText(displayLevelAuthorName, 50, 225);
+  ctx.fillText(displayLevelAuthorName, 50, 295);
 
   ctx.textAlign = 'center';
 
@@ -494,14 +523,14 @@ export async function generateThumbnail(data: MapInfo, chosenDiff: keyof StarRat
   const diff = chosenDiff;
   const rating = starRatings[chosenDiff];
 
-  let x = 50; // Initial x position
+  let x = 75; // Initial x position
 
   // Draw the rating if it exists
   if (diff) {
     // Draw combined rating rectangle
     ctx.fillStyle = color;
     ctx.beginPath();
-    ctx.roundRect(x, 340, 540, 100, 25);
+    ctx.roundRect(x, 360, 510, 100, 25);
     ctx.fill();
     ctx.closePath();
 
@@ -509,10 +538,8 @@ export async function generateThumbnail(data: MapInfo, chosenDiff: keyof StarRat
     ctx.fillStyle = 'white';
     ctx.textBaseline = 'middle';
     ctx.font = 'bold 48px Avenir-Black';
-    ctx.fillText(`${difficulty} ${rating && `${rating} ★`}`, x + 270, 390);
-
+    ctx.fillText(`${difficulty} ${rating}`, x + 255, 410);
   }
-
 
   let dot = new Path2D();
   dot.arc(0, 0, 15, 0, 2 * Math.PI);
@@ -541,7 +568,7 @@ export async function generateThumbnail(data: MapInfo, chosenDiff: keyof StarRat
     }
   }
 
-    drawDottedLine(640, 50, 640, 1030, color);
+  drawDottedLine(640, 50, 640, 1030, color);
 
   return canvas.toDataURL('image/png' as ExportFormat);
 }

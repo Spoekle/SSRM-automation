@@ -32,7 +32,7 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
 }) => {
   const [songName, setSongName] = React.useState('');
   const [chosenDiff, setChosenDiff] = React.useState('ES');
-  const [background, setBackground] = React.useState('');
+  const [background, setBackground] = React.useState<string | ArrayBuffer | null>('');
 
   const handleClickOutside = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     if ((event.target as HTMLDivElement).classList.contains('modal-overlay')) {
@@ -40,7 +40,16 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
     }
   };
 
-
+  const handleBackgroundChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setBackground(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const getMapInfo = async (event: FormEvent) => {
     event.preventDefault();
@@ -79,9 +88,13 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
         const data = response.data;
         const key = Object.keys(starRatings)[i] as keyof StarRatings;
         if (data.stars === 0) {
-          starRatings[key] = 'Unranked';
+          if (data.qualified === true) {
+            starRatings[key] = 'Qualified';
+          } else {
+            starRatings[key] = 'Unranked';
+          }
         } else {
-          starRatings[key] = data.stars;
+          starRatings[key] = data.stars + ' ★';
         }
         localStorage.setItem('starRatings', JSON.stringify(starRatings));
         console.log(starRatings);
@@ -91,6 +104,7 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
     }
     return starRatings;
   }
+
   const fetchName = async (mapId: string) => {
     if (mapId === '') (
       setSongName('')
@@ -153,8 +167,7 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
             <label>Background:</label>
             <input
               type='file'
-              value={background}
-              onChange={(e) => setBackground(e.target.value)}
+              onChange={handleBackgroundChange}
               className='w-24 border rounded p-2 text-neutral-950 mt-1'
             />
           </div>

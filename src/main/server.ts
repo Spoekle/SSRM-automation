@@ -5,7 +5,20 @@ const cors = require('cors');
 const app = express();
 app.use(cors());
 
-app.get('/api/scoresaber/:hash/:difficulty', async (req, res) => {
+interface ScoreSaberRequest {
+  params: {
+    hash: string;
+    difficulty: string;
+  };
+}
+
+interface ScoreSaberResponse {
+  setHeader: (header: string, value: string) => void;
+  json: (data: any) => void;
+  status: (code: number) => ScoreSaberResponse;
+}
+
+app.get('/api/scoresaber/:hash/:difficulty', async (req: ScoreSaberRequest, res: ScoreSaberResponse) => {
   const { hash, difficulty } = req.params;
   try {
     const response = await axios.get(`https://scoresaber.com/api/leaderboard/by-hash/${hash}/info?difficulty=${difficulty}`);
