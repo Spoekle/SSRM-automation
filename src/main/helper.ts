@@ -247,7 +247,7 @@ export async function generateStarChange(data: MapInfo, oldStarRatings: OldStarR
     const ellipsis = '...';
     let truncatedText = text;
     while (ctx.measureText(truncatedText + ellipsis).width > maxWidth) {
-      truncatedText = truncatedText.slice(0, -1);
+      truncatedText = text.slice(0, -1);
     }
     return truncatedText + ellipsis;
   };
@@ -371,6 +371,204 @@ export async function generateStarChange(data: MapInfo, oldStarRatings: OldStarR
     ctx.font = 'bold 20px Avenir-Black';
     ctx.fillText(`${newRating} ★`, x + 250, 200);
   }
+
+  return canvas.toDataURL('image/png' as ExportFormat);
+}
+
+export async function generateThumbnail(data: MapInfo, chosenDiff: keyof StarRating, starRatings: StarRating, background: string | ArrayBuffer | null): Promise<string> {
+
+  const canvas = new Canvas(1920, 1080);
+  const ctx = canvas.getContext('2d');
+
+  const gradient = ctx.createLinearGradient(0, 0, 1920, 1080);
+  gradient.addColorStop(0, 'blue');
+  gradient.addColorStop(1, 'red');
+
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 1920, 1080);
+
+  const img = await loadImage(data.versions[0].coverURL);
+  const backgroundImg = background ? await loadImage(background as string) : null;
+  // Create a clipping path to constrain the background image
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(20, 20, 1880, 1040, 50);
+  ctx.clip();
+
+  ctx.filter = 'blur(10px)';
+  if (backgroundImg) {
+    ctx.drawImage(backgroundImg, 20, 20, 1880, 1040);
+  } else {
+    ctx.drawImage(img, 20, 20, 1880, 1040);
+  }
+  ctx.filter = 'none';
+
+
+  // Draw the rounded rectangle for the background
+  ctx.beginPath();
+  ctx.fillStyle = 'rgba(20, 20, 20, 1)'; // Semi-transparent black
+  ctx.roundRect(20, 20, 620, 1040, 50); // Rounded corners for background
+  ctx.fill(); // Fill the rounded background
+  ctx.closePath();
+
+  // Draw the rounded cover image
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+  ctx.shadowOffsetX = 10;
+  ctx.shadowOffsetY = 10;
+  ctx.shadowBlur = 5;
+  ctx.beginPath();
+  ctx.roundRect(75, 495, 510, 510, 50); // Rounded corners for the cover
+  ctx.clip();
+  ctx.drawImage(img, 75, 495, 510, 510); // Draw the cover image
+  ctx.restore();
+
+  // Draw outline around the image
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = 10;
+  ctx.beginPath();
+  ctx.roundRect(75, 495, 510, 510, 50);
+  ctx.stroke();
+  ctx.closePath();
+
+  // Draw outline around the canvas
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = 10;
+  ctx.beginPath();
+  ctx.roundRect(20, 20, 1880, 1040, 50);
+  ctx.stroke();
+  ctx.closePath();
+
+  // Draw the metadata text
+  ctx.fillStyle = 'white';
+  ctx.textAlign = 'left';
+
+  const truncateText = (ctx: SkiaCanvasRenderingContext2D, text: string, maxWidth: number): string => {
+    const ellipsis = '...';
+    let truncatedText = text;
+
+    // Check if text width exceeds the maxWidth
+    while (ctx.measureText(truncatedText + ellipsis).width > maxWidth) {
+      truncatedText = truncatedText.slice(0, -1);
+    }
+
+    return truncatedText + ellipsis;
+  };
+
+  // Maximum width for text
+  const maxWidth = 580;
+
+  // Set up the canvas context
+  ctx.font = '48px Avenir';
+
+  // Check if Song Author Name needs truncation
+  const authorName = data.metadata.songAuthorName;
+  const displayAuthorName = ctx.measureText(authorName).width > maxWidth
+    ? truncateText(ctx as SkiaCanvasRenderingContext2D, authorName, maxWidth)
+    : authorName;
+  ctx.fillText(displayAuthorName, 50, 95);
+
+  ctx.font = 'bold 56px Avenir-Black';
+  // Check if Song Name needs truncation
+  const songName = data.metadata.songName;
+  const displaySongName = ctx.measureText(songName).width > maxWidth
+    ? truncateText(ctx as SkiaCanvasRenderingContext2D, songName, maxWidth)
+    : songName;
+  ctx.fillText(displaySongName, 50, 160);
+
+  ctx.font = '48px Avenir';
+  // Check if Song Sub Name needs truncation
+  const subName = data.metadata.songSubName;
+  const displaySubName = ctx.measureText(subName).width > maxWidth
+    ? truncateText(ctx as SkiaCanvasRenderingContext2D, subName, maxWidth)
+    : subName;
+  ctx.fillText(displaySubName, 50, 220);
+
+  ctx.font = '40px Avenir-Light';
+  // Check if Level Author Name needs truncation
+  const levelAuthorName = `Mapped by ${data.metadata.levelAuthorName}`;
+  const displayLevelAuthorName = ctx.measureText(levelAuthorName).width > maxWidth
+    ? truncateText(ctx as SkiaCanvasRenderingContext2D, levelAuthorName, maxWidth)
+    : levelAuthorName;
+  ctx.fillText(displayLevelAuthorName, 50, 295);
+
+  ctx.textAlign = 'center';
+
+  let color = '';
+  let difficulty = '';
+  switch (chosenDiff) {
+    case 'ES':
+      color = 'rgb(22 163 74)';
+      difficulty = 'Easy';
+      break;
+    case 'NOR':
+      color = 'rgb(59 130 246)';
+      difficulty = 'Normal';
+      break;
+    case 'HARD':
+      color = 'rgb(249 115 22)';
+      difficulty = 'Hard';
+      break;
+    case 'EXP':
+      color = 'rgb(220 38 38)';
+      difficulty = 'Expert';
+      break;
+    case 'EXP_PLUS':
+      color = 'rgb(126 34 206)';
+      difficulty = 'Expert+';
+      break;
+    default:
+      color = 'gray';
+  }
+
+  const diff = chosenDiff;
+  const rating = starRatings[chosenDiff];
+
+  let x = 75; // Initial x position
+
+  // Draw the rating if it exists
+  if (diff) {
+    // Draw combined rating rectangle
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.roundRect(x, 360, 510, 100, 25);
+    ctx.fill();
+    ctx.closePath();
+
+    // Draw old rating text at the top
+    ctx.fillStyle = 'white';
+    ctx.textBaseline = 'middle';
+    ctx.font = 'bold 48px Avenir-Black';
+    ctx.fillText(`${difficulty} ${rating}`, x + 255, 410);
+  }
+
+  let dot = new Path2D();
+  dot.arc(0, 0, 15, 0, 2 * Math.PI);
+  dot.closePath();
+
+  function drawDottedLine(x1: number, y1: number, x2: number, y2: number, color: string) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 10;
+    ctx.setLineDash([]);
+
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    const dotSpacing = 60;
+    const dotCount = Math.floor(distance / dotSpacing);
+
+    for (let i = 0; i <= dotCount; i++) {
+      const t = i / dotCount;
+      const x = x1 + t * dx;
+      const y = y1 + t * dy;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.fillStyle = color;
+      ctx.fill(dot);
+      ctx.restore();
+    }
+  }
+
+  drawDottedLine(640, 50, 640, 1030, color);
 
   return canvas.toDataURL('image/png' as ExportFormat);
 }

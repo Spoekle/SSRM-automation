@@ -12,6 +12,7 @@ const Navbar: React.FC = () => {
   const [underlineStyle, setUnderlineStyle] = useState({});
   const navRef = useRef<HTMLDivElement>(null);
   const [easterEggCounter, setEasterEggCounter] = useState(0);
+  const [os, setOS] = useState('');
 
   const minimizeWindow = () => {
     ipcRenderer.send('minimize-window');
@@ -21,6 +22,12 @@ const Navbar: React.FC = () => {
     localStorage.removeItem('mapId');
     localStorage.removeItem('mapInfo');
     ipcRenderer.send('close-window');
+  };
+
+  //get machine os
+  const getOS = () => {
+    const os = window.require('os');
+    setOS(os.platform());
   };
 
 
@@ -33,7 +40,7 @@ const Navbar: React.FC = () => {
   };
 
   useEffect(() => {
-    const currentLink = navRef.current?.querySelector('.active') as HTMLAnchorElement | null; // Ensure type safety
+    const currentLink = navRef.current?.querySelector('.active') as HTMLAnchorElement | null;
     if (currentLink) {
       const { offsetLeft, offsetWidth } = currentLink;
       setUnderlineStyle({
@@ -42,7 +49,31 @@ const Navbar: React.FC = () => {
         background: '#ffff00',
       });
     }
+    getOS();
   }, [currentPath]);
+
+  const handleMouseOver = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    const { offsetLeft, offsetWidth } = event.currentTarget;
+    setUnderlineStyle({
+      left: `${offsetLeft}px`,
+      width: `${offsetWidth}px`,
+      background: '#ffff00',
+    });
+  };
+
+  const handleMouseOut = () => {
+    const currentLink = navRef.current?.querySelector('.active') as HTMLAnchorElement | null;
+    if (currentLink) {
+      const { offsetLeft, offsetWidth } = currentLink;
+      setUnderlineStyle({
+        left: `${offsetLeft}px`,
+        width: `${offsetWidth}px`,
+        background: '#ffff00',
+      });
+    } else {
+      setUnderlineStyle({});
+    }
+  };
 
   return (
     <div className='drag items-center justify-center bg-neutral-300 dark:bg-neutral-950 text-neutral-950 dark:text-neutral-200 p-4 rounded-t-3xl'>
@@ -56,27 +87,32 @@ const Navbar: React.FC = () => {
         </div>
         <div className='no-drag flex text-center items-center text-lg'>
           <div className='no-drag text-center items-center text-lg relative' ref={navRef}>
-            <Link to='/' className={`text-neutral-950 dark:text-neutral-200 p-2 mx-2 ${currentPath === '/' ? 'active' : ''}`}>Home</Link>
-            <Link to='/titles' className={`text-neutral-950 dark:text-neutral-200 p-2 mx-2 ${currentPath === '/titles' ? 'active' : ''}`}>Titles</Link>
-            <Link to='/mapcards' className={`text-neutral-950 dark:text-neutral-200 p-2 mx-2 ${currentPath === '/mapcards' ? 'active' : ''}`}>Mapcards</Link>
-            <Link to='/thumbnails' className={`text-neutral-950 dark:text-neutral-200 p-2 mx-2 ${currentPath === '/thumbnails' ? 'active' : ''}`}>Thumbnails</Link>
+            <Link to='/' className={`p-2 px-4 hover:active ${currentPath === '/' ? 'active text-neutral-950 dark:text-neutral-200' : 'text-neutral-400'}`} onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}>Home</Link>
+            <Link to='/titles' className={`p-2 px-4 hover:active ${currentPath === '/titles' ? 'active text-neutral-950 dark:text-neutral-200' : 'text-neutral-400'}`} onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}>Titles</Link>
+            <Link to='/mapcards' className={`p-2 px-4 hover:active ${currentPath === '/mapcards' ? 'active text-neutral-950 dark:text-neutral-200' : 'text-neutral-400'}`} onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}>Mapcards</Link>
+            <Link to='/thumbnails' className={`p-2 px-4 hover:active ${currentPath === '/thumbnails' ? 'active text-neutral-950 dark:text-neutral-200' : 'text-neutral-400'}`} onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}>Thumbnails</Link>
             <div className='absolute bottom--1 h-1 transition-all duration-200 rounded-full' style={underlineStyle}></div>
           </div>
         </div>
-        <div className='no-drag text-center items-center text-lg'>
-          <button
-            className='hover:bg-orange-500 hover:text-white rounded-md p-2 mr-2 transition duration-200'
-            onClick={minimizeWindow}
-          >
-            <FaMinus/>
-          </button>
-          <button
-            className='hover:bg-red-500 hover:text-white rounded-md p-2 transition duration-200'
-            onClick={clearAndCloseWindow}
-          >
-            <FaTimes/>
-          </button>
-        </div>
+        {os !== 'darwin' ? (
+          <div className='no-drag text-center items-center text-lg'>
+            <button
+              className='hover:bg-orange-500 hover:text-white rounded-md p-2 mr-2 transition duration-200'
+              onClick={minimizeWindow}
+            >
+              <FaMinus/>
+            </button>
+            <button
+              className='hover:bg-red-500 hover:text-white rounded-md p-2 transition duration-200'
+              onClick={clearAndCloseWindow}
+            >
+              <FaTimes/>
+            </button>
+          </div>
+        ) : (
+          <div className='no-drag text-center items-center text-lg'>
+          </div>
+        )}
       </div>
     </div>
   );
