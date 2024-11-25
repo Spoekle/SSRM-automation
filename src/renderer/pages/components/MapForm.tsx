@@ -105,10 +105,14 @@ const MapForm: React.FC<MapFormProps> = ({
                         >
                           <option value="Mr_bjo">Mr_bjo</option>
                           <option value="yabje">yabje</option>
+                          <option value="BigOlDumplin">BigOlDumplin</option>
+                          <option value="RaccoonVR">RaccoonVR</option>
+                          <option value="voltage">voltage</option>
+                          <option value="olliemine">olliemine</option>
                         </select>
                     </div>
                 </div>
-                
+
             </div>
             <div className='flex flex-col'>
                 <button type="submit" className='bg-blue-500 text-white p-2 rounded mt-2'>Generate</button>

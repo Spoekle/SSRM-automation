@@ -170,7 +170,7 @@ export async function generateCard(data: MapInfo, starRatings: StarRating, useBa
       if (rating) {
           ctx.fillStyle = color;
           ctx.beginPath();
-          if (rating === 'Unranked') {
+          if (rating === 'Unranked' || rating === 'Qualified') {
               ctx.roundRect(x, 220, 120, 50, 10);
           }
           else {
@@ -183,7 +183,7 @@ export async function generateCard(data: MapInfo, starRatings: StarRating, useBa
           ctx.fillStyle = 'white';
           ctx.textBaseline = 'middle'
           ctx.font = 'bold 20px Avenir-Black';
-          if (rating === 'Unranked') {
+          if (rating === 'Unranked' || rating === 'Qualified') {
               ctx.fillText(`${rating}`, x + 60, 245);
               x += 130;
           } else {

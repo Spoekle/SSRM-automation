@@ -5,7 +5,7 @@ import axios from 'axios';
 
 function Footer() {
   const { ipcRenderer } = window.require('electron');
-  const [appVersion] = useState<string>('1.4.0');
+  const [appVersion] = useState<string>('1.4.1');
   const [latestVersion, setLatestVersion] = useState<string>('');
   const [isDownloading, setIsDownloading] = useState<boolean>(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -62,7 +62,7 @@ function Footer() {
           {parseFloat(latestVersion.replace(/\./g, '')) > parseFloat(appVersion.replace(/\./g, '')) && (
             <button onClick={updateApplication}
               className='text-sm font-bold py-2 px-3 mx-3 hover:scale-105 transition duration-200 underline'>
-              Update available! Latest Version: {latestVersion}, Current Version: {appVersion}
+              Update available! Latest: {latestVersion}, Current: {appVersion}
             </button>
           )}
           {isDownloading && <SyncLoader size='8' color='rgba(255, 255, 255, 1)' />}
