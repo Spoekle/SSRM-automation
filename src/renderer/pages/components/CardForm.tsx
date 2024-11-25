@@ -193,43 +193,52 @@ const CardForm: React.FC<CardFormProps> = ({
             <div className='flex flex-col text-center'>
               <h1 className='text-2xl font-bold'>Star Ratings:</h1>
               <p className='text-lg'>Enter the star ratings for each difficulty</p>
-              {renderRatingsBar()}
               <div className='grid grid-cols-5 gap-2 my-4'>
-                <div className='flex flex-col bg-green-600 rounded px-2 py-1'>
-                  <label className='font-bold'>Easy</label>
-                  {starRatings.ES === '' ?
-                   <h1 className='text-lg'>-</h1>
-                   :
-                   <h1 className='text-lg'>{starRatings.ES} ★</h1>}
-                </div>
-                <div className='flex flex-col bg-blue-500 rounded px-2 py-1'>
-                  <label className='font-bold'>Normal</label>
-                  {starRatings.NOR === '' ?
-                   <h1 className='text-lg'>-</h1>
-                   :
-                   <h1 className='text-lg'>{starRatings.NOR} ★</h1>}
-                </div>
-                <div className='flex flex-col bg-orange-500 rounded px-2 py-1'>
-                  <label className='font-bold'>Hard</label>
-                  {starRatings.HARD === '' ?
-                   <h1 className='text-lg'>-</h1>
-                   :
-                   <h1 className='text-lg'>{starRatings.HARD} ★</h1>}
-                </div>
-                <div className='flex flex-col bg-red-600 rounded px-2 py-1'>
-                  <label className='font-bold'>Expert</label>
-                  {starRatings.EXP === '' ?
-                   <h1 className='text-lg'>-</h1>
-                   :
-                   <h1 className='text-lg'>{starRatings.EXP} ★</h1>}
-                </div>
-                <div className='flex flex-col bg-purple-700 rounded px-2 py-1'>
-                  <label className='font-bold'>Expert+</label>
-                  {starRatings.EXP_PLUS === '' ?
-                   <h1 className='text-lg'>-</h1>
-                   :
-                   <h1 className='text-lg'>{starRatings.EXP_PLUS} ★</h1>}
-                </div>
+              <div className='flex flex-col bg-green-600 rounded px-2 py-1'>
+                <label className='font-bold'>Easy</label>
+                <input
+                type='text'
+                value={starRatings.ES}
+                onChange={(e) => setStarRatings({ ...starRatings, ES: e.target.value })}
+                className='w-24 p-1 rounded text-neutral-950'
+                />
+              </div>
+              <div className='flex flex-col bg-blue-500 rounded px-2 py-1'>
+                <label className='font-bold'>Normal</label>
+                <input
+                type='text'
+                value={starRatings.NOR}
+                onChange={(e) => setStarRatings({ ...starRatings, NOR: e.target.value })}
+                className='w-24 p-1 rounded text-neutral-950'
+                />
+              </div>
+              <div className='flex flex-col bg-orange-500 rounded px-2 py-1'>
+                <label className='font-bold'>Hard</label>
+                <input
+                type='text'
+                value={starRatings.HARD}
+                onChange={(e) => setStarRatings({ ...starRatings, HARD: e.target.value })}
+                className='w-24 p-1 rounded text-neutral-950'
+                />
+              </div>
+              <div className='flex flex-col bg-red-600 rounded px-2 py-1'>
+                <label className='font-bold'>Expert</label>
+                <input
+                type='text'
+                value={starRatings.EXP}
+                onChange={(e) => setStarRatings({ ...starRatings, EXP: e.target.value })}
+                className='w-24 p-1 rounded text-neutral-950'
+                />
+              </div>
+              <div className='flex flex-col bg-purple-700 rounded px-2 py-1'>
+                <label className='font-bold'>Expert+</label>
+                <input
+                type='text'
+                value={starRatings.EXP_PLUS}
+                onChange={(e) => setStarRatings({ ...starRatings, EXP_PLUS: e.target.value })}
+                className='w-24 p-1 rounded text-neutral-950'
+                />
+              </div>
               </div>
             </div>
           </div>

@@ -170,18 +170,21 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
                   <div className='flex justify-center items-center'>
                     <input
                       type='text'
+                      placeholder='Old'
                       value={oldStarRatings.ES}
                       onChange={(e) => setOldStarRatings({ ...oldStarRatings, ES: e.target.value })}
-                      className='w-16 border rounded p-1 text-neutral-950 mt-1'
+                      className='w-24 border rounded p-1 text-neutral-950 mt-1 mr-2'
                     />
                     <div className='flex justify-center'>
                       <GoTriangleRight size={28} />
                     </div>
-                    {newStarRatings.ES === '' ? (
-                      <h1 className='text-lg'>-</h1>
-                    ) : (
-                      <h1 className='text-lg'>{newStarRatings.ES} ★</h1>
-                    )}
+                    <input
+                      type='text'
+                      placeholder='New'
+                      value={newStarRatings.ES}
+                      onChange={(e) => setNewStarRatings({ ...newStarRatings, ES: e.target.value })}
+                      className='w-24 border rounded p-1 text-neutral-950 mt-1 ml-2'
+                    />
                   </div>
                 </div>
               )}
@@ -194,16 +197,18 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
                       type='text'
                       value={oldStarRatings.NOR}
                       onChange={(e) => setOldStarRatings({ ...oldStarRatings, NOR: e.target.value })}
-                      className='w-16 border rounded p-1 text-neutral-950 mt-1'
+                      className='w-24 border rounded p-1 text-neutral-950 mt-1'
                     />
                     <div className='flex justify-center'>
                       <GoTriangleRight size={28} />
                     </div>
-                    {newStarRatings.NOR === '' ? (
-                      <h1 className='text-lg'>-</h1>
-                    ) : (
-                      <h1 className='text-lg'>{newStarRatings.NOR} ★</h1>
-                    )}
+                    <input
+                      type='text'
+                      placeholder='New'
+                      value={newStarRatings.NOR}
+                      onChange={(e) => setNewStarRatings({ ...newStarRatings, NOR: e.target.value })}
+                      className='w-24 border rounded p-1 text-neutral-950 mt-1 ml-2'
+                    />
                   </div>
                 </div>
               )}
@@ -216,16 +221,18 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
                       type='text'
                       value={oldStarRatings.HARD}
                       onChange={(e) => setOldStarRatings({ ...oldStarRatings, HARD: e.target.value })}
-                      className='w-16 border rounded p-1 text-neutral-950 mt-1'
+                      className='w-24 border rounded p-1 text-neutral-950 mt-1'
                     />
                     <div className='flex justify-center'>
                       <GoTriangleRight size={28} />
                     </div>
-                    {newStarRatings.HARD === '' ? (
-                      <h1 className='text-lg'>-</h1>
-                    ) : (
-                      <h1 className='text-lg'>{newStarRatings.HARD} ★</h1>
-                    )}
+                    <input
+                      type='text'
+                      placeholder='New'
+                      value={newStarRatings.HARD}
+                      onChange={(e) => setNewStarRatings({ ...newStarRatings, HARD: e.target.value })}
+                      className='w-24 border rounded p-1 text-neutral-950 mt-1 ml-2'
+                    />
                   </div>
                 </div>
               )}
@@ -238,16 +245,18 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
                       type='text'
                       value={oldStarRatings.EXP}
                       onChange={(e) => setOldStarRatings({ ...oldStarRatings, EXP: e.target.value })}
-                      className='w-16 border rounded p-1 text-neutral-950 mt-1'
+                      className='w-24 border rounded p-1 text-neutral-950 mt-1'
                     />
                     <div className='flex justify-center'>
                       <GoTriangleRight size={28} />
                     </div>
-                    {newStarRatings.EXP === '' ? (
-                      <h1 className='text-lg'>-</h1>
-                    ) : (
-                      <h1 className='text-lg'>{newStarRatings.EXP} ★</h1>
-                    )}
+                    <input
+                      type='text'
+                      placeholder='New'
+                      value={newStarRatings.EXP}
+                      onChange={(e) => setNewStarRatings({ ...newStarRatings, EXP: e.target.value })}
+                      className='w-24 border rounded p-1 text-neutral-950 mt-1 ml-2'
+                    />
                   </div>
                 </div>
               )}
@@ -260,16 +269,18 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
                       type='text'
                       value={oldStarRatings.EXP_PLUS}
                       onChange={(e) => setOldStarRatings({ ...oldStarRatings, EXP_PLUS: e.target.value })}
-                      className='w-16 border rounded p-1 text-neutral-950 mt-1'
+                      className='w-24 border rounded p-1 text-neutral-950 mt-1'
                     />
                     <div className='flex justify-center'>
                       <GoTriangleRight size={28} />
                     </div>
-                    {newStarRatings.EXP_PLUS === '' ? (
-                      <h1 className='text-lg'>-</h1>
-                    ) : (
-                      <h1 className='text-lg'>{newStarRatings.EXP_PLUS} ★</h1>
-                    )}
+                    <input
+                      type='text'
+                      placeholder='New'
+                      value={newStarRatings.EXP_PLUS}
+                      onChange={(e) => setNewStarRatings({ ...newStarRatings, EXP_PLUS: e.target.value })}
+                      className='w-24 border rounded p-1 text-neutral-950 mt-1 ml-2'
+                    />
                   </div>
                 </div>
               )}
