@@ -43,6 +43,7 @@ const MapCards: React.FC = () => {
   const [starRatings, setStarRatings] = useState<StarRatings>({ ES: "", NOR: "", HARD: "", EXP: "", EXP_PLUS: "" });
   const [oldStarRatings, setOldStarRatings] = useState<StarRatings>({ ES: "", NOR: "", HARD: "", EXP: "", EXP_PLUS: "" });
   const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [useBackground, setUseBackground] = React.useState(true);
 
   useEffect(() => {
     const storedMapId = localStorage.getItem('mapId');
@@ -172,6 +173,9 @@ const MapCards: React.FC = () => {
           setMapInfo={setMapInfo}
           setCardFormModal={setCardFormModal}
           setImageSrc={setImageSrc}
+          useBackground={useBackground}
+          setUseBackground={setUseBackground}
+          createAlerts={createAlerts}
         />
       )}
       {starRatingFormModal && (
