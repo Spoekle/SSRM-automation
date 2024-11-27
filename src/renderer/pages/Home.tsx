@@ -7,9 +7,6 @@ function Home() {
           <h1 className='text-2xl font-bold'>SSRM Automation Tool</h1>
           <p className='text-lg'>Generate everything that is needed for a BeatSaber Video!</p>
         </div>
-        <div className='items-center justify-center'>
-          
-        </div>
       </div>
     </div>
   );
