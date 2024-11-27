@@ -1,4 +1,4 @@
-import { Canvas, ExportFormat, Image, Font } from 'skia-canvas';
+import { Canvas, ExportFormat, Image } from 'skia-canvas';
 import { CanvasRenderingContext2D as SkiaCanvasRenderingContext2D } from 'skia-canvas';
 
 interface StarRating {
