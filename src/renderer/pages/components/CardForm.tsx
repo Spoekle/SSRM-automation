@@ -1,8 +1,11 @@
-import React, { FormEvent } from 'react';
+import React, { FormEvent, ChangeEvent } from 'react';
 import ReactDOM from 'react-dom';
 import axios from 'axios';
 import Switch from '@mui/material/Switch';
+import { FaTimes } from 'react-icons/fa';
 import { generateCard } from '../../../main/helper';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 
 interface CardFormProps {
   mapId: string;
@@ -12,14 +15,27 @@ interface CardFormProps {
   setCardFormModal: (show: boolean) => void;
   setMapInfo: (info: any) => void;
   setImageSrc: (src: string) => void;
+  useBackground: boolean;
+  setUseBackground: (use: boolean) => void;
+  createAlerts: (message: string, type: 'success' | 'error' | 'alert') => void;
 }
 
 interface StarRatings {
-  ES: string;  // Temporarily store the input as a string
+  ES: string;
   NOR: string;
   HARD: string;
   EXP: string;
   EXP_PLUS: string;
+}
+
+interface UploadedMap {
+  id: number;
+  songHash: string;
+  songName: string;
+  songSubName: string;
+  levelAuthorName: string;
+  difficulty: number;
+  stars: number;
 }
 
 const CardForm: React.FC<CardFormProps> = ({
@@ -29,10 +45,14 @@ const CardForm: React.FC<CardFormProps> = ({
   setStarRatings,
   setCardFormModal,
   setMapInfo,
-  setImageSrc
+  setImageSrc,
+  useBackground,
+  setUseBackground,
+  createAlerts
 }) => {
   const [songName, setSongName] = React.useState('');
-  const [useBackground, setUseBackground] = React.useState(true);
+  const [isProcessing, setIsProcessing] = React.useState(false);
+  const [uploadError, setUploadError] = React.useState<string | null>(null);
 
   const handleClickOutside = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     if ((event.target as HTMLDivElement).classList.contains('modal-overlay')) {
@@ -42,25 +62,26 @@ const CardForm: React.FC<CardFormProps> = ({
 
   const handleSwitch = (event: React.ChangeEvent<HTMLInputElement>) => {
     setUseBackground(event.target.checked);
+    localStorage.setItem('useBackground', `${event.target.checked}`);
   };
 
   const getMapInfo = async (event: FormEvent) => {
     event.preventDefault();
     try {
-        const response = await axios.get(`https://api.beatsaver.com/maps/id/${mapId}`);
-        const data = response.data;
-        setMapInfo(data);
-        localStorage.setItem('mapId', `${mapId}`);
-        localStorage.setItem('mapInfo', JSON.stringify(data));
+      const response = await axios.get(`https://api.beatsaver.com/maps/id/${mapId}`);
+      const data = response.data;
+      setMapInfo(data);
+      localStorage.setItem('mapId', `${mapId}`);
+      localStorage.setItem('mapInfo', JSON.stringify(data));
 
-        // Generate the image and set it to state
-        const image = await generateCard(data, starRatings, useBackground);
-        setImageSrc(image);
+      // Generate the image and set it to state
+      const image = await generateCard(data, starRatings, useBackground);
+      setImageSrc(image);
 
-        console.log(data);
-        setCardFormModal(false);
+      console.log(data);
+      setCardFormModal(false);
     } catch (error) {
-        console.error('Error fetching map info:', error);
+      console.error('Error fetching map info:', error);
     }
   };
 
@@ -83,7 +104,7 @@ const CardForm: React.FC<CardFormProps> = ({
         if (data.stars === 0) {
           starRatings[key] = 'Unranked';
         } else {
-          starRatings[key] = data.stars;
+          starRatings[key] = data.stars.toString();
         }
         localStorage.setItem('starRatings', JSON.stringify(starRatings));
         console.log(starRatings);
@@ -112,52 +133,134 @@ const CardForm: React.FC<CardFormProps> = ({
     }
   }
 
-  // Utility to get numeric rating or default to 0
-  const getNumericRating = (rating: string) => {
-    const numericRating = parseFloat(rating);
-    return isNaN(numericRating) ? 0 : numericRating;
-  };
-
-  // Calculate total rating value and individual widths as percentage of the total
-  const ratings = {
-    ES: getNumericRating(starRatings.ES),
-    NOR: getNumericRating(starRatings.NOR),
-    HARD: getNumericRating(starRatings.HARD),
-    EXP: getNumericRating(starRatings.EXP),
-    EXP_PLUS: getNumericRating(starRatings.EXP_PLUS),
-  };
-  const totalRating = Object.values(ratings).reduce((sum, value) => sum + value, 0);
-
-  // Render the star ratings bar
-  const renderRatingsBar = () => {
-    const colors = {
-      ES: 'bg-green-600',
-      NOR: 'bg-blue-500',
-      HARD: 'bg-orange-500',
-      EXP: 'bg-red-600',
-      EXP_PLUS: 'bg-purple-700',
+  interface MapInfo {
+    metadata: {
+        songAuthorName: string;
+        songName: string;
+        songSubName: string;
+        levelAuthorName: string;
+        duration: number;
+        bpm: number;
     };
+    id: string;
+    versions: {
+        coverURL: string;
+        hash: string;
+    }[];
+  }
 
-    let accumulatedWidth = 0;
-    return (
-      <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
-        {Object.entries(ratings).map(([difficulty, rating]) => {
-          const percentage = totalRating > 0 ? (rating / totalRating) * 100 : 0; // Calculate percentage width
-          const colorClass = colors[difficulty as keyof typeof colors];
+  // Handle JSON file upload
+  const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-          const style = {
-            width: `${percentage}%`,
-            position: 'absolute',
-            height: '100%',
-            left: `${accumulatedWidth}%`,
-            transition: 'width 0.5s ease', // Animation duration
+    createAlerts(`Json processing...`, 'alert');
+
+    setIsProcessing(true);
+    setCardFormModal(false);
+    setUploadError(null);
+
+    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+    try {
+      const text = await file.text();
+      const uploadedMaps: UploadedMap[] = JSON.parse(text);
+
+      // Group maps by songHash
+      const groupedMaps: { [key: string]: UploadedMap[] } = uploadedMaps.reduce((acc, map) => {
+        if (!acc[map.songHash]) {
+          acc[map.songHash] = [];
+        }
+        acc[map.songHash].push(map);
+        return acc;
+      }, {} as { [key: string]: UploadedMap[] });
+
+      console.log('Grouped maps:', groupedMaps);
+
+      const zip = new JSZip();
+
+      const songHashes = Object.keys(groupedMaps);
+      const batchSize = 10;
+      for (let i = 0; i < songHashes.length; i += batchSize) {
+        const batch = songHashes.slice(i, i + batchSize);
+        const promises = batch.map(async (songHash) => {
+          // Combine difficulties and stars
+          const combinedStarRatings: StarRatings = {
+            ES: '',
+            NOR: '',
+            HARD: '',
+            EXP: '',
+            EXP_PLUS: '',
           };
 
-          accumulatedWidth += percentage;
-          return <div key={difficulty} className={`${colorClass} absolute`} style={style as React.CSSProperties} />;
-        })}
-      </div>
-    );
+          groupedMaps[songHash].forEach(map => {
+            switch (map.difficulty) {
+              case 1:
+                combinedStarRatings.ES = map.stars.toString();
+                break;
+              case 3:
+                combinedStarRatings.NOR = map.stars.toString();
+                break;
+              case 5:
+                combinedStarRatings.HARD = map.stars.toString();
+                break;
+              case 7:
+                combinedStarRatings.EXP = map.stars.toString();
+                break;
+              case 9:
+                combinedStarRatings.EXP_PLUS = map.stars.toString();
+                break;
+              default:
+                break;
+            }
+          });
+
+          try {
+            const response = await axios.get<MapInfo>(`https://api.beatsaver.com/maps/hash/${songHash}`);
+            const mapInfo = response.data;
+
+            // Generate the card image
+            const imageDataUrl = await generateCard(mapInfo, combinedStarRatings, useBackground);
+
+            // Convert Data URL to binary data
+            const base64Data = imageDataUrl.split(',')[1];
+            const byteCharacters = atob(base64Data);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+              byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+
+            // Sanitize file name
+            const sanitizedSongName = mapInfo.metadata.songName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            const fileName = `${sanitizedSongName}_${mapInfo.id}.png`;
+
+            // Add image to zip
+            zip.file(fileName, byteArray, { binary: true });
+
+          } catch (error: any) {
+            console.error(`Error processing map with hash ${songHash}:`, error);
+          }
+        });
+
+        await Promise.all(promises);
+        await delay(2000);
+      }
+
+      // Generate the zip
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+
+      createAlerts(`Creating zip!`, 'success');
+
+      // Trigger the download
+      saveAs(zipBlob, 'map_cards.zip');
+
+      setIsProcessing(false);
+    } catch (error: any) {
+      console.error('Error processing uploaded JSON:', error);
+      createAlerts(`Failed to process the uploaded JSON file. Please ensure it is correctly formatted.`, 'error');
+      setIsProcessing(false);
+    }
   };
 
   return ReactDOM.createPortal(
@@ -165,85 +268,113 @@ const CardForm: React.FC<CardFormProps> = ({
       className="modal-overlay fixed inset-0 bg-white/10 backdrop-blur-lg flex justify-center items-center z-50 rounded-3xl animate-fade animate-duration-200"
       onClick={handleClickOutside}
     >
-      <div className="relative modal-content bg-neutral-200 dark:bg-neutral-900 text-neutral-950 dark:text-neutral-200 p-6 rounded-lg animate-jump-in animate-duration-300">
+      <div className="relative modal-content bg-neutral-200 dark:bg-neutral-900 text-neutral-950 dark:text-neutral-200 p-6 m-16 rounded-lg animate-jump-in animate-duration-300">
+        <div className='absolute top-8 right-8 text-center items-center text-lg'>
+          <button
+            className='bg-red-500 text-white hover:bg-red-600 rounded-md p-2 transition duration-200'
+            onClick={() => setCardFormModal(false)}
+          >
+            <FaTimes/>
+          </button>
+        </div>
         {songName &&
-          <div className='absolute right-0 mr-8 text-right'>
+          <div className='absolute left-0 ml-6 mt-8'>
             <h1 className='text-2xl font-bold'>Chosen Song:</h1>
             <h1 className='text-lg font-semibold'>{songName}</h1>
           </div>
         }
-        <form onSubmit={getMapInfo}>
-          <h1 className='text-2xl font-bold'>Get Info</h1>
-          <div className='flex flex-col justify-center items-center mt-2'>
-            <div className='flex gap-8 text-center'>
-              <div className='flex flex-col text-center'>
-                <label>Map ID:</label>
-                <input
-                  type='text'
-                  value={mapId}
-                  onChange={(e) => fetchName(e.target.value)}
-                  className='w-24 border rounded p-2 text-neutral-950 mt-1'
-                />
-              </div>
-              <div className='flex flex-col text-center items-center'>
-                <label>Background:</label>
-                <Switch checked={useBackground} onChange={handleSwitch} defaultChecked className='mt-1' />
-              </div>
+        <form onSubmit={getMapInfo} className='space-y-6'>
+          <div className='flex flex-col md:flex-row md:space-x-6'>
+            {/* Manual Inputs */}
+            <div className='relative w-full bg-white dark:bg-neutral-800 p-4 rounded-lg shadow'>
+              <h2 className='text-xl font-semibold mb-4'>Manual Input</h2>
+              <label className='block mb-2 text-gray-700 dark:text-gray-200'>Map ID:</label>
+              <input
+              type='text'
+              value={mapId}
+              onChange={(e) => fetchName(e.target.value)}
+              className='w-full px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
+              />
+              <div className='absolute w-full bg-white dark:bg-neutral-800 p-6 left-0'/>
             </div>
-            <div className='flex flex-col text-center'>
-              <h1 className='text-2xl font-bold'>Star Ratings:</h1>
-              <p className='text-lg'>Enter the star ratings for each difficulty</p>
-              <div className='grid grid-cols-5 gap-2 my-4'>
-              <div className='flex flex-col bg-green-600 rounded px-2 py-1'>
-                <label className='font-bold'>Easy</label>
-                <input
+
+            {/* Automatic Inputs */}
+            <div className='w-full bg-white dark:bg-neutral-800 p-4 rounded-lg shadow'>
+              <h2 className='text-xl font-semibold mb-4'>Automatic Input</h2>
+              <label className='block mb-2 text-gray-700 dark:text-gray-200'>Upload JSON File:</label>
+              <label className='flex items-center justify-center w-full px-4 py-2 bg-blue-500 text-white rounded-md cursor-pointer hover:bg-blue-600 transition duration-200'>
+              <span>Select File</span>
+              <input
+                type="file"
+                accept=".json"
+                onChange={handleFileUpload}
+                className='hidden'
+              />
+              </label>
+            </div>
+          </div>
+
+          {/* Star Ratings */}
+          <div className='relative bg-white dark:bg-neutral-800 px-4 pb-4 rounded-lg'>
+            <h2 className='text-xl font-semibold mb-4'>Star Ratings</h2>
+            <div className='grid grid-cols-2 md:grid-cols-5 gap-4'>
+              <div className='flex flex-col'>
+              <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Easy</label>
+              <input
                 type='text'
                 value={starRatings.ES}
                 onChange={(e) => setStarRatings({ ...starRatings, ES: e.target.value })}
-                className='w-24 p-1 rounded text-neutral-950'
-                />
+                className='px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
+              />
               </div>
-              <div className='flex flex-col bg-blue-500 rounded px-2 py-1'>
-                <label className='font-bold'>Normal</label>
-                <input
+              <div className='flex flex-col'>
+              <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Normal</label>
+              <input
                 type='text'
                 value={starRatings.NOR}
                 onChange={(e) => setStarRatings({ ...starRatings, NOR: e.target.value })}
-                className='w-24 p-1 rounded text-neutral-950'
-                />
+                className='px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
+              />
               </div>
-              <div className='flex flex-col bg-orange-500 rounded px-2 py-1'>
-                <label className='font-bold'>Hard</label>
-                <input
+              <div className='flex flex-col'>
+              <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Hard</label>
+              <input
                 type='text'
                 value={starRatings.HARD}
                 onChange={(e) => setStarRatings({ ...starRatings, HARD: e.target.value })}
-                className='w-24 p-1 rounded text-neutral-950'
-                />
+                className='px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
+              />
               </div>
-              <div className='flex flex-col bg-red-600 rounded px-2 py-1'>
-                <label className='font-bold'>Expert</label>
-                <input
+              <div className='flex flex-col'>
+              <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Expert</label>
+              <input
                 type='text'
                 value={starRatings.EXP}
                 onChange={(e) => setStarRatings({ ...starRatings, EXP: e.target.value })}
-                className='w-24 p-1 rounded text-neutral-950'
-                />
+                className='px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
+              />
               </div>
-              <div className='flex flex-col bg-purple-700 rounded px-2 py-1'>
-                <label className='font-bold'>Expert+</label>
-                <input
+              <div className='flex flex-col'>
+              <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Expert+</label>
+              <input
                 type='text'
                 value={starRatings.EXP_PLUS}
                 onChange={(e) => setStarRatings({ ...starRatings, EXP_PLUS: e.target.value })}
-                className='w-24 p-1 rounded text-neutral-950'
-                />
-              </div>
+                className='px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
+              />
               </div>
             </div>
           </div>
-          <div className='flex flex-col'>
-            <button type="submit" className='bg-blue-500 text-white p-2 rounded'>Generate</button>
+
+          {/* Bottom Controls */}
+          <div className='flex flex-col md:flex-row justify-between items-center'>
+            <div className='flex items-center mb-4 md:mb-0'>
+              <label className='mr-2 text-gray-700 dark:text-gray-200'>Background:</label>
+              <Switch checked={useBackground} onChange={handleSwitch} />
+            </div>
+            <button type="submit" className='w-full md:w-auto bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600 transition duration-200'>
+              Generate
+            </button>
           </div>
         </form>
       </div>
