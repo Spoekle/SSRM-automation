@@ -2,6 +2,7 @@ import React, { FormEvent } from 'react';
 import ReactDOM from 'react-dom';
 import axios from 'axios';
 import { GoTriangleRight } from "react-icons/go";
+import { FaTimes } from "react-icons/fa";
 import { generateStarChange } from '../../../main/helper';
 
 interface StarRatingFormProps {
@@ -127,53 +128,58 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
       onClick={handleClickOutside}
     >
       <div className="relative modal-content bg-neutral-200 dark:bg-neutral-900 text-neutral-950 dark:text-neutral-200 p-6 rounded-lg animate-jump-in animate-duration-300">
+        <div className='absolute top-8 right-8 z-30 text-center items-center text-lg'>
+          <button
+            className='bg-red-500 text-white hover:bg-red-600 rounded-md p-2 transition duration-200'
+            onClick={() => setStarRatingFormModal(false)}
+          >
+            <FaTimes/>
+          </button>
+        </div>
         {songName &&
           <div className='absolute right-0 mr-8 text-right'>
             <h1 className='text-2xl font-bold'>Chosen Song:</h1>
             <h1 className='text-lg font-semibold'>{songName}</h1>
           </div>
         }
-        <form onSubmit={getMapInfo}>
-          <h1 className='text-2xl font-bold'>Reweight Form</h1>
-          <div className='flex flex-col justify-center items-center mt-2'>
-            <div className='flex gap-8 text-center'>
-            <div className='flex flex-col text-center'>
-              <label>Map ID:</label>
+        <form onSubmit={getMapInfo} className='space-y-6'>
+          <div className='flex flex-col md:flex-row md:space-x-6'>
+
+            <div className='relative w-full bg-white dark:bg-neutral-800 p-4 rounded-lg shadow'>
+              <h2 className='text-xl font-semibold mb-4'>Map Info</h2>
+              <label className='block mb-2 text-gray-700 dark:text-gray-200'>Map ID:</label>
               <input
-                type='text'
-                value={mapId}
-                onChange={(e) => fetchName(e.target.value)}
-                className='w-24 border rounded p-2 text-neutral-950 mt-1'
+              type='text'
+              value={mapId}
+              onChange={(e) => fetchName(e.target.value)}
+              className='w-full px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
               />
+              <label className='block mb-2 text-gray-700 dark:text-gray-200'>Difficulty:</label>
+                <select
+                  className='w-full px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
+                  onChange={(e) => setChosenDiff(e.target.value)}
+                >
+                  <option value='ES'>Easy</option>
+                  <option value='NOR'>Normal</option>
+                  <option value='HARD'>Hard</option>
+                  <option value='EXP'>Expert</option>
+                  <option value='EXP_PLUS'>Expert+</option>
+                </select>
             </div>
-            <div className='flex flex-col text-center'>
-              <label>Difficulty:</label>
-              <select
-                className='w-24 border rounded p-2 text-neutral-950 mt-1'
-                onChange={(e) => setChosenDiff(e.target.value)}
-              >
-                <option value='ES'>Easy</option>
-                <option value='NOR'>Normal</option>
-                <option value='HARD'>Hard</option>
-                <option value='EXP'>Expert</option>
-                <option value='EXP_PLUS'>Expert+</option>
-              </select>
-            </div>
-            </div>
-            <div className='flex flex-col text-center'>
-              <h1 className='text-2xl font-bold'>Star Rating Change:</h1>
-              <p className='text-lg'>Enter the OLD star ratings for each difficulty</p>
+
+            <div className='relative w-full bg-white dark:bg-neutral-800 p-4 rounded-lg shadow'>
+              <h2 className='text-xl font-semibold mb-4'>Reweight Values</h2>
               <div className='flex flex-col justify-center items-center my-4'>
               {chosenDiff === 'ES' && (
                 <div className='flex flex-col bg-green-600 rounded px-2 py-1'>
-                  <label className='font-bold'>Easy</label>
+                  <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Easy</label>
                   <div className='flex justify-center items-center'>
                     <input
                       type='text'
                       placeholder='Old'
                       value={oldStarRatings.ES}
                       onChange={(e) => setOldStarRatings({ ...oldStarRatings, ES: e.target.value })}
-                      className='w-24 border rounded p-1 text-neutral-950 mt-1 mr-2'
+                      className='w-20 border rounded p-1 text-neutral-950 mt-1 mr-2'
                     />
                     <div className='flex justify-center'>
                       <GoTriangleRight size={28} />
@@ -183,7 +189,7 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
                       placeholder='New'
                       value={newStarRatings.ES}
                       onChange={(e) => setNewStarRatings({ ...newStarRatings, ES: e.target.value })}
-                      className='w-24 border rounded p-1 text-neutral-950 mt-1 ml-2'
+                      className='w-20 border rounded p-1 text-neutral-950 mt-1 ml-2'
                     />
                   </div>
                 </div>
@@ -191,13 +197,14 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
 
               {chosenDiff === 'NOR' && (
                 <div className='flex flex-col bg-blue-500 rounded px-2 py-1'>
-                  <label className='font-bold'>Normal</label>
+                  <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Normal</label>
                   <div className='flex justify-center items-center'>
                     <input
                       type='text'
+                      placeholder='Old'
                       value={oldStarRatings.NOR}
                       onChange={(e) => setOldStarRatings({ ...oldStarRatings, NOR: e.target.value })}
-                      className='w-24 border rounded p-1 text-neutral-950 mt-1'
+                      className='w-20 border rounded p-1 text-neutral-950 mt-1 mr-2'
                     />
                     <div className='flex justify-center'>
                       <GoTriangleRight size={28} />
@@ -207,7 +214,7 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
                       placeholder='New'
                       value={newStarRatings.NOR}
                       onChange={(e) => setNewStarRatings({ ...newStarRatings, NOR: e.target.value })}
-                      className='w-24 border rounded p-1 text-neutral-950 mt-1 ml-2'
+                      className='w-20 border rounded p-1 text-neutral-950 mt-1 ml-2'
                     />
                   </div>
                 </div>
@@ -215,13 +222,14 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
 
               {chosenDiff === 'HARD' && (
                 <div className='flex flex-col bg-orange-500 rounded px-2 py-1'>
-                  <label className='font-bold'>Hard</label>
+                  <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Hard</label>
                   <div className='flex justify-center items-center'>
                     <input
                       type='text'
+                      placeholder='Old'
                       value={oldStarRatings.HARD}
                       onChange={(e) => setOldStarRatings({ ...oldStarRatings, HARD: e.target.value })}
-                      className='w-24 border rounded p-1 text-neutral-950 mt-1'
+                      className='w-20 border rounded p-1 text-neutral-950 mt-1 mr-2'
                     />
                     <div className='flex justify-center'>
                       <GoTriangleRight size={28} />
@@ -231,7 +239,7 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
                       placeholder='New'
                       value={newStarRatings.HARD}
                       onChange={(e) => setNewStarRatings({ ...newStarRatings, HARD: e.target.value })}
-                      className='w-24 border rounded p-1 text-neutral-950 mt-1 ml-2'
+                      className='w-20 border rounded p-1 text-neutral-950 mt-1 ml-2'
                     />
                   </div>
                 </div>
@@ -239,13 +247,14 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
 
               {chosenDiff === 'EXP' && (
                 <div className='flex flex-col bg-red-600 rounded px-2 py-1'>
-                  <label className='font-bold'>Expert</label>
+                  <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Expert</label>
                   <div className='flex justify-center items-center'>
                     <input
                       type='text'
+                      placeholder='Old'
                       value={oldStarRatings.EXP}
                       onChange={(e) => setOldStarRatings({ ...oldStarRatings, EXP: e.target.value })}
-                      className='w-24 border rounded p-1 text-neutral-950 mt-1'
+                      className='w-20 border rounded p-1 text-neutral-950 mt-1 mr-2'
                     />
                     <div className='flex justify-center'>
                       <GoTriangleRight size={28} />
@@ -255,7 +264,7 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
                       placeholder='New'
                       value={newStarRatings.EXP}
                       onChange={(e) => setNewStarRatings({ ...newStarRatings, EXP: e.target.value })}
-                      className='w-24 border rounded p-1 text-neutral-950 mt-1 ml-2'
+                      className='w-20 border rounded p-1 text-neutral-950 mt-1 ml-2'
                     />
                   </div>
                 </div>
@@ -263,13 +272,14 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
 
               {chosenDiff === 'EXP_PLUS' && (
                 <div className='flex flex-col bg-purple-700 rounded px-2 py-1'>
-                  <label className='font-bold'>Expert+</label>
+                  <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Expert+</label>
                   <div className='flex justify-center items-center'>
                     <input
                       type='text'
+                      placeholder='Old'
                       value={oldStarRatings.EXP_PLUS}
                       onChange={(e) => setOldStarRatings({ ...oldStarRatings, EXP_PLUS: e.target.value })}
-                      className='w-24 border rounded p-1 text-neutral-950 mt-1'
+                      className='w-20 border rounded p-1 text-neutral-950 mt-1 mr-2'
                     />
                     <div className='flex justify-center'>
                       <GoTriangleRight size={28} />
@@ -279,7 +289,7 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
                       placeholder='New'
                       value={newStarRatings.EXP_PLUS}
                       onChange={(e) => setNewStarRatings({ ...newStarRatings, EXP_PLUS: e.target.value })}
-                      className='w-24 border rounded p-1 text-neutral-950 mt-1 ml-2'
+                      className='w-20 border rounded p-1 text-neutral-950 mt-1 ml-2'
                     />
                   </div>
                 </div>
@@ -287,8 +297,10 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
               </div>
             </div>
           </div>
-          <div className='flex flex-col'>
-            <button type="submit" className='bg-blue-500 text-white p-2 rounded'>Generate</button>
+          <div className='flex flex-col md:flex-row justify-end items-center'>
+            <button type="submit" className='w-full md:w-auto bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600 transition duration-200'>
+              Generate
+            </button>
           </div>
         </form>
       </div>
