@@ -1,4 +1,4 @@
-import { Canvas, ExportFormat, Image } from 'skia-canvas';
+import { Canvas, ExportFormat, Image, Font } from 'skia-canvas';
 import { CanvasRenderingContext2D as SkiaCanvasRenderingContext2D } from 'skia-canvas';
 
 interface StarRating {
@@ -25,8 +25,6 @@ interface MapInfo {
     }[];
 }
 
-
-
 async function loadImage(url: string): Promise<Image> {
     const response = await fetch(url);
     if (!response.ok) throw new Error('Failed to fetch image');
@@ -46,7 +44,6 @@ function formatDuration(seconds = 0): string {
 }
 
 export async function generateCard(data: MapInfo, starRatings: StarRating, useBackground: boolean): Promise<string> {
-
     const canvas = new Canvas(900, 300);
     const ctx = canvas.getContext('2d');
 
@@ -284,7 +281,7 @@ export async function generateStarChange(data: MapInfo, oldStarRatings: OldStarR
   // Display additional info
   ctx.textAlign = 'right';
   ctx.font = '20px Avenir-Black';
-  ctx.fillText(`BSR:`, 730, 55);
+  ctx.fillText(`Map Code:`, 730, 55);
   ctx.font = '20px Avenir-Light';
   ctx.fillText(`${data.id}`, 730, 75);
 
@@ -376,7 +373,6 @@ export async function generateStarChange(data: MapInfo, oldStarRatings: OldStarR
 }
 
 export async function generateThumbnail(data: MapInfo, chosenDiff: keyof StarRating, starRatings: StarRating, background: string | ArrayBuffer | null): Promise<string> {
-
   const canvas = new Canvas(1920, 1080);
   const ctx = canvas.getContext('2d');
 
