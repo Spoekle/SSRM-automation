@@ -2,6 +2,7 @@ import React, { FormEvent } from 'react';
 import ReactDOM from 'react-dom';
 import axios from 'axios';
 import { generateThumbnail } from '../../../main/helper';
+import { FaTimes } from 'react-icons/fa';
 
 interface ThumbnailFormProps {
   mapId: string;
@@ -129,50 +130,54 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
       onClick={handleClickOutside}
     >
       <div className="relative modal-content bg-neutral-200 dark:bg-neutral-900 text-neutral-950 dark:text-neutral-200 p-6 rounded-lg animate-jump-in animate-duration-300">
-        {songName &&
-          <div className='absolute right-0 mr-8 text-right'>
-            <h1 className='text-2xl font-bold'>Chosen Song:</h1>
-            <h1 className='text-lg font-semibold'>{songName}</h1>
-          </div>
-        }
-        <form onSubmit={getMapInfo}>
-          <h1 className='text-2xl font-bold'>Thumbnail Form</h1>
-          <div className='flex flex-col justify-center items-center mt-2'>
-            <div className='flex gap-8 text-center'>
-            <div className='flex flex-col text-center'>
-              <label>Map ID:</label>
+        <div className='absolute top-8 right-8 z-30 text-center items-center text-lg'>
+          <button
+            className='bg-red-500 text-white hover:bg-red-600 rounded-md p-2 transition duration-200'
+            onClick={() => setThumbnailFormModal(false)}
+          >
+            <FaTimes/>
+          </button>
+        </div>
+        <form onSubmit={getMapInfo} className='space-y-6'>
+          <div className='flex flex-col md:flex-row md:space-x-6'>
+            <div className='relative w-full bg-white dark:bg-neutral-800 p-4 rounded-lg shadow'>
+              <h2 className='text-xl font-semibold mb-4'>Map Info</h2>
+              <label className='block mb-2 text-gray-700 dark:text-gray-200'>Map ID:</label>
               <input
-                type='text'
-                value={mapId}
-                onChange={(e) => fetchName(e.target.value)}
-                className='w-24 border rounded p-2 text-neutral-950 mt-1'
+              type='text'
+              value={mapId}
+              onChange={(e) => fetchName(e.target.value)}
+              className='w-full px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
               />
-            </div>
-            <div className='flex flex-col text-center'>
-              <label>Difficulty:</label>
-              <select
-                className='w-24 border rounded p-2 text-neutral-950 mt-1'
-                onChange={(e) => setChosenDiff(e.target.value)}
-              >
-                <option value='ES'>Easy</option>
-                <option value='NOR'>Normal</option>
-                <option value='HARD'>Hard</option>
-                <option value='EXP'>Expert</option>
-                <option value='EXP_PLUS'>Expert+</option>
-              </select>
-            </div>
+              <label className='block mb-2 text-gray-700 dark:text-gray-200'>Difficulty:</label>
+                <select
+                  className='w-full px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
+                  onChange={(e) => setChosenDiff(e.target.value)}
+                >
+                  <option value='ES'>Easy</option>
+                  <option value='NOR'>Normal</option>
+                  <option value='HARD'>Hard</option>
+                  <option value='EXP'>Expert</option>
+                  <option value='EXP_PLUS'>Expert+</option>
+                </select>
             </div>
           </div>
-          <div className='flex flex-col text-center items-center mt-2'>
-            <label>Background:</label>
+          <div className='w-full bg-white dark:bg-neutral-800 p-4 rounded-lg shadow'>
+            <label className='block mb-2 text-gray-700 dark:text-gray-200'>Upload Background:</label>
+            <label className='flex items-center justify-center w-full px-4 py-2 bg-blue-500 text-white rounded-md cursor-pointer hover:bg-blue-600 transition duration-200'>
+            <span>Select File</span>
             <input
-              type='file'
+              type="file"
+              accept=".png, .jpg, .jpeg, .webp"
               onChange={handleBackgroundChange}
-              className='w-24 border rounded p-2 text-neutral-950 mt-1'
+              className='hidden'
             />
+            </label>
           </div>
-          <div className='flex flex-col mt-4'>
-            <button type="submit" className='bg-blue-500 text-white p-2 rounded'>Generate</button>
+          <div className='flex flex-col md:flex-row justify-end items-center'>
+            <button type="submit" className='w-full md:w-auto bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600 transition duration-200'>
+              Generate
+            </button>
           </div>
         </form>
       </div>
