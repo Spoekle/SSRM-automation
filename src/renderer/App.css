@@ -35,18 +35,3 @@
   .animate-fade-out {
     animation: fadeOut 0.5s forwards;
   }
-
-  @font-face {
-    font-family: 'Avenir';
-    src: url('../main/fonts/Avenir-Roman.ttf') format('truetype');
-  }
-
-  @font-face {
-    font-family: 'Avenir-Light';
-    src: url('../main/fonts/Avenir-Light.ttf') format('truetype');
-  }
-
-  @font-face {
-    font-family: 'Avenir-Black';
-    src: url('../main/fonts/Avenir-Black.ttf') format('truetype');
-  }
