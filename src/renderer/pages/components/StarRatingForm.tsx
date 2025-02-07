@@ -231,167 +231,94 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
       className="modal-overlay fixed inset-0 bg-white/10 backdrop-blur-lg flex justify-center items-center z-50 rounded-3xl animate-fade animate-duration-200"
       onClick={handleClickOutside}
     >
-      <div className="relative modal-content bg-neutral-200 dark:bg-neutral-900 text-neutral-950 dark:text-neutral-200 p-6 rounded-lg animate-jump-in animate-duration-300">
-        <div className='absolute top-8 right-8 z-30 text-center items-center'>
+      <div className="relative modal-content bg-neutral-200 dark:bg-neutral-900 text-neutral-950 dark:text-neutral-200 p-6 m-16 rounded-lg animate-jump-in animate-duration-300">
+        <div className="absolute z-10 top-8 right-8 text-center items-center text-lg">
           <button
-            className='bg-red-500 text-white hover:bg-red-600 rounded-md p-2 transition duration-200'
+            className="bg-red-500 text-white hover:bg-red-600 rounded-md p-2 transition duration-200"
             onClick={() => setStarRatingFormModal(false)}
           >
-            <FaTimes/>
+            <FaTimes />
           </button>
         </div>
-        {songName &&
-          <div className='absolute right-0 mr-8 text-right'>
-            <h1 className='text-2xl font-bold'>Chosen Song:</h1>
-            <h1 className='text-lg font-semibold'>{songName}</h1>
+        {songName && (
+          <div className="absolute left-0 ml-6 mt-8">
+            <h1 className="text-2xl font-bold">Chosen Song:</h1>
+            <h1 className="text-lg font-semibold">{songName}</h1>
           </div>
-        }
-        <form onSubmit={getMapInfo} className='space-y-6'>
-          <div className='flex flex-col md:flex-row md:space-x-6'>
+        )}
+        <form onSubmit={getMapInfo} className="space-y-6">
+          <div className="flex flex-col md:flex-row md:space-x-6">
             {/* Manual Input Section */}
-            <div className='relative w-full bg-white dark:bg-neutral-800 p-4 rounded-lg shadow'>
-              <h2 className='text-xl font-semibold mb-4'>Manual Input</h2>
-              <label className='block mb-2'>Map ID:</label>
+            <div className="relative w-full bg-white dark:bg-neutral-800 p-4 rounded-lg shadow">
+              <h2 className="text-xl font-semibold mb-4">Manual Input</h2>
+              <label className="block mb-2 text-gray-700 dark:text-gray-200">Map ID:</label>
               <input
-                type='text'
+                type="text"
                 value={mapId}
                 onChange={(e) => fetchName(e.target.value)}
-                className='w-full px-3 py-2 border rounded-md'
+                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white"
               />
-              <label className='block mt-4 mb-2'>Difficulty:</label>
+              <label className="block mt-4 mb-2 text-gray-700 dark:text-gray-200">Difficulty:</label>
               <select
-                className='w-full px-3 py-2 border rounded-md'
+                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white"
                 onChange={(e) => setChosenDiff(e.target.value)}
                 value={chosenDiff}
               >
-                <option value='ES'>Easy</option>
-                <option value='NOR'>Normal</option>
-                <option value='HARD'>Hard</option>
-                <option value='EXP'>Expert</option>
-                <option value='EXP_PLUS'>Expert+</option>
+                <option value="ES">Easy</option>
+                <option value="NOR">Normal</option>
+                <option value="HARD">Hard</option>
+                <option value="EXP">Expert</option>
+                <option value="EXP_PLUS">Expert+</option>
               </select>
-              <div className='mt-4'>
-                <h3 className='text-lg font-semibold'>Reweight Values</h3>
-                {chosenDiff === 'ES' && (
-                  <div className='mt-2'>
-                    <label>Old:</label>
-                    <input
-                      type='text'
-                      placeholder='Old'
-                      value={oldStarRatings.ES}
-                      onChange={(e) => setOldStarRatings({ ...oldStarRatings, ES: e.target.value })}
-                      className='w-full px-2 py-1 border rounded'
-                    />
-                    <label className='mt-2'>New:</label>
-                    <input
-                      type='text'
-                      placeholder='New'
-                      value={newStarRatings.ES}
-                      onChange={(e) => setNewStarRatings({ ...newStarRatings, ES: e.target.value })}
-                      className='w-full px-2 py-1 border rounded'
-                    />
-                  </div>
-                )}
-                {chosenDiff === 'NOR' && (
-                  <div className='mt-2'>
-                    <label>Old:</label>
-                    <input
-                      type='text'
-                      placeholder='Old'
-                      value={oldStarRatings.NOR}
-                      onChange={(e) => setOldStarRatings({ ...oldStarRatings, NOR: e.target.value })}
-                      className='w-full px-2 py-1 border rounded'
-                    />
-                    <label className='mt-2'>New:</label>
-                    <input
-                      type='text'
-                      placeholder='New'
-                      value={newStarRatings.NOR}
-                      onChange={(e) => setNewStarRatings({ ...newStarRatings, NOR: e.target.value })}
-                      className='w-full px-2 py-1 border rounded'
-                    />
-                  </div>
-                )}
-                {chosenDiff === 'HARD' && (
-                  <div className='mt-2'>
-                    <label>Old:</label>
-                    <input
-                      type='text'
-                      placeholder='Old'
-                      value={oldStarRatings.HARD}
-                      onChange={(e) => setOldStarRatings({ ...oldStarRatings, HARD: e.target.value })}
-                      className='w-full px-2 py-1 border rounded'
-                    />
-                    <label className='mt-2'>New:</label>
-                    <input
-                      type='text'
-                      placeholder='New'
-                      value={newStarRatings.HARD}
-                      onChange={(e) => setNewStarRatings({ ...newStarRatings, HARD: e.target.value })}
-                      className='w-full px-2 py-1 border rounded'
-                    />
-                  </div>
-                )}
-                {chosenDiff === 'EXP' && (
-                  <div className='mt-2'>
-                    <label>Old:</label>
-                    <input
-                      type='text'
-                      placeholder='Old'
-                      value={oldStarRatings.EXP}
-                      onChange={(e) => setOldStarRatings({ ...oldStarRatings, EXP: e.target.value })}
-                      className='w-full px-2 py-1 border rounded'
-                    />
-                    <label className='mt-2'>New:</label>
-                    <input
-                      type='text'
-                      placeholder='New'
-                      value={newStarRatings.EXP}
-                      onChange={(e) => setNewStarRatings({ ...newStarRatings, EXP: e.target.value })}
-                      className='w-full px-2 py-1 border rounded'
-                    />
-                  </div>
-                )}
-                {chosenDiff === 'EXP_PLUS' && (
-                  <div className='mt-2'>
-                    <label>Old:</label>
-                    <input
-                      type='text'
-                      placeholder='Old'
-                      value={oldStarRatings.EXP_PLUS}
-                      onChange={(e) => setOldStarRatings({ ...oldStarRatings, EXP_PLUS: e.target.value })}
-                      className='w-full px-2 py-1 border rounded'
-                    />
-                    <label className='mt-2'>New:</label>
-                    <input
-                      type='text'
-                      placeholder='New'
-                      value={newStarRatings.EXP_PLUS}
-                      onChange={(e) => setNewStarRatings({ ...newStarRatings, EXP_PLUS: e.target.value })}
-                      className='w-full px-2 py-1 border rounded'
-                    />
-                  </div>
-                )}
-              </div>
+              <div className='absolute w-full bg-white dark:bg-neutral-800 p-6 left-0'/>
             </div>
+
             {/* Automatic Input Section */}
-            <div className='relative w-full bg-white dark:bg-neutral-800 p-4 rounded-lg shadow mt-6 md:mt-0'>
-              <h2 className='text-xl font-semibold mb-4'>Automatic Input</h2>
-              <label className='block mb-2'>Upload JSON File:</label>
-              <label className='flex items-center justify-center w-full px-4 py-2 bg-blue-500 text-white rounded-md cursor-pointer hover:bg-blue-600 transition duration-200'>
+            <div className="relative w-full bg-white dark:bg-neutral-800 p-4 rounded-lg shadow mt-6 md:mt-0">
+              <h2 className="text-xl font-semibold mb-4">Automatic Input</h2>
+              <label className="block mb-2 text-gray-700 dark:text-gray-200">Upload JSON File:</label>
+              <label className="flex items-center justify-center w-full px-4 py-2 bg-blue-500 text-white rounded-md cursor-pointer hover:bg-blue-600 transition duration-200">
                 <span>Select File</span>
-                <input
-                  type="file"
-                  accept=".json"
-                  onChange={handleJsonUpload}
-                  className="hidden"
-                />
+                <input type="file" accept=".json" onChange={handleJsonUpload} className="hidden" />
               </label>
               {uploadError && <p className="mt-2 text-red-500">{uploadError}</p>}
             </div>
           </div>
-          <div className='flex flex-col md:flex-row justify-end items-center'>
-            <button type="submit" className='w-full md:w-auto bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600 transition duration-200'>
+
+          {/* Reweight Values Section */}
+          <div className="relative bg-white dark:bg-neutral-800 px-4 pb-4 rounded-lg flex flex-row gap-6 items-center">
+            <div className="flex flex-col w-1/2">
+              <label className="mb-1 text-gray-700 dark:text-gray-200">Old:</label>
+              <input
+                type="text"
+                placeholder="Old"
+                value={oldStarRatings[chosenDiff as keyof OldStarRatings]}
+                onChange={(e) =>
+                  setOldStarRatings({ ...oldStarRatings, [chosenDiff]: e.target.value })
+                }
+                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white"
+              />
+            </div>
+            <div className="flex flex-col w-1/2">
+              <label className="mb-1 text-gray-700 dark:text-gray-200">New:</label>
+              <input
+                type="text"
+                placeholder="New"
+                value={newStarRatings[chosenDiff as keyof NewStarRatings]}
+                onChange={(e) =>
+                  setNewStarRatings({ ...newStarRatings, [chosenDiff]: e.target.value })
+                }
+                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white"
+              />
+            </div>
+          </div>
+
+          {/* Bottom Controls */}
+          <div className="flex flex-col md:flex-row justify-end items-center">
+            <button
+              type="submit"
+              className="w-full md:w-auto bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600 transition duration-200"
+            >
               Generate
             </button>
           </div>
