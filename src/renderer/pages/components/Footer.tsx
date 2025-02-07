@@ -5,7 +5,7 @@ import axios from 'axios';
 
 function Footer() {
   const { ipcRenderer } = window.require('electron');
-  const [appVersion] = useState<string>('1.5.2');
+  const [appVersion] = useState<string>('1.6.0');
   const [latestVersion, setLatestVersion] = useState<string>('');
   const [isDownloading, setIsDownloading] = useState<boolean>(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
