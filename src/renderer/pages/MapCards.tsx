@@ -123,7 +123,7 @@ const MapCards: React.FC = () => {
             className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mt-4 mx-2 rounded-lg hover:scale-110 transition duration-200 drop-shadow-lg'
             onClick={() => setStarRatingFormModal(true)}
           >
-            Open Star Rating Form
+            Open Reweight Form
           </button>
           {imageSrc && (
             <>
@@ -191,6 +191,7 @@ const MapCards: React.FC = () => {
           useBackground={useBackground}
           setUseBackground={setUseBackground}
           createAlerts={createAlerts}
+          progress={(process: string, progress: number, visible: boolean) => setProgress({ process, progress, visible })}
         />
       )}
       {starRatingFormModal && (

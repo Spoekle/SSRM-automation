@@ -81,7 +81,6 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
       localStorage.setItem('oldStarRatings', JSON.stringify(oldStarRatings));
       localStorage.setItem('mapInfo', JSON.stringify(data));
 
-      // Generate the star change image and set it to state
       const image = await generateStarChange(data, oldStarRatings, newStarRatings, chosenDiff as keyof OldStarRatings);
       setImageSrc(image);
       createAlerts("Star change image generated successfully.", "success");
@@ -92,7 +91,6 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
     }
   };
 
-  // Get star ratings from ScoreSaber API for difficulties 1,3,5,7,9 (if needed)
   async function getStarRating(hash: string): Promise<NewStarRatings> {
     let diffs = ['1', '3', '5', '7', '9'];
     let fetchedStarRatings: NewStarRatings = {
@@ -137,7 +135,6 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
     }
   };
 
-  // Handle JSON file upload for automatic processing
   const handleJsonUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -153,7 +150,6 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
       setProgress("Starting map processing...", 30, true);
       const zip = new JSZip();
 
-      // Process each uploaded map using an index for progress accuracy
       for (let i = 0; i < mapCount; i++) {
         const map = uploadedMaps[i];
         let diffKey = '';
@@ -177,22 +173,18 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
             diffKey = 'ES';
         }
 
-        // Prepare reweight objects with only the relevant field populated
         const manualOld: OldStarRatings = { ES: '', NOR: '', HARD: '', EXP: '', EXP_PLUS: '' };
         const manualNew: NewStarRatings = { ES: '', NOR: '', HARD: '', EXP: '', EXP_PLUS: '' };
         manualOld[diffKey as keyof OldStarRatings] = map.old_stars.toString();
         manualNew[diffKey as keyof NewStarRatings] = map.new_stars.toString();
 
         try {
-          // Update progress as a percentage of total maps processed
           const percent = Math.floor(((i + 1) / mapCount) * 100);
           setProgress(`Processing maps`, percent, true);
 
           const response = await axios.get(`https://api.beatsaver.com/maps/hash/${map.songHash}`);
           const mapInfo = response.data;
-          // Generate the star change image
           const imageDataUrl = await generateStarChange(mapInfo, manualOld, manualNew, diffKey as keyof OldStarRatings);
-          // Convert Data URL to binary data
           const base64Data = imageDataUrl.split(',')[1];
           const byteCharacters = atob(base64Data);
           const byteNumbers = new Array(byteCharacters.length);
@@ -200,16 +192,15 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
             byteNumbers[j] = byteCharacters.charCodeAt(j);
           }
           const byteArray = new Uint8Array(byteNumbers);
-          // Create a sanitized file name
           const sanitizedSongName = map.songName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
           const fileName = `${sanitizedSongName}_${map.id}.png`;
-          // Add image file to zip
+
           zip.file(fileName, byteArray, { binary: true });
         } catch (err) {
           console.error(`Error processing map with hash ${map.songHash}:`, err);
         }
       }
-      // Update progress before generating zip
+
       setProgress("Generating ZIP file...", 80, true);
       const zipBlob = await zip.generateAsync({ type: 'blob' });
       createAlerts("Creating zip!", "success");
