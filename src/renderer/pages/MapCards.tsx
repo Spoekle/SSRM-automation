@@ -34,9 +34,16 @@ interface StarRatings {
   EXP_PLUS: string;
 }
 
+interface Progress {
+  process: string;
+  progress: number;
+  visible: boolean;
+}
+
 const MapCards: React.FC = () => {
   const [mapId, setMapId] = useState<string>('');
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [progress, setProgress] = useState<Progress>({process: "", progress: 0, visible: false });
   const [mapInfo, setMapInfo] = useState<MapInfo | null>(null);
   const [cardFormModal, setCardFormModal] = useState<boolean>(false);
   const [starRatingFormModal, setStarRatingFormModal] = useState<boolean>(false);
@@ -164,6 +171,14 @@ const MapCards: React.FC = () => {
         ))}
       </div>
 
+      <div className='absolute bottom-0 right-0 mb-4 mr-4 flex flex-col items-end space-y-2 overflow-hidden z-60'>
+        {progress.visible && (
+          <div className={`flex items-center justify-center px-4 py-2 bg-blue-600 rounded-md drop-shadow-lg animate-fade-left`}>
+            <p className='text-white'>{progress.process}<p className='ml-1 font-bold text-center'>{progress.progress.toString()}%</p></p>
+          </div>
+        )}
+      </div>
+
       {cardFormModal && (
         <CardForm
           mapId={mapId}
@@ -189,6 +204,8 @@ const MapCards: React.FC = () => {
           setMapInfo={setMapInfo}
           setStarRatingFormModal={setStarRatingFormModal}
           setImageSrc={setImageSrc}
+          createAlerts={createAlerts}
+          progress={(process: string, progress: number, visible: boolean) => setProgress({ process, progress, visible })}
         />
       )}
     </div>
