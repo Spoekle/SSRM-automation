@@ -1,16 +1,13 @@
-/* eslint global-require: off, no-console: off, promise/always-return: off */
-
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 import axios from 'axios';
-import { exec } from 'child_process';
+import { spawn } from 'child_process';
 import { app, BrowserWindow, shell, ipcMain } from 'electron';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 
-// Import and run the backend server
-require('./server');  // Add this to run the backend before the frontend starts
+require('./server');
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -99,19 +96,52 @@ const createMainWindow = async () => {
         responseType: 'stream',
       });
 
+      const totalLength = parseInt(downloadResponse.headers['content-length'], 10);
+      let downloaded = 0;
+
+      downloadResponse.data.on('data', (chunk: Buffer) => {
+        downloaded += chunk.length;
+        const percent = Math.floor((downloaded / totalLength) * 100);
+        BrowserWindow.getAllWindows().forEach(win => {
+          win.webContents.send('update-progress', `Downloading update... ${percent}%`);
+        });
+      });
+
       downloadResponse.data.pipe(writer);
 
       return new Promise((resolve, reject) => {
         writer.on('finish', () => {
-          exec(`"${downloadPath}"`, (error) => {
-            if (error) {
-              reject(error);
-            } else {
-              resolve('Update started');
-            }
+          BrowserWindow.getAllWindows().forEach(win => {
+            win.webContents.send('update-progress', 'Download complete. Installing update...');
           });
-        });
+          try {
+            const child = spawn(downloadPath, {
+              detached: true,
+              stdio: 'ignore',
+              shell: true,
+            });
+            child.unref();
+          } catch (error) {
+            reject(error);
+            return;
+          }
 
+          let countdown = 5;
+          const interval = setInterval(() => {
+            BrowserWindow.getAllWindows().forEach(win => {
+              win.webContents.send('update-progress', `Restarting application in ${countdown}...`);
+            });
+            countdown--;
+            if (countdown < 0) {
+              clearInterval(interval);
+              BrowserWindow.getAllWindows().forEach(win => {
+                win.webContents.send('update-progress', 'Restarting application...');
+              });
+              app.quit();
+            }
+          }, 1000);
+          resolve('Update started');
+        });
         writer.on('error', reject);
       });
     } catch (error) {
