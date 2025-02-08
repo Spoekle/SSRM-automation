@@ -126,7 +126,7 @@ const createMainWindow = async () => {
             return;
           }
 
-          let countdown = 5;
+          let countdown = 3;
           const interval = setInterval(() => {
             BrowserWindow.getAllWindows().forEach(win => {
               win.webContents.send('update-progress', `Restarting application in ${countdown}...`);

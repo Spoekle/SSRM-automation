@@ -6,7 +6,6 @@ function Footer() {
   const { ipcRenderer } = window.require('electron');
   const [appVersion] = useState<string>('1.5.1');
   const [latestVersion, setLatestVersion] = useState<string>('');
-  const [isDownloading, setIsDownloading] = useState<boolean>(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const savedTheme = localStorage.getItem('theme');
     return savedTheme === 'dark';
@@ -30,7 +29,6 @@ function Footer() {
 
   const updateApplication = async () => {
     try {
-      setIsDownloading(true);
       setIsUpdating(true);
       setUpdateProgress("Starting update...");
 
@@ -74,21 +72,16 @@ function Footer() {
             <p className='text-sm py-2 px-3 mx-3'>Created by Spoekle</p>
           </div>
             <div className="flex text-center justify-between relative">
-            {parseFloat(latestVersion.replace(/\./g, '')) > parseFloat(appVersion.replace(/\./g, '')) && (
-              <div className="relative group">
-              {/* Moving rainbow gradient border */}
-              <div className="absolute -inset-1 rounded-md bg-conic/[in_hsl_longer_hue] from-red-600 to-red-600 size-24 opacity-75 blur animate-[spin_4s_linear_infinite]"></div>
-              {/* Inner background to overlay the gradient border */}
-              <div className="relative rounded-md bg-neutral-200 dark:bg-neutral-900">
-                <button
-                onClick={updateApplication}
-                className="text-sm font-bold py-2 px-3 mx-3 transition duration-200 underline rounded-md"
-                >
-                Update available! Latest: {latestVersion}, Current: {appVersion}
-                </button>
-              </div>
-              </div>
-            )}
+              {parseFloat(latestVersion.replace(/\./g, '')) > parseFloat(appVersion.replace(/\./g, '')) && (
+                <div className="z-20 rainbow-shadow relative rounded-md bg-neutral-200 dark:bg-neutral-900">
+                  <button
+                  onClick={updateApplication}
+                  className="text-sm font-bold py-2 px-3 bg-neutral-200 dark:bg-neutral-900 transition duration-200 underline rounded-full hover:cursor-pointer hover:text-blue-500"
+                  >
+                  Update available! Latest: {latestVersion}, Current: {appVersion}
+                  </button>
+                </div>
+              )}
             </div>
           <div className='flex text-center justify-between'>
             <a
