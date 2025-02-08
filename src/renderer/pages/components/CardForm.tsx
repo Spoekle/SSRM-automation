@@ -19,6 +19,7 @@ interface CardFormProps {
   setUseBackground: (use: boolean) => void;
   createAlerts: (message: string, type: 'success' | 'error' | 'alert') => void;
   progress: (process: string, progress: number, visible: boolean) => void;
+  cancelGenerationRef: React.MutableRefObject<boolean>;
 }
 
 interface StarRatings {
@@ -50,7 +51,8 @@ const CardForm: React.FC<CardFormProps> = ({
   useBackground,
   setUseBackground,
   createAlerts,
-  progress: setProgress
+  progress: setProgress,
+  cancelGenerationRef,
 }) => {
   const [songName, setSongName] = React.useState('');
 
@@ -148,12 +150,12 @@ const CardForm: React.FC<CardFormProps> = ({
   }
 
   const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    cancelGenerationRef.current = false;
     const file = event.target.files?.[0];
     if (!file) return;
 
-    createAlerts(`Json processing...`, 'alert');
     setCardFormModal(false);
-
+    createAlerts(`JSON processing...`, 'alert');
     setProgress("Reading JSON file...", 10, true);
 
     try {
@@ -161,6 +163,7 @@ const CardForm: React.FC<CardFormProps> = ({
       setProgress("Parsing JSON...", 20, true);
 
       const uploadedMaps: UploadedMap[] = JSON.parse(text);
+
       const groupedMaps: { [key: string]: UploadedMap[] } = uploadedMaps.reduce((acc, map) => {
         if (!acc[map.songHash]) {
           acc[map.songHash] = [];
@@ -169,67 +172,82 @@ const CardForm: React.FC<CardFormProps> = ({
         return acc;
       }, {} as { [key: string]: UploadedMap[] });
 
-      console.log('Grouped maps:', groupedMaps);
-
-      const songHashes = Object.keys(groupedMaps);
-      const totalHashes = songHashes.length;
       setProgress("Starting map processing...", 30, true);
 
       const zip = new JSZip();
+      const songHashes = Object.keys(groupedMaps);
+      const totalHashes = songHashes.length;
+      let processedCount = 0;
+      const batchSize = 10;
 
-      for (let i = 0; i < totalHashes; i++) {
-        const songHash = songHashes[i];
-        const combinedStarRatings: StarRatings = {
-          ES: '',
-          NOR: '',
-          HARD: '',
-          EXP: '',
-          EXP_PLUS: '',
-        };
+      for (let i = 0; i < songHashes.length; i += batchSize) {
+        if (cancelGenerationRef.current) {
+          createAlerts("Card generation cancelled by user!", "error");
+          return;
+        }
+        const batch = songHashes.slice(i, i + batchSize);
+        const promises = batch.map(async (songHash) => {
+          const combinedStarRatings: StarRatings = {
+            ES: '',
+            NOR: '',
+            HARD: '',
+            EXP: '',
+            EXP_PLUS: '',
+          };
 
-        groupedMaps[songHash].forEach(map => {
-          switch (map.difficulty) {
-            case 1:
-              combinedStarRatings.ES = map.stars.toString();
-              break;
-            case 3:
-              combinedStarRatings.NOR = map.stars.toString();
-              break;
-            case 5:
-              combinedStarRatings.HARD = map.stars.toString();
-              break;
-            case 7:
-              combinedStarRatings.EXP = map.stars.toString();
-              break;
-            case 9:
-              combinedStarRatings.EXP_PLUS = map.stars.toString();
-              break;
-            default:
-              break;
+          groupedMaps[songHash].forEach((map) => {
+            switch (map.difficulty) {
+              case 1:
+                combinedStarRatings.ES = map.stars.toString();
+                break;
+              case 3:
+                combinedStarRatings.NOR = map.stars.toString();
+                break;
+              case 5:
+                combinedStarRatings.HARD = map.stars.toString();
+                break;
+              case 7:
+                combinedStarRatings.EXP = map.stars.toString();
+                break;
+              case 9:
+                combinedStarRatings.EXP_PLUS = map.stars.toString();
+                break;
+              default:
+                break;
+            }
+          });
+
+          try {
+            const response = await axios.get<MapInfo>(`https://api.beatsaver.com/maps/hash/${songHash}`);
+            const mapInfo = response.data;
+            const imageDataUrl = await generateCard(mapInfo, combinedStarRatings, useBackground);
+            const base64Data = imageDataUrl.split(',')[1];
+            const byteCharacters = atob(base64Data);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let j = 0; j < byteCharacters.length; j++) {
+              byteNumbers[j] = byteCharacters.charCodeAt(j);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const sanitizedSongName = mapInfo.metadata.songName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            const fileName = `${sanitizedSongName}-${mapInfo.id}.png`;
+
+            zip.file(fileName, byteArray, { binary: true });
+          } catch (error: any) {
+            console.error(`Error processing map with hash ${songHash}:`, error);
+          } finally {
+            processedCount++;
+            const percent = Math.floor((processedCount / totalHashes) * 100);
+            setProgress(`Processing maps (${processedCount} / ${totalHashes})`, percent, true);
           }
         });
 
-        try {
-          const response = await axios.get<MapInfo>(`https://api.beatsaver.com/maps/hash/${songHash}`);
-          const mapInfo = response.data;
-          const imageDataUrl = await generateCard(mapInfo, combinedStarRatings, useBackground);
-          const base64Data = imageDataUrl.split(',')[1];
-          const byteCharacters = atob(base64Data);
-          const byteNumbers = new Array(byteCharacters.length);
-          for (let j = 0; j < byteCharacters.length; j++) {
-            byteNumbers[j] = byteCharacters.charCodeAt(j);
-          }
-          const byteArray = new Uint8Array(byteNumbers);
-          const sanitizedSongName = mapInfo.metadata.songName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-          const fileName = `${sanitizedSongName}_${mapInfo.id}.png`;
-
-          zip.file(fileName, byteArray, { binary: true });
-        } catch (error: any) {
-          console.error(`Error processing map with hash ${songHash}:`, error);
+        await Promise.all(promises);
+        let remaining = 3;
+        while (remaining > 0) {
+          createAlerts(`Rate limit ahead. Waiting for ${remaining} seconds...`, "alert");
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+          remaining--;
         }
-
-        const percent = 30 + Math.floor(((i + 1) / totalHashes) * 50);
-        setProgress("Processing maps", percent, true);
       }
 
       setProgress("Generating ZIP file...", 80, true);
@@ -243,7 +261,10 @@ const CardForm: React.FC<CardFormProps> = ({
       }, 2000);
     } catch (error: any) {
       console.error('Error processing uploaded JSON:', error);
-      createAlerts(`Failed to process the uploaded JSON file. Please ensure it is correctly formatted.`, 'error');
+      createAlerts(
+        `Failed to process the uploaded JSON file. Please ensure it is correctly formatted.`,
+        'error'
+      );
       setProgress("", 0, false);
     }
   };

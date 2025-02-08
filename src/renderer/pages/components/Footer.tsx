@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { FaSun, FaMoon, FaGithub } from 'react-icons/fa';
-import { SyncLoader } from 'react-spinners';
 import axios from 'axios';
 
 function Footer() {
   const { ipcRenderer } = window.require('electron');
-  const [appVersion] = useState<string>('1.6.1');
+  const [appVersion] = useState<string>('1.5.1');
   const [latestVersion, setLatestVersion] = useState<string>('');
   const [isDownloading, setIsDownloading] = useState<boolean>(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -74,15 +73,23 @@ function Footer() {
           <div className='flex text-center justify-between'>
             <p className='text-sm py-2 px-3 mx-3'>Created by Spoekle</p>
           </div>
-          <div className='flex text-center justify-between'>
+            <div className="flex text-center justify-between relative">
             {parseFloat(latestVersion.replace(/\./g, '')) > parseFloat(appVersion.replace(/\./g, '')) && (
-              <button
+              <div className="relative group">
+              {/* Moving rainbow gradient border */}
+              <div className="absolute -inset-1 rounded-md bg-conic/[in_hsl_longer_hue] from-red-600 to-red-600 size-24 opacity-75 blur animate-[spin_4s_linear_infinite]"></div>
+              {/* Inner background to overlay the gradient border */}
+              <div className="relative rounded-md bg-neutral-200 dark:bg-neutral-900">
+                <button
                 onClick={updateApplication}
-                className='text-sm font-bold py-2 px-3 mx-3 hover:scale-105 transition duration-200 underline'>
+                className="text-sm font-bold py-2 px-3 mx-3 transition duration-200 underline rounded-md"
+                >
                 Update available! Latest: {latestVersion}, Current: {appVersion}
-              </button>
+                </button>
+              </div>
+              </div>
             )}
-          </div>
+            </div>
           <div className='flex text-center justify-between'>
             <a
               href='https://github.com/Spoekle/SSRM-automation'

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import LinearProgress, { linearProgressClasses } from '@mui/material/LinearProgress';
 import { FaDownload } from 'react-icons/fa';
 import CardForm from './components/CardForm';
 import StarRatingForm from './components/StarRatingForm';
@@ -51,6 +52,7 @@ const MapCards: React.FC = () => {
   const [oldStarRatings, setOldStarRatings] = useState<StarRatings>({ ES: "", NOR: "", HARD: "", EXP: "", EXP_PLUS: "" });
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [useBackground, setUseBackground] = React.useState(true);
+  const cancelGenerationRef = useRef(false);
 
   useEffect(() => {
     const storedMapId = localStorage.getItem('mapId');
@@ -171,13 +173,39 @@ const MapCards: React.FC = () => {
         ))}
       </div>
 
-      <div className='absolute bottom-0 right-0 mb-4 mr-4 flex flex-col items-end space-y-2 overflow-hidden z-60'>
-        {progress.visible && (
-          <div className={`flex items-center justify-center px-4 py-2 bg-blue-600 rounded-md drop-shadow-lg animate-fade-left`}>
-            <p className='text-white'>{progress.process}<p className='ml-1 font-bold text-center'>{progress.progress.toString()}%</p></p>
+        <div className='absolute bottom-0 w-[90vw] items-center justify-center mb-4 z-60'>
+          {progress.visible && (
+            <div className='flex flex-col w-full text-center items-center justify-center bg-neutral-300 dark:bg-neutral-800 p-4 rounded-md drop-shadow-lg animate-fade'>
+              <div className="w-full px-4 relative">
+          <p className='text-lg font-bold mb-2'>{progress.process}</p>
+          <div className='relative'>
+            <LinearProgress
+              sx={{
+                height: 30,
+                backgroundColor: "#171717",
+                "& .MuiLinearProgress-bar": { backgroundColor: "#2563eb" }
+              }}
+              variant="determinate"
+              value={progress.progress}
+              className='w-full rounded-full text-white'
+            />
+            <span className='absolute inset-0 flex items-center justify-center text-white font-bold'>
+              {progress.progress}%
+            </span>
           </div>
-        )}
-      </div>
+          <button
+            className='mt-4 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200'
+            onClick={() => {
+              cancelGenerationRef.current = true;
+              setProgress({ process: "", progress: 0, visible: false });
+            }}
+          >
+            Cancel
+          </button>
+              </div>
+            </div>
+          )}
+        </div>
 
       {cardFormModal && (
         <CardForm
@@ -192,6 +220,7 @@ const MapCards: React.FC = () => {
           setUseBackground={setUseBackground}
           createAlerts={createAlerts}
           progress={(process: string, progress: number, visible: boolean) => setProgress({ process, progress, visible })}
+          cancelGenerationRef={cancelGenerationRef}
         />
       )}
       {starRatingFormModal && (
@@ -207,6 +236,7 @@ const MapCards: React.FC = () => {
           setImageSrc={setImageSrc}
           createAlerts={createAlerts}
           progress={(process: string, progress: number, visible: boolean) => setProgress({ process, progress, visible })}
+          cancelGenerationRef={cancelGenerationRef}
         />
       )}
     </div>

@@ -18,6 +18,7 @@ interface StarRatingFormProps {
   setImageSrc: (src: string) => void;
   createAlerts: (message: string, type: 'success' | 'error' | 'alert') => void;
   progress: (process: string, progress: number, visible: boolean) => void;
+  cancelGenerationRef: React.MutableRefObject<boolean>;
 }
 
 interface OldStarRatings {
@@ -58,7 +59,8 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
   setMapInfo,
   setImageSrc,
   createAlerts,
-  progress: setProgress
+  progress: setProgress,
+  cancelGenerationRef,
 }) => {
   const [songName, setSongName] = useState('');
   const [chosenDiff, setChosenDiff] = useState('ES');
@@ -136,12 +138,15 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
   };
 
   const handleJsonUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    cancelGenerationRef.current = false;
     const file = event.target.files?.[0];
     if (!file) return;
+
     setStarRatingFormModal(false);
     setUploadError(null);
     createAlerts("Reweight JSON Uploaded...", "alert");
     setProgress("Reading JSON file...", 10, true);
+
     try {
       const text = await file.text();
       setProgress("Parsing JSON...", 20, true);
@@ -150,69 +155,96 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
       setProgress("Starting map processing...", 30, true);
       const zip = new JSZip();
 
-      for (let i = 0; i < mapCount; i++) {
-        const map = uploadedMaps[i];
-        let diffKey = '';
-        switch (map.difficulty) {
-          case 1:
-            diffKey = 'ES';
-            break;
-          case 3:
-            diffKey = 'NOR';
-            break;
-          case 5:
-            diffKey = 'HARD';
-            break;
-          case 7:
-            diffKey = 'EXP';
-            break;
-          case 9:
-            diffKey = 'EXP_PLUS';
-            break;
-          default:
-            diffKey = 'ES';
+      const batchSize = 10;
+      let processedCount = 0;
+
+      for (let i = 0; i < mapCount; i += batchSize) {
+        if (cancelGenerationRef.current) {
+          createAlerts("Reweight cards generation cancelled by user!", "error");
+          setProgress("", 0, false);
+          return;
         }
-
-        const manualOld: OldStarRatings = { ES: '', NOR: '', HARD: '', EXP: '', EXP_PLUS: '' };
-        const manualNew: NewStarRatings = { ES: '', NOR: '', HARD: '', EXP: '', EXP_PLUS: '' };
-        manualOld[diffKey as keyof OldStarRatings] = map.old_stars.toString();
-        manualNew[diffKey as keyof NewStarRatings] = map.new_stars.toString();
-
-        try {
-          const percent = Math.floor(((i + 1) / mapCount) * 100);
-          setProgress(`Processing maps`, percent, true);
-
-          const response = await axios.get(`https://api.beatsaver.com/maps/hash/${map.songHash}`);
-          const mapInfo = response.data;
-          const imageDataUrl = await generateStarChange(mapInfo, manualOld, manualNew, diffKey as keyof OldStarRatings);
-          const base64Data = imageDataUrl.split(',')[1];
-          const byteCharacters = atob(base64Data);
-          const byteNumbers = new Array(byteCharacters.length);
-          for (let j = 0; j < byteCharacters.length; j++) {
-            byteNumbers[j] = byteCharacters.charCodeAt(j);
+        const batch = uploadedMaps.slice(i, i + batchSize);
+        const promises = batch.map(async (map) => {
+          let diffKey = '';
+          switch (map.difficulty) {
+            case 1:
+              diffKey = 'ES';
+              break;
+            case 3:
+              diffKey = 'NOR';
+              break;
+            case 5:
+              diffKey = 'HARD';
+              break;
+            case 7:
+              diffKey = 'EXP';
+              break;
+            case 9:
+              diffKey = 'EXP_PLUS';
+              break;
+            default:
+              diffKey = 'ES';
           }
-          const byteArray = new Uint8Array(byteNumbers);
-          const sanitizedSongName = map.songName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-          const fileName = `${sanitizedSongName}_${map.id}.png`;
 
-          zip.file(fileName, byteArray, { binary: true });
-        } catch (err) {
-          console.error(`Error processing map with hash ${map.songHash}:`, err);
+          const manualOld: OldStarRatings = { ES: '', NOR: '', HARD: '', EXP: '', EXP_PLUS: '' };
+          const manualNew: NewStarRatings = { ES: '', NOR: '', HARD: '', EXP: '', EXP_PLUS: '' };
+          manualOld[diffKey as keyof OldStarRatings] = map.old_stars.toString();
+          manualNew[diffKey as keyof NewStarRatings] = map.new_stars.toString();
+
+          try {
+            const response = await axios.get(`https://api.beatsaver.com/maps/hash/${map.songHash}`);
+            const mapInfo = response.data;
+            const imageDataUrl = await generateStarChange(
+              mapInfo,
+              manualOld,
+              manualNew,
+              diffKey as keyof OldStarRatings
+            );
+            const base64Data = imageDataUrl.split(",")[1];
+            const byteCharacters = atob(base64Data);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let j = 0; j < byteCharacters.length; j++) {
+              byteNumbers[j] = byteCharacters.charCodeAt(j);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const sanitizedSongName = map.songName.replace(/[^a-z0-9]/gi, "_").toLowerCase();
+            const fileName = `${sanitizedSongName}-${diffKey}-${mapInfo.id}.png`;
+
+            zip.file(fileName, byteArray, { binary: true });
+          } catch (err) {
+            console.error(`Error processing map with hash ${map.songHash}:`, err);
+          } finally {
+            processedCount++;
+            const percent = Math.floor((processedCount / mapCount) * 100);
+            setProgress(`Processing maps (${processedCount} / ${mapCount})`, percent, true);
+          }
+        });
+
+        await Promise.all(promises);
+        let remaining = 3;
+        while (remaining > 0) {
+          createAlerts(`Rate limit ahead. Waiting for ${remaining} seconds...`, "alert");
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+          remaining--;
         }
       }
 
-      setProgress("Generating ZIP file...", 80, true);
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      setProgress("Generating ZIP file...", 50, true);
+      const zipBlob = await zip.generateAsync({ type: "blob" });
       createAlerts("Creating zip!", "success");
-      saveAs(zipBlob, 'reweight_cards.zip');
+      saveAs(zipBlob, "reweight_cards.zip");
       setProgress("ZIP file created!", 100, true);
       setTimeout(() => {
         setProgress("", 0, false);
       }, 2000);
     } catch (err: any) {
-      console.error('Error processing uploaded JSON:', err);
-      setUploadError('Failed to process the uploaded JSON file. Please ensure it is correctly formatted.');
-      createAlerts("Failed to process the uploaded JSON file. Please ensure it is correctly formatted.", "error");
+      console.error("Error processing uploaded JSON:", err);
+      setUploadError("Failed to process the uploaded JSON file. Please ensure it is correctly formatted.");
+      createAlerts(
+        "Failed to process the uploaded JSON file. Please ensure it is correctly formatted.",
+        "error"
+      );
       setProgress("", 0, false);
     }
   };
