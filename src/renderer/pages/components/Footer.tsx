@@ -4,7 +4,7 @@ import axios from 'axios';
 
 function Footer() {
   const { ipcRenderer } = window.require('electron');
-  const [appVersion] = useState<string>('1.5.1');
+  const [appVersion] = useState<string>('1.6.2');
   const [latestVersion, setLatestVersion] = useState<string>('');
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const savedTheme = localStorage.getItem('theme');
