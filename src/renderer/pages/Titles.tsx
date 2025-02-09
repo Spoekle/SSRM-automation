@@ -78,7 +78,7 @@ const Titles: React.FC = () => {
           <h1 className='text-2xl font-bold'>Titles</h1>
           <p className='text-lg'>Generate your title and description here!</p>
           <button
-            className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mt-4 rounded'
+            className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mt-4 mx-2 rounded-lg hover:scale-110 transition duration-200 drop-shadow-lg'
             onClick={() => setMapFormModal(true)}
           >
             Open Map Form
