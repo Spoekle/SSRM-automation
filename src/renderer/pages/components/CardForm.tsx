@@ -242,11 +242,14 @@ const CardForm: React.FC<CardFormProps> = ({
         });
 
         await Promise.all(promises);
-        let remaining = 3;
-        while (remaining > 0) {
-          createAlerts(`Rate limit ahead. Waiting for ${remaining} seconds...`, "alert");
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          remaining--;
+
+        if (processedCount < totalHashes) {
+          let remaining = 3;
+          while (remaining > 0) {
+            createAlerts(`Rate limit ahead. Waiting for ${remaining} seconds...`, "alert");
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+            remaining--;
+          }
         }
       }
 

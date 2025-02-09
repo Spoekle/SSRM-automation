@@ -222,12 +222,15 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
         });
 
         await Promise.all(promises);
-        let remaining = 3;
-        while (remaining > 0) {
-          createAlerts(`Rate limit ahead. Waiting for ${remaining} seconds...`, "alert");
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          remaining--;
-        }
+
+        if (processedCount < mapCount) {
+          let remaining = 3;
+          while (remaining > 0) {
+            createAlerts(`Rate limit ahead. Waiting for ${remaining} seconds...`, "alert");
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+            remaining--;
+          }
+        } 
       }
 
       setProgress("Generating ZIP file...", 50, true);
