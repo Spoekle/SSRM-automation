@@ -1,31 +1,15 @@
 import { useState, useEffect } from 'react';
-import { FaSun, FaMoon, FaGithub } from 'react-icons/fa';
+import { FaGithub, FaCog } from 'react-icons/fa';
 import axios from 'axios';
+import Settings from '../Settings/Settings';
 
 function Footer() {
   const { ipcRenderer } = window.require('electron');
-  const [appVersion] = useState<string>('1.6.2');
+  const [appVersion] = useState<string>('1.6.4');
   const [latestVersion, setLatestVersion] = useState<string>('');
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    const savedTheme = localStorage.getItem('theme');
-    return savedTheme === 'dark';
-  });
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
   const [updateProgress, setUpdateProgress] = useState<string>('');
-
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  }, [isDarkMode]);
-
-  const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode);
-  };
+  const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
 
   const updateApplication = async () => {
     try {
@@ -68,37 +52,29 @@ function Footer() {
       )}
       <div className='no-move items-center justify-items-center bg-neutral-200 dark:bg-neutral-900 text-neutral-950 dark:text-neutral-200 rounded-b-3xl drop-shadow-xl'>
         <div className='flex justify-between items-center p-4'>
-          <div className='flex text-center justify-between'>
-            <p className='text-sm py-2 px-3 mx-3'>Created by Spoekle</p>
-          </div>
-            <div className="flex text-center justify-between relative">
-              {parseFloat(latestVersion.replace(/\./g, '')) > parseFloat(appVersion.replace(/\./g, '')) && (
-                <div className="z-20 rainbow-shadow relative rounded-md bg-neutral-200 dark:bg-neutral-900">
-                  <button
+          <div className="flex text-center justify-between relative">
+            {parseFloat(latestVersion.replace(/\./g, '')) > parseFloat(appVersion.replace(/\./g, '')) && (
+              <div className="z-20 rainbow-shadow relative rounded-md bg-neutral-200 dark:bg-neutral-900">
+                <button
                   onClick={updateApplication}
                   className="text-sm font-bold py-2 px-3 bg-neutral-200 dark:bg-neutral-900 transition duration-200 underline rounded-full hover:cursor-pointer hover:text-blue-500"
-                  >
+                >
                   Update available! Latest: {latestVersion}, Current: {appVersion}
-                  </button>
-                </div>
-              )}
-            </div>
+                </button>
+              </div>
+            )}
+          </div>
           <div className='flex text-center justify-between'>
-            <a
-              href='https://github.com/Spoekle/SSRM-automation'
-              target='_blank'
-              rel="noreferrer"
-              className='py-2 px-3 mx-3 bg-transparent hover:bg-black/20 hover:scale-110 rounded-md transition duration-200'>
-              <FaGithub />
-            </a>
             <button
-              onClick={toggleDarkMode}
-              className="py-2 px-3 mx-3 bg-transparent hover:bg-black/20 hover:scale-110 rounded-md transition duration-200">
-              {isDarkMode ? <FaSun className="transition duration-200" /> : <FaMoon className="transition duration-200" />}
+              onClick={() => setSettingsOpen(!settingsOpen)}
+              className="py-2 px-3 mx-3 bg-transparent hover:bg-black/20 hover:scale-110 rounded-md transition duration-200"
+            >
+              <FaCog className="transition duration-200" />
             </button>
           </div>
         </div>
       </div>
+      {settingsOpen && <Settings onClose={() => setSettingsOpen(false)} />}
     </>
   );
 }
