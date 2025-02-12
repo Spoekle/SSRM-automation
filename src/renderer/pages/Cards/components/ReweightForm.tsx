@@ -4,7 +4,7 @@ import axios from 'axios';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { FaTimes } from "react-icons/fa";
-import { generateStarChange } from '../../../main/helper';
+import { generateReweightCard } from '../../../../main/helper';
 
 interface StarRatingFormProps {
   mapId: string;
@@ -83,7 +83,7 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
       localStorage.setItem('oldStarRatings', JSON.stringify(oldStarRatings));
       localStorage.setItem('mapInfo', JSON.stringify(data));
 
-      const image = await generateStarChange(data, oldStarRatings, newStarRatings, chosenDiff as keyof OldStarRatings);
+      const image = await generateReweightCard(data, oldStarRatings, newStarRatings, chosenDiff as keyof OldStarRatings);
       setImageSrc(image);
       createAlerts("Star change image generated successfully.", "success");
       setStarRatingFormModal(false);
@@ -155,87 +155,82 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
       setProgress("Starting map processing...", 30, true);
       const zip = new JSZip();
 
-      const batchSize = 10;
       let processedCount = 0;
-
-      for (let i = 0; i < mapCount; i += batchSize) {
+      for (const map of uploadedMaps) {
         if (cancelGenerationRef.current) {
           createAlerts("Reweight cards generation cancelled by user!", "error");
           setProgress("", 0, false);
           return;
         }
-        const batch = uploadedMaps.slice(i, i + batchSize);
-        const promises = batch.map(async (map) => {
-          let diffKey = '';
-          switch (map.difficulty) {
-            case 1:
-              diffKey = 'ES';
-              break;
-            case 3:
-              diffKey = 'NOR';
-              break;
-            case 5:
-              diffKey = 'HARD';
-              break;
-            case 7:
-              diffKey = 'EXP';
-              break;
-            case 9:
-              diffKey = 'EXP_PLUS';
-              break;
-            default:
-              diffKey = 'ES';
-          }
 
-          const manualOld: OldStarRatings = { ES: '', NOR: '', HARD: '', EXP: '', EXP_PLUS: '' };
-          const manualNew: NewStarRatings = { ES: '', NOR: '', HARD: '', EXP: '', EXP_PLUS: '' };
-          manualOld[diffKey as keyof OldStarRatings] = map.old_stars.toString();
-          manualNew[diffKey as keyof NewStarRatings] = map.new_stars.toString();
+        let diffKey = '';
+        switch (map.difficulty) {
+          case 1:
+            diffKey = 'ES';
+            break;
+          case 3:
+            diffKey = 'NOR';
+            break;
+          case 5:
+            diffKey = 'HARD';
+            break;
+          case 7:
+            diffKey = 'EXP';
+            break;
+          case 9:
+            diffKey = 'EXP_PLUS';
+            break;
+          default:
+            diffKey = 'ES';
+        }
 
-          try {
-            const response = await axios.get(`https://api.beatsaver.com/maps/hash/${map.songHash}`);
-            const mapInfo = response.data;
-            const imageDataUrl = await generateStarChange(
-              mapInfo,
-              manualOld,
-              manualNew,
-              diffKey as keyof OldStarRatings
-            );
-            const base64Data = imageDataUrl.split(",")[1];
-            const byteCharacters = atob(base64Data);
-            const byteNumbers = new Array(byteCharacters.length);
-            for (let j = 0; j < byteCharacters.length; j++) {
-              byteNumbers[j] = byteCharacters.charCodeAt(j);
+        const manualOld: OldStarRatings = { ES: '', NOR: '', HARD: '', EXP: '', EXP_PLUS: '' };
+        const manualNew: NewStarRatings = { ES: '', NOR: '', HARD: '', EXP: '', EXP_PLUS: '' };
+        manualOld[diffKey as keyof OldStarRatings] = map.old_stars.toString();
+        manualNew[diffKey as keyof NewStarRatings] = map.new_stars.toString();
+
+        try {
+          let response;
+          while (true) {
+            try {
+              response = await axios.get(`https://api.beatsaver.com/maps/hash/${map.songHash}`);
+              break;
+            } catch (err: any) {
+              if (err.response && err.response.status === 429) {
+                await new Promise((resolve) => setTimeout(resolve, 1000));
+              } else {
+                throw err;
+              }
             }
-            const byteArray = new Uint8Array(byteNumbers);
-            const sanitizedSongName = map.songName.replace(/[^a-z0-9]/gi, "_").toLowerCase();
-            const fileName = `${sanitizedSongName}-${diffKey}-${mapInfo.id}.png`;
-
-            zip.file(fileName, byteArray, { binary: true });
-          } catch (err) {
-            console.error(`Error processing map with hash ${map.songHash}:`, err);
-          } finally {
-            processedCount++;
-            const percent = Math.floor((processedCount / mapCount) * 100);
-            setProgress(`Processing maps (${processedCount} / ${mapCount})`, percent, true);
           }
-        });
-
-        await Promise.all(promises);
-
-        if (processedCount < mapCount) {
-          let remaining = 3;
-          while (remaining > 0) {
-            createAlerts(`Rate limit ahead. Waiting for ${remaining} seconds...`, "alert");
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            remaining--;
+          const mapInfo = response.data;
+          const imageDataUrl = await generateReweightCard(
+            mapInfo,
+            manualOld,
+            manualNew,
+            diffKey as keyof OldStarRatings
+          );
+          const base64Data = imageDataUrl.split(",")[1];
+          const byteCharacters = atob(base64Data);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let j = 0; j < byteCharacters.length; j++) {
+            byteNumbers[j] = byteCharacters.charCodeAt(j);
           }
-        } 
+          const byteArray = new Uint8Array(byteNumbers);
+          const sanitizedSongName = map.songName.replace(/[^a-z0-9]/gi, "_").toLowerCase();
+          const fileName = `${sanitizedSongName}-${diffKey}-${mapInfo.id}.png`;
+
+          zip.file(fileName, byteArray, { binary: true });
+        } catch (err) {
+          console.error(`Error processing map with hash ${map.songHash}:`, err);
+        } finally {
+          processedCount++;
+          const percent = Math.floor((processedCount / mapCount) * 100);
+          setProgress(`Processing maps (${processedCount} / ${mapCount})`, percent, true);
+        }
       }
 
-      setProgress("Generating ZIP file...", 50, true);
       const zipBlob = await zip.generateAsync({ type: "blob" });
-      createAlerts("Creating zip!", "success");
       saveAs(zipBlob, "reweight_cards.zip");
       setProgress("ZIP file created!", 100, true);
       setTimeout(() => {

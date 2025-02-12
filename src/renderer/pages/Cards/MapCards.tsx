@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import LinearProgress, { linearProgressClasses } from '@mui/material/LinearProgress';
+import LinearProgress from '@mui/material/LinearProgress';
 import { FaDownload } from 'react-icons/fa';
 import CardForm from './components/CardForm';
-import StarRatingForm from './components/StarRatingForm';
+import StarRatingForm from './components/ReweightForm';
 
 interface MapInfo {
   metadata: {

@@ -1,7 +1,5 @@
-import axios from 'axios';
 import MapForm from './components/MapForm';
 import React, { useState, useEffect } from 'react';
-import { FaClipboard } from 'react-icons/fa';
 
 interface MapInfo {
   metadata: {
