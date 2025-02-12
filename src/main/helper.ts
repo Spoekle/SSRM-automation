@@ -184,7 +184,7 @@ export async function generateCard(data: MapInfo, starRatings: StarRating, useBa
   return canvas.toDataURL('image/png' as ExportFormat);
 }
 
-export async function generateStarChange(data: MapInfo, oldStarRatings: OldStarRatings, newStarRatings: NewStarRatings, chosenDiff: keyof OldStarRatings): Promise<string> {
+export async function generateReweightCard(data: MapInfo, oldStarRatings: OldStarRatings, newStarRatings: NewStarRatings, chosenDiff: keyof OldStarRatings): Promise<string> {
   const canvas = new Canvas(800, 270);
   const ctx = canvas.getContext('2d');
 
