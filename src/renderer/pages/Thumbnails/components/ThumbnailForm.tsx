@@ -12,6 +12,9 @@ interface ThumbnailFormProps {
   setImageSrc: (src: string) => void;
   starRatings: StarRatings;
   setStarRatings: (ratings: StarRatings) => void;
+  createAlerts: (message: string, type: 'success' | 'error' | 'alert') => void;
+  progress: (process: string, progress: number, visible: boolean) => void;
+  cancelGenerationRef: React.MutableRefObject<boolean>;
 }
 
 interface StarRatings {
@@ -29,7 +32,9 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
   setMapInfo,
   setImageSrc,
   starRatings,
-  setStarRatings
+  setStarRatings,
+  createAlerts,
+  progress: setProgress,
 }) => {
   const [songName, setSongName] = React.useState('');
   const [chosenDiff, setChosenDiff] = React.useState('ES');
@@ -90,31 +95,76 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
   const getMapInfo = async (event: FormEvent) => {
     event.preventDefault();
     try {
-      // Fetch map info.
-      const { data: mapData } = await axios.get(`https://api.beatsaver.com/maps/id/${mapId}`);
-      setMapInfo(mapData);
-      localStorage.setItem('mapId', mapId);
-      localStorage.setItem('mapInfo', JSON.stringify(mapData));
-
-      // Send image and video to backend to get a processed background image.
-      const response = await axios.post('http://localhost:3000/api/generate-thumbnail', {
-        background,
-        video
-      });
-      const processedBackground = response.data.thumbnail;
-
-      // Use the processed background in the thumbnail generation.
-      const image = await generateThumbnail(
-        mapData,
-        chosenDiff as keyof StarRatings,
-        starRatings,
-        processedBackground,
-      );
-
-      setImageSrc(image);
+      // Start the process.
+      setImageSrc("");
       setThumbnailFormModal(false);
+      createAlerts('Generation Started...', 'alert');
+      setProgress('Fetching map info...', 10, true);
+
+      let mapData;
+      try {
+        const { data } = await axios.get(`https://api.beatsaver.com/maps/id/${mapId}`);
+        mapData = data;
+        setMapInfo(mapData);
+        localStorage.setItem('mapId', mapId);
+        localStorage.setItem('mapInfo', JSON.stringify(mapData));
+        getStarRating(data.versions[0].hash).then(setStarRatings);
+      } catch (error) {
+        console.error('Error fetching map data:', error);
+        createAlerts('Error fetching map info', 'error');
+        return;
+      }
+
+
+      let processedBackground: string;
+
+      if (video || background) {
+        if (video) {
+          setProgress('Waiting on ffmpeg to process the video for a fitting background', 30, true);
+        } else {
+          setProgress('Passing through image', 50, true);
+        }
+        try {
+          const response = await axios.post('http://localhost:3000/api/generate-thumbnail', {
+            background,
+            video,
+          });
+          processedBackground = response.data;
+        } catch (error) {
+          console.error('Error processing background:', error);
+          createAlerts('Error processing background', 'error');
+          return;
+        }
+      } else {
+        createAlerts('No video or image provided, using map cover as background', 'error');
+        setProgress('Generating thumbnail with cover image', 70, true);
+        processedBackground = mapData.versions[0].coverURL;
+      }
+      console.log('Processed background:', processedBackground);
+
+      setProgress('Generating thumbnail', 70, true);
+      let image;
+      try {
+        image = await generateThumbnail(
+          mapData,
+          chosenDiff as keyof StarRatings,
+          starRatings,
+          processedBackground,
+        );
+      } catch (error) {
+        console.error('Error generating thumbnail:', error);
+        createAlerts('Error generating thumbnail', 'error');
+        return;
+      }
+
+      setProgress('Thumbnail generated', 100, true);
+      setImageSrc(image);
+      setTimeout(() => {
+        setProgress("", 0, false);
+      }, 2000);
     } catch (error) {
-      console.error('Error fetching map info or generating thumbnail:', error);
+      console.error('Unhandled error in getMapInfo:', error);
+      createAlerts('An unexpected error occurred', 'error');
     }
   };
 
@@ -164,12 +214,12 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
 
   return ReactDOM.createPortal(
     <div
-      className="modal-overlay fixed inset-0 bg-white/10 backdrop-blur-lg flex justify-center items-center z-50 p-2"
+      className="modal-overlay fixed inset-0 bg-black/20 dark:bg-white/10 backdrop-blur-lg flex justify-center items-center z-50 p-2"
       onClick={handleClickOutside}
     >
       <div className="relative modal-content bg-neutral-200 dark:bg-neutral-900 text-neutral-950 dark:text-neutral-200 p-2 rounded-lg w-full max-w-lg">
         <button
-          className="absolute top-2 right-2 bg-red-500 text-white hover:bg-red-600 rounded-md p-1 transition duration-200 text-sm"
+          className="absolute z-30 top-4 right-4 bg-red-500 text-white hover:bg-red-600 rounded-md p-1 transition duration-200 text-sm"
           onClick={() => setThumbnailFormModal(false)}
         >
           <FaTimes />
@@ -209,7 +259,7 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
                   onDrop={(e) => handleDropWithName(e, setBackground, setBackgroundFilename, setImageLoading)}
                   onClick={() => document.getElementById('imageInput')?.click()}
                 >
-                  <span className="text-sm text-gray-600">
+                  <span className="m-2 text-sm text-gray-600">
                     {backgroundFilename ? backgroundFilename : 'Drag & drop image here or click to select'}
                   </span>
                   <input
@@ -244,7 +294,7 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
                   onDrop={(e) => handleDropWithName(e, setVideo, setVideoFilename, setVideoLoading)}
                   onClick={() => document.getElementById('videoInput')?.click()}
                 >
-                  <span className="text-sm text-gray-600">
+                  <span className="m-2 text-sm text-gray-600">
                     {videoFilename ? videoFilename : 'Drag & drop video here or click to select'}
                   </span>
                   <input
@@ -270,7 +320,9 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
               </div>
             )}
           </div>
-          <div className="flex justify-end">
+          <div className="flex justify-between items-center">
+            <h2 className="text-sm text-neutral-600 font-semibold">Max 5GB</h2>
+
             <button
               type="submit"
               className="w-full md:w-auto bg-blue-500 text-white px-2 py-1 rounded-md hover:bg-blue-600 transition duration-200 text-sm"

@@ -8,7 +8,7 @@ const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: '50mb' }));
+app.use(express.json({ limit: '5000mb' }));
 
 interface ScoreSaberRequest {
   params: {
@@ -88,7 +88,7 @@ app.post('/api/generate-thumbnail', async (req: any, res: any) => {
             timestamps: [randomTime],
             filename: path.basename(tempImagePath),
             folder: path.dirname(tempImagePath),
-            size: '320x240'
+            size: '1920x1080',
           })
           .on('end', () => {
             try {

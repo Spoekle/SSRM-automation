@@ -3,6 +3,7 @@ import LinearProgress from '@mui/material/LinearProgress';
 import { FaDownload } from 'react-icons/fa';
 import CardForm from './components/CardForm';
 import StarRatingForm from './components/ReweightForm';
+import LoadedMap from '../components/LoadedMap';
 
 interface MapInfo {
   metadata: {
@@ -137,21 +138,7 @@ const MapCards: React.FC = () => {
               </button>
             </>
           )}
-          {mapInfo && (
-            <div className='absolute left-0 top-0 mt-4 ml-4 z-10 drop-shadow-lg hover:drop-shadow-lg flex'>
-              <div className='bg-neutral-300 dark:bg-neutral-800 mt-2 p-2 rounded-md hover:scale-110 transition duration-200'>
-                <a href={mapLink} target="_blank" title="Go to BeatSaver map page">
-                  <img className='w-24 h-24 rounded-t-md no-move' src={mapInfo.versions[0].coverURL} alt='Cover' />
-                </a>
-                <button
-                  className='w-24 bg-red-500 hover:bg-red-700 text-white text-sm font-bold py-2 px-4 rounded-b-md transition duration-200'
-                  onClick={() => removeMapInfo()}
-                >
-                  Clear Map Info
-                </button>
-              </div>
-            </div>
-          )}
+          {mapInfo && <LoadedMap mapInfo={mapInfo} />}
         </div>
         {imageSrc && (
           <div className='mt-4 flex justify-center'>
@@ -173,39 +160,39 @@ const MapCards: React.FC = () => {
         ))}
       </div>
 
-        <div className='absolute bottom-0 w-[90vw] items-center justify-center mb-4 z-60'>
-          {progress.visible && (
-            <div className='flex flex-col w-full text-center items-center justify-center bg-neutral-300 dark:bg-neutral-800 p-4 rounded-md drop-shadow-lg animate-fade'>
-              <div className="w-full px-4 relative">
-          <p className='text-lg font-bold mb-2'>{progress.process}</p>
-          <div className='relative'>
-            <LinearProgress
-              sx={{
-                height: 30,
-                backgroundColor: "#171717",
-                "& .MuiLinearProgress-bar": { backgroundColor: "#2563eb" }
-              }}
-              variant="determinate"
-              value={progress.progress}
-              className='w-full rounded-full text-white'
-            />
-            <span className='absolute inset-0 flex items-center justify-center text-white font-bold'>
-              {progress.progress}%
-            </span>
-          </div>
-          <button
-            className='mt-4 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200'
-            onClick={() => {
-              cancelGenerationRef.current = true;
-              setProgress({ process: "", progress: 0, visible: false });
+      <div className='absolute bottom-0 w-[90vw] items-center justify-center mb-4 z-60'>
+        {progress.visible && (
+          <div className='flex flex-col w-full text-center items-center justify-center bg-neutral-300 dark:bg-neutral-800 p-4 rounded-md drop-shadow-lg animate-fade'>
+            <div className="w-full px-4 relative">
+        <p className='text-lg font-bold mb-2'>{progress.process}</p>
+        <div className='relative'>
+          <LinearProgress
+            sx={{
+              height: 30,
+              backgroundColor: "#171717",
+              "& .MuiLinearProgress-bar": { backgroundColor: "#2563eb" }
             }}
-          >
-            Cancel
-          </button>
-              </div>
-            </div>
-          )}
+            variant="determinate"
+            value={progress.progress}
+            className='w-full rounded-full text-white'
+          />
+          <span className='absolute inset-0 flex items-center justify-center text-white font-bold'>
+            {progress.progress}%
+          </span>
         </div>
+        <button
+          className='mt-4 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200'
+          onClick={() => {
+            cancelGenerationRef.current = true;
+            setProgress({ process: "", progress: 0, visible: false });
+          }}
+        >
+          Cancel
+        </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       {cardFormModal && (
         <CardForm

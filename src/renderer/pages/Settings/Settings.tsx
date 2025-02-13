@@ -1,18 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import { FaTimes } from 'react-icons/fa';
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import Switch from '@mui/material/Switch';
+import LinearProgress from '@mui/material/LinearProgress';
+import { FaTimes, FaGithub } from 'react-icons/fa';
 import { ipcRenderer } from 'electron';
+
+export interface SettingsHandles {
+  close: () => void;
+}
 
 interface SettingsProps {
   onClose: () => void;
 }
 
-const Settings: React.FC<SettingsProps> = ({ onClose }) => {
+const Settings = forwardRef<SettingsHandles, SettingsProps>(({ onClose }, ref) => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const savedTheme = localStorage.getItem('theme');
     return savedTheme === 'dark';
   });
   const [ffmpegInstalled, setFfmpegInstalled] = useState<boolean | null>(null);
   const [ffmpegLoading, setFfmpegLoading] = useState(false);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [isOverlayVisible, setIsOverlayVisible] = useState(false);
+  const [installStatus, setInstallStatus] = useState('');
+  const [installProgressPercent, setInstallProgressPercent] = useState<number | null>(null);
 
   useEffect(() => {
     if (isDarkMode) {
@@ -28,15 +38,33 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
     checkFfmpeg();
   }, []);
 
+  useEffect(() => {
+    setIsOverlayVisible(true);
+    setIsPanelOpen(true);
+  }, []);
+
+  useEffect(() => {
+    const listener = (_event: any, progressMessage: string) => {
+      setInstallStatus(progressMessage);
+      const match = progressMessage.match(/(\d+)%/);
+      if (match) {
+        setInstallProgressPercent(parseInt(match[1], 10));
+      } else {
+        setInstallProgressPercent(null);
+      }
+    };
+
+    ipcRenderer.on('ffmpeg-install-progress', listener);
+    return () => {
+      ipcRenderer.removeListener('ffmpeg-install-progress', listener);
+    };
+  }, []);
+
   const checkFfmpeg = async () => {
     try {
       const installed: boolean = await ipcRenderer.invoke('check-ffmpeg');
       setFfmpegInstalled(installed);
-      if (installed) {
-        console.log('ffmpeg detected.');
-      } else {
-        console.log('ffmpeg not detected.');
-      }
+      console.log(installed ? 'ffmpeg detected.' : 'ffmpeg not detected.');
     } catch (error) {
       console.error('Error checking ffmpeg installation:', error);
       setFfmpegInstalled(false);
@@ -45,6 +73,8 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
 
   const handleInstallFfmpeg = async () => {
     setFfmpegLoading(true);
+    setInstallStatus('');
+    setInstallProgressPercent(null);
     try {
       await ipcRenderer.invoke('install-ffmpeg');
       checkFfmpeg();
@@ -57,6 +87,8 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
 
   const handleReinstallFfmpeg = async () => {
     setFfmpegLoading(true);
+    setInstallStatus('');
+    setInstallProgressPercent(null);
     try {
       await ipcRenderer.invoke('reinstall-ffmpeg');
       checkFfmpeg();
@@ -78,101 +110,96 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
     }
   };
 
+  const resetLoadedMap  = () => {
+    if (window.confirm('Are you sure you want to reset loaded map?')) {
+      localStorage.removeItem('mapId');
+      localStorage.removeItem('mapInfo');
+      localStorage.removeItem('starRatings');
+      localStorage.removeItem('oldStarRatings');
+      window.location.reload();
+    }
+  };
+
+  const handleClose = () => {
+    setIsPanelOpen(false);
+    setIsOverlayVisible(false);
+    setTimeout(() => {
+      onClose();
+    }, 300);
+  };
+
+  useImperativeHandle(ref, () => ({
+    close: handleClose,
+  }));
+
   return (
     <div
-      className="fixed top-16 left-0 right-0 bottom-16 z-40"
-      onClick={onClose}
+      className={`fixed top-16 left-0 right-0 bottom-16 z-40 rounded-bl-3xl backdrop-blur-md flex justify-center items-center transition-opacity duration-300 ${
+        isOverlayVisible ? 'opacity-100' : 'opacity-0'
+      } bg-black/20`}
+      onClick={handleClose}
     >
       <div
-        className="absolute right-0 top-0 h-full w-2/3 rounded-l-xl bg-white dark:bg-neutral-800 text-neutral-950 dark:text-white shadow-lg transform transition-transform duration-300 overflow-y-auto"
+        className={`absolute right-0 top-0 h-full w-2/3 rounded-l-xl bg-white dark:bg-neutral-800 text-neutral-950 dark:text-white shadow-lg transform transition-transform duration-300 overflow-y-auto ${
+          isPanelOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
         onClick={(e) => e.stopPropagation()}
+        id="settings-panel"
       >
         <div className="p-4 border-b flex justify-between items-center">
           <h2 className="text-xl font-semibold">Settings</h2>
-          <button className="text-red-500" onClick={onClose}>
+          <button className="text-red-500 bg-neutral-300 dark:bg-neutral-700 p-2 rounded-md hover:scale-105 hover:bg-neutral-400 dark:hover:bg-neutral-600 transition duration-200" onClick={handleClose}>
             <FaTimes />
           </button>
         </div>
         <div className="p-4 space-y-6">
-          <div className="flex items-center justify-between pb-2 border-b">
+          <div className="flex items-center pb-2 border-b">
             <span className="font-medium">Dark Mode</span>
-            <input
-              type="checkbox"
-              checked={isDarkMode}
-              onChange={toggleTheme}
-              className="w-4 h-4"
-            />
+            <Switch checked={isDarkMode} onChange={toggleTheme} color="primary" />
           </div>
-          <div className='flex items-center justify-between'>
-            <div className='flex flex-col items-center'>
-              <button
-                onClick={resetLocalStorage}
-                className="w-full bg-red-500 text-white px-4 py-2 rounded"
-              >
+          <div className="flex mx-8 items-center justify-between">
+            <div className="flex justify-between items-center space-x-4">
+              <button onClick={resetLoadedMap} className="w-full bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition duration-200">
+                Reset Loaded Map
+              </button>
+            </div>
+            <div className="flex justify-between items-center space-x-4">
+              <button onClick={resetLocalStorage} className="w-full bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition duration-200">
                 Reset Local Storage
               </button>
             </div>
-
-          </div>
-
-          <div>
-            <h3 className="font-semibold mb-2">Credits</h3>
-            <ul className="list-disc ml-5 space-y-1">
-              <li>
-                Developed by{' '}
-                <a
-                  href="https://github.com/Spoekle"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-500"
-                >
-                  Spoekle
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://github.com/spoekle/SSRM-automation"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-500"
-                >
-                  GitHub Repo
-                </a>
-              </li>
-            </ul>
           </div>
         </div>
-        <div className='absolute bottom-4 right-4 flex flex-col items-center'>
-          {ffmpegLoading && <p>Installing...</p>}
-          {ffmpegInstalled === null && !ffmpegLoading && (
-            <p>Checking ffmpeg installation status...</p>
+        <div className="absolute bottom-4 flex flex-col justify-center items-center space-y-2 w-full px-8">
+          {ffmpegLoading && (
+            <div className="w-full">
+              <LinearProgress
+                variant={installProgressPercent !== null ? 'determinate' : 'indeterminate'}
+                value={installProgressPercent || 0}
+              />
+              <p className="text-center text-sm mt-1">{installStatus}</p>
+            </div>
           )}
-          {ffmpegInstalled === true && !ffmpegLoading && (
-            <div>
-              <button
-                onClick={handleReinstallFfmpeg}
-                className="w-full bg-blue-500 text-white px-4 py-2 rounded mt-2"
-              >
+          {!ffmpegLoading && ffmpegInstalled === true && (
+            <div className="w-full text-center">
+              <button onClick={handleReinstallFfmpeg} className="w-full bg-blue-500 text-white px-4 py-2 rounded mt-2">
                 Reinstall ffmpeg
               </button>
               <p>ffmpeg is installed.</p>
             </div>
           )}
-          {ffmpegInstalled === false && !ffmpegLoading && (
-            <>
-              <button
-                onClick={handleInstallFfmpeg}
-                className="w-full bg-green-500 text-white px-4 py-2 rounded"
-              >
+          {!ffmpegLoading && ffmpegInstalled === false && (
+            <div className="w-full text-center">
+              <button onClick={handleInstallFfmpeg} className="w-full bg-green-500 text-white px-4 py-2 rounded">
                 Install ffmpeg
               </button>
               <p>ffmpeg is not installed.</p>
-            </>
+            </div>
           )}
         </div>
       </div>
     </div>
   );
-};
+});
 
 export default Settings;

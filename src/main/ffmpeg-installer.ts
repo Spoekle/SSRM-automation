@@ -1,34 +1,66 @@
-import { exec } from 'child_process';
+import { spawn } from 'child_process';
 import os from 'os';
 
-export function installFfmpeg(): Promise<void> {
+export function installFfmpeg(progressCallback?: (msg: string) => void): Promise<void> {
   return new Promise((resolve, reject) => {
     const platform = os.platform();
-    let installCommand: string;
+    let command: string;
+    let args: string[];
+    let platformName: string;
 
-    if (platform === 'darwin') {
-      // macOS - using brew
-      installCommand = 'brew install ffmpeg';
-    } else if (platform === 'linux') {
-      // Linux - using apt-get (Debian/Ubuntu)
-      installCommand = 'sudo apt-get update && sudo apt-get install -y ffmpeg';
-    } else if (platform === 'win32') {
-      // Windows - using Chocolatey
-      installCommand = 'choco install ffmpeg -y';
-    } else {
-      return reject(new Error(`Unsupported platform: ${platform}`));
+    switch (platform) {
+      case 'darwin':
+        platformName = 'MacOS';
+        command = 'brew';
+        args = ['install', 'ffmpeg'];
+        break;
+      case 'linux':
+        platformName = 'Linux';
+        command = 'bash';
+        args = ['-c', 'sudo apt-get update && sudo apt-get install -y ffmpeg'];
+        break;
+      case 'win32':
+        platformName = 'Windows';
+        command = 'powershell';
+        args = [
+          '-Command',
+          `if (!(Get-Command choco -ErrorAction SilentlyContinue)) {
+             Write-Output 'Chocolatey not found. Installing Chocolatey...';
+             Set-ExecutionPolicy Bypass -Scope Process -Force;
+             [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072;
+             iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+           }; Start-Process choco -ArgumentList 'install ffmpeg -y' -Verb runAs`
+        ];
+        break;
+      default:
+        return reject(new Error(`Unsupported platform: ${platform}`));
     }
 
-    console.log(`Detected OS: ${platform}. Running command: ${installCommand}`);
-    exec(installCommand, (error, stdout, stderr) => {
-      if (error) {
-        console.error(`Error while installing ffmpeg: ${error.message}`);
-        console.error(`stderr: ${stderr}`);
-        return reject(error);
+    progressCallback && progressCallback(`Detected OS: ${platformName}. Starting installation...`);
+
+    const child = spawn(command, args, { shell: true });
+
+    child.stdout.on('data', (data: Buffer) => {
+      progressCallback && progressCallback(data.toString());
+    });
+
+    child.stderr.on('data', (data: Buffer) => {
+      progressCallback && progressCallback(data.toString());
+    });
+
+    child.on('error', (error) => {
+      progressCallback && progressCallback(`Error while installing: ${error.message}`);
+      reject(error);
+    });
+
+    child.on('close', (code) => {
+      if (code === 0) {
+        progressCallback && progressCallback('ffmpeg installation completed successfully.');
+        resolve();
+      } else {
+        progressCallback && progressCallback(`ffmpeg installation failed with exit code ${code}.`);
+        reject(new Error(`Installation failed with exit code ${code}`));
       }
-      console.log(`stdout: ${stdout}`);
-      console.log('ffmpeg installation completed successfully.');
-      resolve();
     });
   });
 }

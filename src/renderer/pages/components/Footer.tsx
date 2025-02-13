@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { FaGithub, FaCog } from 'react-icons/fa';
 import axios from 'axios';
-import Settings from '../Settings/Settings';
+import Settings, { SettingsHandles } from '../Settings/Settings';
 
 function Footer() {
   const { ipcRenderer } = window.require('electron');
@@ -10,6 +10,8 @@ function Footer() {
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
   const [updateProgress, setUpdateProgress] = useState<string>('');
   const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
+
+  const settingsRef = useRef<SettingsHandles>(null);
 
   const updateApplication = async () => {
     try {
@@ -31,7 +33,9 @@ function Footer() {
   useEffect(() => {
     const getLatestVersion = async () => {
       try {
-        const response = await axios.get('https://api.github.com/repos/Spoekle/SSRM-automation/releases/latest');
+        const response = await axios.get(
+          'https://api.github.com/repos/Spoekle/SSRM-automation/releases/latest'
+        );
         const data = response.data;
         setLatestVersion(data.tag_name.replace(/^v/, ''));
       } catch (error) {
@@ -41,19 +45,26 @@ function Footer() {
     getLatestVersion();
   }, []);
 
+  const handleCogClick = () => {
+    if (settingsOpen) {
+      settingsRef.current?.close();
+    } else {
+      setSettingsOpen(true);
+    }
+  };
+
   return (
     <>
       {isUpdating && (
-        <div
-          className="absolute animate-pulse bottom-16 left-1/2 w-full transform -translate-x-1/2 z-50 bg-blue-500 text-white p-4 shadow-md text-center"
-        >
+        <div className="absolute animate-pulse bottom-16 left-1/2 w-full transform -translate-x-1/2 z-50 bg-blue-500 text-white p-4 shadow-md text-center">
           <p className="text-lg font-bold">{updateProgress}</p>
         </div>
       )}
-      <div className='no-move items-center justify-items-center bg-neutral-200 dark:bg-neutral-900 text-neutral-950 dark:text-neutral-200 rounded-b-3xl drop-shadow-xl'>
-        <div className='flex justify-between items-center p-4'>
+      <div className="no-move items-center justify-items-center bg-neutral-200 dark:bg-neutral-900 text-neutral-950 dark:text-neutral-200 rounded-b-3xl drop-shadow-xl">
+        <div className="flex justify-between items-center p-4">
           <div className="flex text-center justify-between relative">
-            {parseFloat(latestVersion.replace(/\./g, '')) > parseFloat(appVersion.replace(/\./g, '')) && (
+            {parseFloat(latestVersion.replace(/\./g, '')) >
+              parseFloat(appVersion.replace(/\./g, '')) && (
               <div className="z-20 rainbow-shadow relative rounded-md bg-neutral-200 dark:bg-neutral-900">
                 <button
                   onClick={updateApplication}
@@ -64,9 +75,9 @@ function Footer() {
               </div>
             )}
           </div>
-          <div className='flex text-center justify-between'>
+          <div className="flex text-center justify-between">
             <button
-              onClick={() => setSettingsOpen(!settingsOpen)}
+              onClick={handleCogClick}
               className="py-2 px-3 mx-3 bg-transparent hover:bg-black/20 hover:scale-110 rounded-md transition duration-200"
             >
               <FaCog className="transition duration-200" />
@@ -74,7 +85,14 @@ function Footer() {
           </div>
         </div>
       </div>
-      {settingsOpen && <Settings onClose={() => setSettingsOpen(false)} />}
+      {settingsOpen && (
+        <Settings
+          ref={settingsRef}
+          onClose={() => {
+            setSettingsOpen(false);
+          }}
+        />
+      )}
     </>
   );
 }

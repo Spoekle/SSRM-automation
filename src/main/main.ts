@@ -86,13 +86,17 @@ const createMainWindow = async () => {
     });
   });
 
-  ipcMain.handle('install-ffmpeg', async () => {
-    await installFfmpeg();
+  ipcMain.handle('install-ffmpeg', async (event) => {
+    await installFfmpeg((progress) => {
+      event.sender.send('ffmpeg-install-progress', progress);
+    });
     return true;
   });
 
-  ipcMain.handle('reinstall-ffmpeg', async () => {
-    await installFfmpeg();
+  ipcMain.handle('reinstall-ffmpeg', async (event) => {
+    await installFfmpeg((progress) => {
+      event.sender.send('ffmpeg-install-progress', progress);
+    });
     return true;
   });
 

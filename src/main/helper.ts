@@ -41,10 +41,15 @@ export interface OldStarRatings {
   EXP_PLUS: string;
 }
 
-async function loadImage(url: string): Promise<Image> {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error('Failed to fetch image');
-  const buffer = Buffer.from(await response.arrayBuffer());
+async function loadImage(urlOrBuffer: string | ArrayBuffer): Promise<Image> {
+  let buffer;
+  if (typeof urlOrBuffer === 'string') {
+    const response = await fetch(urlOrBuffer);
+    if (!response.ok) throw new Error('Failed to fetch image');
+    buffer = Buffer.from(await response.arrayBuffer());
+  } else {
+    buffer = Buffer.from(urlOrBuffer);
+  }
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => resolve(img);
@@ -327,7 +332,7 @@ export async function generateReweightCard(data: MapInfo, oldStarRatings: OldSta
   return canvas.toDataURL('image/png' as ExportFormat);
 }
 
-export async function generateThumbnail(data: MapInfo, chosenDiff: keyof StarRating, starRatings: StarRating, background: string | ArrayBuffer | null): Promise<string> {
+export async function generateThumbnail(data: MapInfo, chosenDiff: keyof StarRating, starRatings: StarRating, processedBackground: string | ArrayBuffer | null): Promise<string> {
   const canvas = new Canvas(1920, 1080);
   const ctx = canvas.getContext('2d');
 
@@ -338,8 +343,26 @@ export async function generateThumbnail(data: MapInfo, chosenDiff: keyof StarRat
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, 1920, 1080);
 
+  console.log('Before loading cover image');
   const img = await loadImage(data.versions[0].coverURL);
-  const backgroundImg = background ? await loadImage(background as string) : null;
+  console.log('Cover image loaded');
+
+  console.log('Before loading background image');
+  let backgroundImg: Image | null = null;
+  if (
+    processedBackground &&
+    typeof processedBackground === 'object' &&
+    'thumbnail' in processedBackground &&
+    typeof (processedBackground as any).thumbnail === 'string'
+  ) {
+    try {
+      backgroundImg = await loadImage((processedBackground as any).thumbnail);
+    } catch (error) {
+      console.error('Failed to load background image from thumbnail, using cover image instead', error);
+    }
+  } else {
+    console.log('Skipping background image loading');
+  }
 
   ctx.save();
   ctx.beginPath();

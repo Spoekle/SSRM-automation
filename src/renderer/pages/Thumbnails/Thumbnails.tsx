@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FaDownload } from 'react-icons/fa';
+import LinearProgress from '@mui/material/LinearProgress';
 import ThumbnailForm from './components/ThumbnailForm';
 import ThumbnailPreview from './components/ThumbnailPreview';
+import LoadedMap from '../components/LoadedMap';
 
 interface MapInfo {
   metadata: {
@@ -9,9 +11,13 @@ interface MapInfo {
     songName: string;
     songSubName: string;
     levelAuthorName: string;
+    duration: number;
+    bpm: number;
   };
+  id: string;
   versions: {
     coverURL: string;
+    hash: string;
   }[];
 }
 
@@ -30,14 +36,22 @@ interface Alert {
   type: 'success' | 'error' | 'alert';
 }
 
+interface Progress {
+  process: string;
+  progress: number;
+  visible: boolean;
+}
+
 const Thumbnails: React.FC = () => {
   const [mapId, setMapId] = useState<string>('');
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [progress, setProgress] = useState<Progress>({process: "", progress: 0, visible: false });
   const [mapInfo, setMapInfo] = useState<MapInfo | null>(null);
   const [starRatings, setStarRatings] = useState<StarRatings>({ ES: "", NOR: "", HARD: "", EXP: "", EXP_PLUS: "" });
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [thumbnailFormModal, setThumbnailFormModal] = useState<boolean>(false);
   const [thumbnailPreviewModal, setThumbnailPreviewModal] = useState<boolean>(false);
+  const cancelGenerationRef = useRef(false);
 
   useEffect(() => {
     const storedMapId = localStorage.getItem('mapId');
@@ -115,21 +129,7 @@ const Thumbnails: React.FC = () => {
               </button>
             </>
           )}
-          {mapInfo && (
-            <div className='absolute left-0 top-0 mt-4 ml-4 z-10 drop-shadow-lg hover:drop-shadow-lg flex'>
-              <div className='bg-neutral-300 dark:bg-neutral-800 mt-2 p-2 rounded-md hover:scale-110 transition duration-200'>
-                <a href={mapLink} target="_blank" title="Go to BeatSaver map page">
-                  <img className='w-24 h-24 rounded-t-md no-move' src={mapInfo.versions[0].coverURL} alt='Cover' />
-                </a>
-                <button
-                  className='w-24 bg-red-500 hover:bg-red-700 text-white text-sm font-bold py-2 px-4 rounded-b-md transition duration-200'
-                  onClick={() => removeMapInfo()}
-                >
-                  Clear Map Info
-                </button>
-              </div>
-            </div>
-          )}
+          {mapInfo && <LoadedMap mapInfo={mapInfo} />}
         </div>
         {imageSrc && (
           <div className='mt-4 flex justify-center'>
@@ -150,6 +150,41 @@ const Thumbnails: React.FC = () => {
           </div>
         ))}
       </div>
+
+      <div className='absolute bottom-0 w-[90vw] items-center justify-center mb-4 z-60 shadow-lg'>
+        {progress.visible && (
+          <div className='flex flex-col w-full text-center items-center justify-center bg-neutral-300 dark:bg-neutral-800 p-4 rounded-md drop-shadow-lg animate-fade'>
+            <div className="w-full px-4 relative">
+        <p className='text-lg font-bold mb-2'>{progress.process}</p>
+        <div className='relative'>
+          <LinearProgress
+            sx={{
+              height: 30,
+              backgroundColor: "#171717",
+              "& .MuiLinearProgress-bar": { backgroundColor: "#2563eb" }
+            }}
+            variant="determinate"
+            value={progress.progress}
+            className='w-full rounded-full text-white'
+          />
+          <span className='absolute inset-0 flex items-center justify-center text-white font-bold'>
+            {progress.progress}%
+          </span>
+        </div>
+        <button
+          className='mt-4 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200'
+          onClick={() => {
+            cancelGenerationRef.current = true;
+            setProgress({ process: "", progress: 0, visible: false });
+          }}
+        >
+          Cancel
+        </button>
+            </div>
+          </div>
+        )}
+      </div>
+
       {thumbnailFormModal && (
         <ThumbnailForm
           mapId={mapId}
@@ -159,6 +194,9 @@ const Thumbnails: React.FC = () => {
           setImageSrc={setImageSrc}
           starRatings={starRatings}
           setStarRatings={setStarRatings}
+          createAlerts={createAlerts}
+          progress={(process: string, progress: number, visible: boolean) => setProgress({ process, progress, visible })}
+          cancelGenerationRef={cancelGenerationRef}
         />
       )}
       {thumbnailPreviewModal && (

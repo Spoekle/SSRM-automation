@@ -1,5 +1,6 @@
 import MapForm from './components/MapForm';
 import React, { useState, useEffect } from 'react';
+import LoadedMap from '../components/LoadedMap';
 
 interface MapInfo {
   metadata: {
@@ -7,9 +8,13 @@ interface MapInfo {
     songName: string;
     songSubName: string;
     levelAuthorName: string;
+    duration: number;
+    bpm: number;
   };
+  id: string;
   versions: {
     coverURL: string;
+    hash: string;
   }[];
 }
 
@@ -81,21 +86,7 @@ const Titles: React.FC = () => {
           >
             Open Map Form
           </button>
-          {mapInfo && (
-            <div className='absolute left-0 top-0 mt-4 ml-4 z-10 drop-shadow-lg hover:drop-shadow-lg flex'>
-              <div className='bg-neutral-300 dark:bg-neutral-800 mt-2 p-2 rounded-md hover:scale-110 transition duration-200'>
-                <a href={mapLink} target="_blank" title="Go to BeatSaver map page">
-                  <img className='w-24 h-24 rounded-t-md no-move' src={mapInfo.versions[0].coverURL} alt='Cover' />
-                </a>
-                <button
-                  className='w-24 bg-red-500 hover:bg-red-700 text-white text-sm font-bold py-2 px-4 rounded-b-md transition duration-200'
-                  onClick={() => removeMapInfo()}
-                >
-                  Clear Map Info
-                </button>
-              </div>
-            </div>
-          )}
+          {mapInfo && <LoadedMap mapInfo={mapInfo} />}
         </div>
 
         {mapInfo && (
