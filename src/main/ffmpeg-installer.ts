@@ -26,7 +26,12 @@ export function installFfmpeg(progressCallback?: (msg: string) => void): Promise
           '-NoProfile',
           '-ExecutionPolicy', 'Bypass',
           '-Command',
-          "if (!(Get-Command choco -ErrorAction SilentlyContinue)) { Write-Output 'Chocolatey not found. Installing Chocolatey...'; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1')) }; choco install ffmpeg -y"
+          "if (!(Get-Command choco -ErrorAction SilentlyContinue)) {" +
+            " Write-Output 'Chocolatey not found. Installing Chocolatey...'; " +
+            " Set-ExecutionPolicy Bypass -Scope Process -Force; " +
+            " [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; " +
+            " iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))" +
+          "}; Start-Process choco -ArgumentList 'install ffmpeg -y' -Verb runAs -Wait"
         ];
         break;
       default:
