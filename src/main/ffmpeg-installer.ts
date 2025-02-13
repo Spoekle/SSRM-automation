@@ -26,7 +26,7 @@ export function installFfmpeg(progressCallback?: (msg: string) => void): Promise
           '-NoProfile',
           '-ExecutionPolicy', 'Bypass',
           '-Command',
-          "Start-Process powershell -Verb runAs -Wait -ArgumentList '-NoProfile -ExecutionPolicy Bypass -Command \"Set-ExecutionPolicy Bypass -Scope Process -Force; " +
+          "Start-Process powershell -Verb runAs -NoExit -Wait -ArgumentList '-NoProfile -NoExit -ExecutionPolicy Bypass -Command \"Set-ExecutionPolicy Bypass -Scope Process -Force; " +
           "[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; " +
           "if (-Not (Get-Command choco -ErrorAction SilentlyContinue)) { " +
             "iex ((New-Object System.Net.WebClient).DownloadString(\\\"https://community.chocolatey.org/install.ps1\\\")) " +
