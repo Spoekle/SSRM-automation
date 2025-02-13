@@ -26,18 +26,13 @@ export function installFfmpeg(progressCallback?: (msg: string) => void): Promise
           '-NoProfile',
           '-ExecutionPolicy', 'Bypass',
           '-Command',
-          
-          "if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)) {" +
-            "Start-Process powershell -Verb runAs -Wait -ArgumentList '-NoProfile -ExecutionPolicy Bypass -Command \"Set-ExecutionPolicy Bypass -Scope Process -Force; " +
-            "[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; " +
-            "if (-Not (Get-Command choco -ErrorAction SilentlyContinue)) { " +
-              "iex ((New-Object System.Net.WebClient).DownloadString(\\\"https://community.chocolatey.org/install.ps1\\\")) " +
-            "}; choco install ffmpeg -y\"'; exit } else {" +
-            "Set-ExecutionPolicy Bypass -Scope Process -Force; " +
-            "[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; " +
-            "if (-Not (Get-Command choco -ErrorAction SilentlyContinue)) { " +
-              "iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1')) " +
-            "}; choco install ffmpeg -y }"
+          "Start-Process powershell -Verb runAs -Wait -ArgumentList '-NoProfile -ExecutionPolicy Bypass -Command \"Set-ExecutionPolicy Bypass -Scope Process -Force; " +
+          "[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; " +
+          "if (-Not (Get-Command choco -ErrorAction SilentlyContinue)) { " +
+            "iex ((New-Object System.Net.WebClient).DownloadString(\\\"https://community.chocolatey.org/install.ps1\\\")) " +
+          "}; choco install ffmpeg -y; " +
+          "Write-Output \\\"Installation finished. Press Enter to exit.\\\"; " +
+          "Read-Host -Prompt \\\"Press Enter to exit\\\"\"'"
         ];
         break;
       default:
