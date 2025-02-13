@@ -19,22 +19,21 @@ export function installFfmpeg(progressCallback?: (msg: string) => void): Promise
         command = 'bash';
         args = ['-c', 'sudo apt-get update && sudo apt-get install -y ffmpeg'];
         break;
-        case 'win32':
-          platformName = 'Windows';
-          command = 'powershell';
-          args = [
-            '-NoProfile',
-            '-ExecutionPolicy', 'Bypass',
-            '-Command',
-            "Start-Process powershell -Verb runAs -Wait -ArgumentList '-NoProfile -ExecutionPolicy Bypass -Command \"Set-ExecutionPolicy AllSigned; " +
-            "[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; " +
-            "if (-Not (Get-Command choco -ErrorAction SilentlyContinue)) { " +
-              "iex ((New-Object System.Net.WebClient).DownloadString(\\\"https://community.chocolatey.org/install.ps1\\\")) " +
-            "}; choco install ffmpeg -y; " +
-            "Write-Output \\\"Installation finished. Press Enter to exit.\\\"; " +
-            "Read-Host -Prompt \\\"Press Enter to exit\\\"\"'"
-          ];
-          break;
+      case 'win32':
+        platformName = 'Windows';
+        command = 'powershell';
+        args = [
+          '-NoProfile',
+          '-Command',
+          "Start-Process powershell -Verb runAs -Wait -ArgumentList '-NoProfile -Command \"Set-ExecutionPolicy AllSigned -Force; " +
+          "[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; " +
+          "if (-Not (Get-Command choco -ErrorAction SilentlyContinue)) { " +
+            "iex ((New-Object System.Net.WebClient).DownloadString(\\\"https://community.chocolatey.org/install.ps1\\\")) " +
+          "}; choco install ffmpeg -y; " +
+          "Write-Output \\\"Installation finished. Press Enter to exit.\\\"; " +
+          "Read-Host -Prompt \\\"Press Enter to exit\\\"\"'"
+        ];
+        break;
       default:
         return reject(new Error(`Unsupported platform: ${platform}`));
     }
