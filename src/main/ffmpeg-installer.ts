@@ -26,9 +26,10 @@ export function installFfmpeg(progressCallback?: (msg: string) => void): Promise
           '-NoProfile',
           '-ExecutionPolicy', 'Bypass',
           '-Command',
-          "Set-ExecutionPolicy Bypass -Scope Process -Force; " +
-          "[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; " +
-          "if (!(Get-Command choco -ErrorAction SilentlyContinue)) { " +
+          "$env:ChocolateyInstall='C:\\ProgramData\\chocolatey'; " +
+          "if (-Not (Test-Path $env:ChocolateyInstall)) { " +
+            "Set-ExecutionPolicy Bypass -Scope Process -Force; " +
+            "[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; " +
             "iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1')); " +
           "}; " +
           "choco install ffmpeg -y"
