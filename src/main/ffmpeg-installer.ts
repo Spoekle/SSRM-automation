@@ -24,14 +24,15 @@ export function installFfmpeg(progressCallback?: (msg: string) => void): Promise
         command = 'powershell';
         args = [
           '-NoProfile',
+          '-ExecutionPolicy', 'Bypass',
           '-Command',
-          "Start-Process powershell -Verb runAs -Wait -ArgumentList '-NoProfile -Command \"Set-ExecutionPolicy AllSigned -Force; " +
+          "Start-Process powershell -Verb runAs -NoExit -Wait -ArgumentList '-NoProfile -ExecutionPolicy Bypass -NoExit -Command \"Set-ExecutionPolicy Bypass -Scope Process -Force; " +
           "[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; " +
           "if (-Not (Get-Command choco -ErrorAction SilentlyContinue)) { " +
-            "iex ((New-Object System.Net.WebClient).DownloadString(\\\"https://community.chocolatey.org/install.ps1\\\")) " +
+            "iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1')) " +
           "}; choco install ffmpeg -y; " +
-          "Write-Output \\\"Installation finished. Press Enter to exit.\\\"; " +
-          "Read-Host -Prompt \\\"Press Enter to exit\\\"\"'"
+          "Write-Output ''Installation finished. Press Enter to exit.''; " +
+          "Read-Host -Prompt ''Press Enter to exit''\"'"
         ];
         break;
       default:
