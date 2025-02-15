@@ -214,8 +214,8 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
 
   return ReactDOM.createPortal(
     <div
-      className="modal-overlay fixed inset-0 bg-black/20 dark:bg-white/10 backdrop-blur-lg flex justify-center items-center z-50 p-2"
-      onClick={handleClickOutside}
+      className="modal-overlay fixed inset-0 bg-black/20 dark:bg-white/10 backdrop-blur-xl rounded-3xl flex justify-center items-center z-50 p-2"
+      onMouseDown={handleClickOutside}
     >
       <div className="relative modal-content bg-neutral-200 dark:bg-neutral-900 text-neutral-950 dark:text-neutral-200 p-2 rounded-lg w-full max-w-lg">
         <button
