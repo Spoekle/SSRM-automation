@@ -5,7 +5,6 @@ import Thumbnails from './pages/Thumbnails/Thumbnails';
 import MapCards from './pages/Cards/MapCards';
 import Navbar from './pages/components/Navbar';
 import Footer from './pages/components/Footer';
-import Settings from './pages/Settings/Settings';
 import './App.css';
 
 const AppContent: React.FC = () => {
