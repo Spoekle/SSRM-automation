@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { FaGithub, FaCog } from 'react-icons/fa';
+import { FaCog } from 'react-icons/fa';
 import axios from 'axios';
 import Settings, { SettingsHandles } from '../Settings/Settings';
 
@@ -88,6 +88,7 @@ function Footer() {
       {settingsOpen && (
         <Settings
           ref={settingsRef}
+          appVersion={appVersion}
           onClose={() => {
             setSettingsOpen(false);
           }}
