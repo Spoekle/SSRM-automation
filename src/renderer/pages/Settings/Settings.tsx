@@ -77,11 +77,11 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(({ onClose }, ref) =
     setInstallProgressPercent(null);
     try {
       await ipcRenderer.invoke('install-ffmpeg');
-      checkFfmpeg();
     } catch (err) {
       console.error('Error installing ffmpeg:', err);
     } finally {
       setFfmpegLoading(false);
+      checkFfmpeg();
     }
   };
 
@@ -91,11 +91,11 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(({ onClose }, ref) =
     setInstallProgressPercent(null);
     try {
       await ipcRenderer.invoke('reinstall-ffmpeg');
-      checkFfmpeg();
     } catch (err) {
       console.error('Error reinstalling ffmpeg:', err);
     } finally {
       setFfmpegLoading(false);
+      checkFfmpeg();
     }
   };
 
