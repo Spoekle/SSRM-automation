@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import axios from 'axios';
 import Switch from '@mui/material/Switch';
 import { FaTimes } from 'react-icons/fa';
-import { generateCard } from '../../../main/helper';
+import { generateCard } from '../../../../main/helper';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 
@@ -149,7 +149,7 @@ const CardForm: React.FC<CardFormProps> = ({
     }[];
   }
 
-  const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     cancelGenerationRef.current = false;
     const file = event.target.files?.[0];
     if (!file) return;
@@ -163,14 +163,17 @@ const CardForm: React.FC<CardFormProps> = ({
       setProgress("Parsing JSON...", 20, true);
 
       const uploadedMaps: UploadedMap[] = JSON.parse(text);
-
-      const groupedMaps: { [key: string]: UploadedMap[] } = uploadedMaps.reduce((acc, map) => {
-        if (!acc[map.songHash]) {
-          acc[map.songHash] = [];
-        }
-        acc[map.songHash].push(map);
-        return acc;
-      }, {} as { [key: string]: UploadedMap[] });
+      // Group by songHash
+      const groupedMaps: { [key: string]: UploadedMap[] } = uploadedMaps.reduce(
+        (acc, map) => {
+          if (!acc[map.songHash]) {
+            acc[map.songHash] = [];
+          }
+          acc[map.songHash].push(map);
+          return acc;
+        },
+        {} as { [key: string]: UploadedMap[] }
+      );
 
       setProgress("Starting map processing...", 30, true);
 
@@ -178,95 +181,94 @@ const CardForm: React.FC<CardFormProps> = ({
       const songHashes = Object.keys(groupedMaps);
       const totalHashes = songHashes.length;
       let processedCount = 0;
-      const batchSize = 10;
 
-      for (let i = 0; i < songHashes.length; i += batchSize) {
+      for (const songHash of songHashes) {
         if (cancelGenerationRef.current) {
           createAlerts("Card generation cancelled by user!", "error");
+          setProgress("", 0, false);
           return;
         }
-        const batch = songHashes.slice(i, i + batchSize);
-        const promises = batch.map(async (songHash) => {
-          const combinedStarRatings: StarRatings = {
-            ES: '',
-            NOR: '',
-            HARD: '',
-            EXP: '',
-            EXP_PLUS: '',
-          };
 
-          groupedMaps[songHash].forEach((map) => {
-            switch (map.difficulty) {
-              case 1:
-                combinedStarRatings.ES = map.stars.toString();
-                break;
-              case 3:
-                combinedStarRatings.NOR = map.stars.toString();
-                break;
-              case 5:
-                combinedStarRatings.HARD = map.stars.toString();
-                break;
-              case 7:
-                combinedStarRatings.EXP = map.stars.toString();
-                break;
-              case 9:
-                combinedStarRatings.EXP_PLUS = map.stars.toString();
-                break;
-              default:
-                break;
-            }
-          });
+        // Combine star ratings for all maps with the same songHash
+        const combinedStarRatings: StarRatings = {
+          ES: '',
+          NOR: '',
+          HARD: '',
+          EXP: '',
+          EXP_PLUS: '',
+        };
 
-          try {
-            const response = await axios.get<MapInfo>(`https://api.beatsaver.com/maps/hash/${songHash}`);
-            const mapInfo = response.data;
-            const imageDataUrl = await generateCard(mapInfo, combinedStarRatings, useBackground);
-            const base64Data = imageDataUrl.split(',')[1];
-            const byteCharacters = atob(base64Data);
-            const byteNumbers = new Array(byteCharacters.length);
-            for (let j = 0; j < byteCharacters.length; j++) {
-              byteNumbers[j] = byteCharacters.charCodeAt(j);
-            }
-            const byteArray = new Uint8Array(byteNumbers);
-            const sanitizedSongName = mapInfo.metadata.songName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-            const fileName = `${sanitizedSongName}-${mapInfo.id}.png`;
-
-            zip.file(fileName, byteArray, { binary: true });
-          } catch (error: any) {
-            console.error(`Error processing map with hash ${songHash}:`, error);
-          } finally {
-            processedCount++;
-            const percent = Math.floor((processedCount / totalHashes) * 100);
-            setProgress(`Processing maps (${processedCount} / ${totalHashes})`, percent, true);
+        groupedMaps[songHash].forEach((map) => {
+          switch (map.difficulty) {
+            case 1:
+              combinedStarRatings.ES = map.stars.toString();
+              break;
+            case 3:
+              combinedStarRatings.NOR = map.stars.toString();
+              break;
+            case 5:
+              combinedStarRatings.HARD = map.stars.toString();
+              break;
+            case 7:
+              combinedStarRatings.EXP = map.stars.toString();
+              break;
+            case 9:
+              combinedStarRatings.EXP_PLUS = map.stars.toString();
+              break;
+            default:
+              break;
           }
         });
 
-        await Promise.all(promises);
-
-        if (processedCount < totalHashes) {
-          let remaining = 3;
-          while (remaining > 0) {
-            createAlerts(`Rate limit ahead. Waiting for ${remaining} seconds...`, "alert");
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            remaining--;
+        try {
+          let response;
+          while (true) {
+            try {
+              response = await axios.get<MapInfo>(
+                `https://api.beatsaver.com/maps/hash/${songHash}`
+              );
+              break;
+            } catch (err: any) {
+              if (err.response && err.response.status === 429) {
+                await new Promise((resolve) => setTimeout(resolve, 2000));
+              } else {
+                throw err;
+              }
+            }
           }
+          const mapInfo = response.data;
+          const imageDataUrl = await generateCard(mapInfo, combinedStarRatings, useBackground);
+          const base64Data = imageDataUrl.split(",")[1];
+          const byteCharacters = atob(base64Data);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let j = 0; j < byteCharacters.length; j++) {
+            byteNumbers[j] = byteCharacters.charCodeAt(j);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          const sanitizedSongName = mapInfo.metadata.songName.replace(/[^a-z0-9]/gi, "_").toLowerCase();
+          const fileName = `${sanitizedSongName}-${mapInfo.id}.png`;
+
+          zip.file(fileName, byteArray, { binary: true });
+        } catch (error: any) {
+          console.error(`Error processing map with hash ${songHash}:`, error);
+        } finally {
+          processedCount++;
+          const percent = Math.floor((processedCount / totalHashes) * 100);
+          setProgress(`Processing maps (${processedCount} / ${totalHashes})`, percent, true);
         }
       }
 
-      setProgress("Generating ZIP file...", 80, true);
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
-
-      createAlerts(`Creating zip!`, 'success');
-      saveAs(zipBlob, 'map_cards.zip');
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      saveAs(zipBlob, "map_cards.zip");
       setProgress("ZIP file created!", 100, true);
       setTimeout(() => {
         setProgress("", 0, false);
       }, 2000);
     } catch (error: any) {
-      console.error('Error processing uploaded JSON:', error);
+      console.error("Error processing uploaded JSON:", error);
       createAlerts(
-        `Failed to process the uploaded JSON file. Please ensure it is correctly formatted.`,
-        'error'
+        "Failed to process the uploaded JSON file. Please ensure it is correctly formatted.",
+        "error"
       );
       setProgress("", 0, false);
     }
@@ -274,8 +276,8 @@ const CardForm: React.FC<CardFormProps> = ({
 
   return ReactDOM.createPortal(
     <div
-      className="modal-overlay fixed inset-0 bg-white/10 backdrop-blur-lg flex justify-center items-center z-50 rounded-3xl animate-fade animate-duration-200"
-      onClick={handleClickOutside}
+      className="modal-overlay fixed inset-0 bg-black/20 dark:bg-white/10 backdrop-blur-lg flex justify-center items-center z-50 rounded-3xl animate-fade animate-duration-200"
+      onMouseDown={handleClickOutside}
     >
       <div className="relative modal-content bg-neutral-200 dark:bg-neutral-900 text-neutral-950 dark:text-neutral-200 p-6 m-16 rounded-lg animate-jump-in animate-duration-300">
         <div className='absolute top-8 right-8 text-center items-center text-lg'>

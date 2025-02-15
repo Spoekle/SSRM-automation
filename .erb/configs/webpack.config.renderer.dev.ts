@@ -60,6 +60,16 @@ const configuration: webpack.Configuration = {
     },
   },
 
+  resolve: {
+    fallback: {
+      fs: false,
+    },
+  },
+
+  externals: {
+    electron: "commonjs2 electron",
+  },
+
   module: {
     rules: [
       {

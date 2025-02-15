@@ -2,7 +2,8 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 import axios from 'axios';
-import { spawn } from 'child_process';
+import { spawn, exec } from 'child_process';
+import { installFfmpeg } from './ffmpeg-installer';
 import { app, BrowserWindow, shell, ipcMain } from 'electron';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
@@ -75,6 +76,28 @@ const createMainWindow = async () => {
     if (mainWindow) {
       mainWindow.close();
     }
+  });
+
+  ipcMain.handle('check-ffmpeg', async () => {
+    return new Promise<boolean>((resolve) => {
+      exec('ffmpeg -version', (error, stdout, stderr) => {
+        resolve(!error);
+      });
+    });
+  });
+
+  ipcMain.handle('install-ffmpeg', async (event) => {
+    await installFfmpeg((progress) => {
+      event.sender.send('ffmpeg-install-progress', progress);
+    });
+    return true;
+  });
+
+  ipcMain.handle('reinstall-ffmpeg', async (event) => {
+    await installFfmpeg((progress) => {
+      event.sender.send('ffmpeg-install-progress', progress);
+    });
+    return true;
   });
 
   ipcMain.handle('update-application', async () => {

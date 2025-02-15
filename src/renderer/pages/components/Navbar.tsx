@@ -13,6 +13,17 @@ const Navbar: React.FC = () => {
   const navRef = useRef<HTMLDivElement>(null);
   const [easterEggCounter, setEasterEggCounter] = useState(0);
   const [os, setOS] = useState('');
+  const isDarkMode = localStorage.getItem('theme') === 'dark';
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDarkMode]);
 
   const minimizeWindow = () => {
     ipcRenderer.send('minimize-window');
@@ -24,12 +35,20 @@ const Navbar: React.FC = () => {
     ipcRenderer.send('close-window');
   };
 
-  //get machine os
   const getOS = () => {
     const os = window.require('os');
     setOS(os.platform());
   };
 
+useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDarkMode]);
 
   const addToCounter = () => {
     if (easterEggCounter === 5) {
