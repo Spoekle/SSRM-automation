@@ -5,7 +5,7 @@ import Settings, { SettingsHandles } from '../Settings/Settings';
 
 function Footer() {
   const { ipcRenderer } = window.require('electron');
-  const [appVersion] = useState<string>('1.7.0');
+  const [appVersion] = useState<string>('1.7.1');
   const [latestVersion, setLatestVersion] = useState<string>('');
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
   const [updateProgress, setUpdateProgress] = useState<string>('');
