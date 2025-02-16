@@ -211,7 +211,7 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(({ onClose, appVersi
                 <h1 className="font-medium text-xl text-neutral-800 dark:text-neutral-100">
                   ffmpeg
                 </h1>
-                <p className="text-neutral-800 dark:text-neutral-100">
+                <p className="text-neutral-800 dark:text-neutral-100 text-sm">
                   ffmpeg is required for video thumbnail extractions.
                 </p>
               </div>
