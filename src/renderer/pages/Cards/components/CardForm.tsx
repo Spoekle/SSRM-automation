@@ -4,6 +4,7 @@ import axios from 'axios';
 import Switch from '@mui/material/Switch';
 import { FaTimes } from 'react-icons/fa';
 import { generateCard } from '../../../../main/helper';
+import { generateCardFromConfig } from '../../../../main/jsonHelper';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 
@@ -116,10 +117,11 @@ const CardForm: React.FC<CardFormProps> = ({
   }
 
   const fetchName = async (mapId: string) => {
-    if (mapId === '') (
-      setSongName('')
-    )
-    setMapId(mapId)
+    if (mapId === '') {
+      setSongName('');
+      return;
+    }
+    setMapId(mapId);
     try {
       const response = await axios.get(`https://api.beatsaver.com/maps/id/${mapId}`);
       const data = response.data;
@@ -131,7 +133,7 @@ const CardForm: React.FC<CardFormProps> = ({
     } catch (error) {
       console.error('Error fetching map info:', error);
     }
-  }
+  };
 
   interface MapInfo {
     metadata: {
@@ -149,7 +151,40 @@ const CardForm: React.FC<CardFormProps> = ({
     }[];
   }
 
-    const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+  // New: Generate card using the stored card configuration from localStorage.
+  const handleStoredConfigGeneration = async () => {
+    const configStr = localStorage.getItem('cardConfig');
+    setCardFormModal(false);
+    if (!configStr) {
+      createAlerts("No saved card configuration found in localStorage!", "error");
+      return;
+    }
+    try {
+      const cardConfig = JSON.parse(configStr);
+
+      // Optional: Validate cardConfig structure.
+      if (!cardConfig.width || !cardConfig.height || !cardConfig.background || !cardConfig.components) {
+        throw new Error("Invalid card configuration");
+      }
+      // Fetch map info similar to getMapInfo
+      const response = await axios.get(`https://api.beatsaver.com/maps/id/${mapId}`);
+      const data = response.data;
+      setMapInfo(data);
+      localStorage.setItem('mapId', `${mapId}`);
+      localStorage.setItem('mapInfo', JSON.stringify(data));
+
+      // Pass cardConfig along with the fetched data, starRatings, and useBackground
+      const imageDataUrl = await generateCardFromConfig(cardConfig, data, starRatings, useBackground);
+      setImageSrc(imageDataUrl);
+      createAlerts("Card generated from stored configuration!", "success");
+    } catch (error) {
+      console.error("Error generating card from stored config:", error);
+      createAlerts("Failed to generate card from stored configuration.", "error");
+    }
+  };
+
+  // Existing file upload handler for processing JSON files of maps.
+  const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     cancelGenerationRef.current = false;
     const file = event.target.files?.[0];
     if (!file) return;
@@ -314,13 +349,13 @@ const CardForm: React.FC<CardFormProps> = ({
               <h2 className='text-xl font-semibold mb-4'>Automatic Input</h2>
               <label className='block mb-2 text-gray-700 dark:text-gray-200'>Upload JSON File:</label>
               <label className='flex items-center justify-center w-full px-4 py-2 bg-blue-500 text-white rounded-md cursor-pointer hover:bg-blue-600 transition duration-200'>
-              <span>Select File</span>
-              <input
-                type="file"
-                accept=".json"
-                onChange={handleFileUpload}
-                className='hidden'
-              />
+                <span>Select File</span>
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={handleFileUpload}
+                  className='hidden'
+                />
               </label>
             </div>
           </div>
@@ -330,49 +365,49 @@ const CardForm: React.FC<CardFormProps> = ({
             <h2 className='text-xl font-semibold mb-4'>Star Ratings</h2>
             <div className='grid grid-cols-2 md:grid-cols-5 gap-4'>
               <div className='flex flex-col'>
-              <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Easy</label>
-              <input
-                type='text'
-                value={starRatings.ES}
-                onChange={(e) => setStarRatings({ ...starRatings, ES: e.target.value })}
-                className='px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
-              />
+                <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Easy</label>
+                <input
+                  type='text'
+                  value={starRatings.ES}
+                  onChange={(e) => setStarRatings({ ...starRatings, ES: e.target.value })}
+                  className='px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
+                />
               </div>
               <div className='flex flex-col'>
-              <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Normal</label>
-              <input
-                type='text'
-                value={starRatings.NOR}
-                onChange={(e) => setStarRatings({ ...starRatings, NOR: e.target.value })}
-                className='px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
-              />
+                <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Normal</label>
+                <input
+                  type='text'
+                  value={starRatings.NOR}
+                  onChange={(e) => setStarRatings({ ...starRatings, NOR: e.target.value })}
+                  className='px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
+                />
               </div>
               <div className='flex flex-col'>
-              <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Hard</label>
-              <input
-                type='text'
-                value={starRatings.HARD}
-                onChange={(e) => setStarRatings({ ...starRatings, HARD: e.target.value })}
-                className='px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
-              />
+                <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Hard</label>
+                <input
+                  type='text'
+                  value={starRatings.HARD}
+                  onChange={(e) => setStarRatings({ ...starRatings, HARD: e.target.value })}
+                  className='px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
+                />
               </div>
               <div className='flex flex-col'>
-              <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Expert</label>
-              <input
-                type='text'
-                value={starRatings.EXP}
-                onChange={(e) => setStarRatings({ ...starRatings, EXP: e.target.value })}
-                className='px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
-              />
+                <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Expert</label>
+                <input
+                  type='text'
+                  value={starRatings.EXP}
+                  onChange={(e) => setStarRatings({ ...starRatings, EXP: e.target.value })}
+                  className='px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
+                />
               </div>
               <div className='flex flex-col'>
-              <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Expert+</label>
-              <input
-                type='text'
-                value={starRatings.EXP_PLUS}
-                onChange={(e) => setStarRatings({ ...starRatings, EXP_PLUS: e.target.value })}
-                className='px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
-              />
+                <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Expert+</label>
+                <input
+                  type='text'
+                  value={starRatings.EXP_PLUS}
+                  onChange={(e) => setStarRatings({ ...starRatings, EXP_PLUS: e.target.value })}
+                  className='px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
+                />
               </div>
             </div>
           </div>
@@ -383,9 +418,18 @@ const CardForm: React.FC<CardFormProps> = ({
               <label className='mr-2 text-gray-700 dark:text-gray-200'>Background:</label>
               <Switch checked={useBackground} onChange={handleSwitch} />
             </div>
-            <button type="submit" className='w-full md:w-auto bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600 transition duration-200'>
-              Generate
-            </button>
+            <div className='flex space-x-4'>
+              <button
+                type="button"
+                onClick={handleStoredConfigGeneration}
+                className='w-full bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600 transition duration-200'
+              >
+                Generate From Stored Config
+              </button>
+              <button type="submit" className='w-full md:w-auto bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600 transition duration-200'>
+                Generate
+              </button>
+            </div>
           </div>
         </form>
       </div>

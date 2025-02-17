@@ -1,7 +1,7 @@
 import { Canvas, ExportFormat, Image } from 'skia-canvas';
 import { CanvasRenderingContext2D as SkiaCanvasRenderingContext2D } from 'skia-canvas';
 
-interface StarRating {
+export interface StarRating {
   ES: string;
   NOR: string;
   HARD: string;
@@ -9,7 +9,7 @@ interface StarRating {
   EXP_PLUS: string;
 }
 
-interface MapInfo {
+export interface MapInfo {
   metadata: {
     songAuthorName: string;
     songName: string;
@@ -41,7 +41,7 @@ export interface OldStarRatings {
   EXP_PLUS: string;
 }
 
-async function loadImage(urlOrBuffer: string | ArrayBuffer): Promise<Image> {
+export async function loadImage(urlOrBuffer: string | ArrayBuffer): Promise<Image> {
   let buffer;
   if (typeof urlOrBuffer === 'string') {
     const response = await fetch(urlOrBuffer);
@@ -58,13 +58,13 @@ async function loadImage(urlOrBuffer: string | ArrayBuffer): Promise<Image> {
   });
 }
 
-function formatDuration(seconds = 0): string {
+export function formatDuration(seconds = 0): string {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
   return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
 }
 
-function truncateText(ctx: SkiaCanvasRenderingContext2D, text: string, maxWidth: number): string {
+export function truncateText(ctx: SkiaCanvasRenderingContext2D, text: string, maxWidth: number): string {
   const ellipsis = '…';
   let truncatedText = text;
 

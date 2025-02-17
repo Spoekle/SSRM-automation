@@ -1,0 +1,158 @@
+{
+  "configName": "ssConfig.json",
+  "width": 900,
+  "height": 300,
+  "cardCornerRadius": 20,
+  "background": {
+    "type": "cover",
+    "srcField": "versions.0.coverURL",
+    "blur": 10,
+    "clip": true
+  },
+  "components": [
+    {
+      "type": "roundedRect",
+      "x": 0,
+      "y": 0,
+      "width": 900,
+      "height": 300,
+      "cornerRadius": 50,
+      "fillStyle": "transparent"
+    },
+    {
+      "type": "image",
+      "srcField": "versions.0.coverURL",
+      "x": 20,
+      "y": 20,
+      "width": 260,
+      "height": 260,
+      "clip": true,
+      "shadow": {
+        "color": "rgba(0, 0, 0, 0.5)",
+        "offsetX": 10,
+        "offsetY": 10,
+        "blur": 5
+      }
+    },
+    {
+      "type": "roundedRect",
+      "x": 300,
+      "y": 20,
+      "width": 580,
+      "height": 180,
+      "cornerRadius": 10,
+      "fillStyle": "rgba(0, 0, 0, 0.2)"
+    },
+    {
+      "type": "text",
+      "text": "{metadata.songAuthorName}",
+      "x": 320,
+      "y": 55,
+      "maxWidth": 480,
+      "font": "24px Heebo, sans-serif",
+      "fillStyle": "white",
+      "textAlign": "left"
+    },
+    {
+      "type": "text",
+      "text": "{metadata.songName}",
+      "x": 320,
+      "y": 90,
+      "maxWidth": 480,
+      "font": "bold 30px Heebo, sans-serif",
+      "fillStyle": "white",
+      "textAlign": "left"
+    },
+    {
+      "type": "text",
+      "text": "{metadata.songSubName}",
+      "x": 320,
+      "y": 120,
+      "maxWidth": 480,
+      "font": "20px Heebo, sans-serif",
+      "fillStyle": "white",
+      "textAlign": "left"
+    },
+    {
+      "type": "text",
+      "text": "Mapped by {metadata.levelAuthorName}",
+      "x": 320,
+      "y": 180,
+      "maxWidth": 480,
+      "font": "20px Heebo, sans-serif",
+      "fillStyle": "white",
+      "textAlign": "left"
+    },
+    {
+      "type": "text",
+      "text": "Map Code:",
+      "x": 860,
+      "y": 55,
+      "font": "20px Heebo, sans-serif",
+      "fillStyle": "white",
+      "textAlign": "right"
+    },
+    {
+      "type": "text",
+      "text": "{id}",
+      "x": 860,
+      "y": 75,
+      "font": "20px Heebo, sans-serif",
+      "fillStyle": "white",
+      "textAlign": "right"
+    },
+    {
+      "type": "text",
+      "text": "BPM:",
+      "x": 860,
+      "y": 105,
+      "font": "20px Heebo, sans-serif",
+      "fillStyle": "white",
+      "textAlign": "right"
+    },
+    {
+      "type": "text",
+      "text": "{metadata.bpm}",
+      "x": 860,
+      "y": 130,
+      "font": "20px Heebo, sans-serif",
+      "fillStyle": "white",
+      "textAlign": "right"
+    },
+    {
+      "type": "text",
+      "text": "Song Duration:",
+      "x": 860,
+      "y": 160,
+      "font": "20px Heebo, sans-serif",
+      "fillStyle": "white",
+      "textAlign": "right"
+    },
+    {
+      "type": "text",
+      "text": "{durationFormatted}",
+      "x": 860,
+      "y": 180,
+      "font": "20px Heebo, sans-serif",
+      "fillStyle": "white",
+      "textAlign": "right"
+    },
+    {
+      "type": "starRating",
+      "ratings": [
+        { "label": "ES", "rating": "{starRatings.ES}", "color": "rgb(22 163 74)" },
+        { "label": "NOR", "rating": "{starRatings.NOR}", "color": "rgb(59 130 246)" },
+        { "label": "HARD", "rating": "{starRatings.HARD}", "color": "rgb(249 115 22)" },
+        { "label": "EXP", "rating": "{starRatings.EXP}", "color": "rgb(220 38 38)" },
+        { "label": "EXP_PLUS", "rating": "{starRatings.EXP_PLUS}", "color": "rgb(126 34 206)" }
+      ],
+      "x": 300,
+      "y": 220,
+      "defaultWidth": 100,
+      "specialWidth": 120,
+      "height": 50,
+      "defaultSpacing": 110,
+      "specialSpacing": 130
+    }
+  ]
+}
