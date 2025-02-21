@@ -35,10 +35,6 @@ export interface CardComponentConfig {
 export interface CardBackgroundConfig {
   type: 'color' | 'gradient' | 'cover';  // added "cover"
   color?: string;
-  gradient?: {
-    startColor: string;
-    endColor: string;
-  };
   // For cover type background
   srcField?: string;
   blur?: number;
@@ -98,12 +94,6 @@ export async function generateCardFromConfig(
     // Otherwise, use provided background config (color or gradient)
     if (config.background.type === 'color' && config.background.color) {
       ctx.fillStyle = config.background.color;
-      ctx.fillRect(0, 0, config.width, config.height);
-    } else if (config.background.type === 'gradient' && config.background.gradient) {
-      const gradient = ctx.createLinearGradient(0, 0, config.width, config.height);
-      gradient.addColorStop(0, config.background.gradient.startColor);
-      gradient.addColorStop(1, config.background.gradient.endColor);
-      ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, config.width, config.height);
     }
   }

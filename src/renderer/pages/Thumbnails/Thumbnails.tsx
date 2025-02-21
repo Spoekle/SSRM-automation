@@ -25,8 +25,8 @@ interface StarRatings {
   ES: string;
   NOR: string;
   HARD: string;
+  EX: string;
   EXP: string;
-  EXP_PLUS: string;
 }
 
 interface Alert {
@@ -47,7 +47,7 @@ const Thumbnails: React.FC = () => {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [progress, setProgress] = useState<Progress>({process: "", progress: 0, visible: false });
   const [mapInfo, setMapInfo] = useState<MapInfo | null>(null);
-  const [starRatings, setStarRatings] = useState<StarRatings>({ ES: "", NOR: "", HARD: "", EXP: "", EXP_PLUS: "" });
+  const [starRatings, setStarRatings] = useState<StarRatings>({ ES: "", NOR: "", HARD: "", EX: "", EXP: "" });
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [thumbnailFormModal, setThumbnailFormModal] = useState<boolean>(false);
   const [thumbnailPreviewModal, setThumbnailPreviewModal] = useState<boolean>(false);

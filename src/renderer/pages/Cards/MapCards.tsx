@@ -32,8 +32,8 @@ interface StarRatings {
   ES: string;
   NOR: string;
   HARD: string;
+  EX: string;
   EXP: string;
-  EXP_PLUS: string;
 }
 
 interface Progress {
@@ -49,8 +49,8 @@ const MapCards: React.FC = () => {
   const [mapInfo, setMapInfo] = useState<MapInfo | null>(null);
   const [cardFormModal, setCardFormModal] = useState<boolean>(false);
   const [starRatingFormModal, setStarRatingFormModal] = useState<boolean>(false);
-  const [starRatings, setStarRatings] = useState<StarRatings>({ ES: "", NOR: "", HARD: "", EXP: "", EXP_PLUS: "" });
-  const [oldStarRatings, setOldStarRatings] = useState<StarRatings>({ ES: "", NOR: "", HARD: "", EXP: "", EXP_PLUS: "" });
+  const [starRatings, setStarRatings] = useState<StarRatings>({ ES: "", NOR: "", HARD: "", EX: "", EXP: "" });
+  const [oldStarRatings, setOldStarRatings] = useState<StarRatings>({ ES: "", NOR: "", HARD: "", EX: "", EXP: "" });
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [useBackground, setUseBackground] = React.useState(true);
   const cancelGenerationRef = useRef(false);

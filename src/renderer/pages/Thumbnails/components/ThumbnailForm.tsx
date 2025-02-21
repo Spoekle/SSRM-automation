@@ -21,8 +21,8 @@ interface StarRatings {
   ES: string;
   NOR: string;
   HARD: string;
+  EX: string;
   EXP: string;
-  EXP_PLUS: string;
 }
 
 const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
@@ -170,7 +170,7 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
 
   async function getStarRating(hash: string): Promise<StarRatings> {
     const diffs = ['1', '3', '5', '7', '9'];
-    const ratings: StarRatings = { ES: '', NOR: '', HARD: '', EXP: '', EXP_PLUS: '' };
+    const ratings: StarRatings = { ES: '', NOR: '', HARD: '', EX: '', EXP: '' };
 
     for (let i = 0; i < diffs.length; i++) {
       try {
@@ -243,8 +243,8 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
                 <option value="ES">Easy</option>
                 <option value="NOR">Normal</option>
                 <option value="HARD">Hard</option>
-                <option value="EXP">Expert</option>
-                <option value="EXP_PLUS">Expert+</option>
+                <option value="EX">Expert</option>
+                <option value="EXP">Expert+</option>
               </select>
             </div>
           </div>

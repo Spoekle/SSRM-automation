@@ -169,8 +169,8 @@
         { "label": "ES", "rating": "{starRatings.ES}", "color": "rgb(22 163 74)" },
         { "label": "NOR", "rating": "{starRatings.NOR}", "color": "rgb(59 130 246)" },
         { "label": "HARD", "rating": "{starRatings.HARD}", "color": "rgb(249 115 22)" },
-        { "label": "EXP", "rating": "{starRatings.EXP}", "color": "rgb(220 38 38)" },
-        { "label": "EXP_PLUS", "rating": "{starRatings.EXP_PLUS}", "color": "rgb(126 34 206)" }
+        { "label": "EX", "rating": "{starRatings.EX}", "color": "rgb(220 38 38)" },
+        { "label": "EXP", "rating": "{starRatings.EXP}", "color": "rgb(126 34 206)" }
       ],
       "x": 300,
       "y": 220,

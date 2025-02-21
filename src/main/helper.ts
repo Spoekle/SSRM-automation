@@ -5,8 +5,8 @@ export interface StarRating {
   ES: string;
   NOR: string;
   HARD: string;
+  EX: string;
   EXP: string;
-  EXP_PLUS: string;
 }
 
 export interface MapInfo {
@@ -29,16 +29,16 @@ export interface NewStarRatings {
   ES: string;
   NOR: string;
   HARD: string;
+  EX: string;
   EXP: string;
-  EXP_PLUS: string;
 }
 
 export interface OldStarRatings {
   ES: string;
   NOR: string;
   HARD: string;
+  EX: string;
   EXP: string;
-  EXP_PLUS: string;
 }
 
 export async function loadImage(urlOrBuffer: string | ArrayBuffer): Promise<Image> {
@@ -164,8 +164,8 @@ export async function generateCard(data: MapInfo, starRatings: StarRating, useBa
     { rating: starRatings.ES, color: 'rgb(22 163 74)' },
     { rating: starRatings.NOR, color: 'rgb(59 130 246)' },
     { rating: starRatings.HARD, color: 'rgb(249 115 22)' },
-    { rating: starRatings.EXP, color: 'rgb(220 38 38)' },
-    { rating: starRatings.EXP_PLUS, color: 'rgb(126 34 206)' }
+    { rating: starRatings.EX, color: 'rgb(220 38 38)' },
+    { rating: starRatings.EXP, color: 'rgb(126 34 206)' }
   ];
 
   let x = 300;
@@ -263,10 +263,10 @@ export async function generateReweightCard(data: MapInfo, oldStarRatings: OldSta
     case 'HARD':
       color = 'rgb(249 115 22)';
       break;
-    case 'EXP':
+    case 'EX':
       color = 'rgb(220 38 38)';
       break;
-    case 'EXP_PLUS':
+    case 'EXP':
       color = 'rgb(126 34 206)';
       break;
     default:
@@ -454,11 +454,11 @@ export async function generateThumbnail(data: MapInfo, chosenDiff: keyof StarRat
       color = 'rgb(249 115 22)';
       difficulty = 'Hard';
       break;
-    case 'EXP':
+    case 'EX':
       color = 'rgb(220 38 38)';
       difficulty = 'Expert';
       break;
-    case 'EXP_PLUS':
+    case 'EXP':
       color = 'rgb(126 34 206)';
       difficulty = 'Expert+';
       break;

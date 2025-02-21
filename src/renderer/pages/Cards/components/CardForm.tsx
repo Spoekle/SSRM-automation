@@ -27,8 +27,8 @@ interface StarRatings {
   ES: string;
   NOR: string;
   HARD: string;
+  EX: string;
   EXP: string;
-  EXP_PLUS: string;
 }
 
 interface UploadedMap {
@@ -93,8 +93,8 @@ const CardForm: React.FC<CardFormProps> = ({
       ES: '',
       NOR: '',
       HARD: '',
-      EXP: '',
-      EXP_PLUS: ''
+      EX: '',
+      EXP: ''
     };
 
     for (let i = 0; i < diffs.length; i++) {
@@ -229,8 +229,8 @@ const CardForm: React.FC<CardFormProps> = ({
           ES: '',
           NOR: '',
           HARD: '',
+          EX: '',
           EXP: '',
-          EXP_PLUS: '',
         };
 
         groupedMaps[songHash].forEach((map) => {
@@ -245,10 +245,10 @@ const CardForm: React.FC<CardFormProps> = ({
               combinedStarRatings.HARD = map.stars.toString();
               break;
             case 7:
-              combinedStarRatings.EXP = map.stars.toString();
+              combinedStarRatings.EX = map.stars.toString();
               break;
             case 9:
-              combinedStarRatings.EXP_PLUS = map.stars.toString();
+              combinedStarRatings.EXP = map.stars.toString();
               break;
             default:
               break;
@@ -404,8 +404,8 @@ const CardForm: React.FC<CardFormProps> = ({
                 <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Expert+</label>
                 <input
                   type='text'
-                  value={starRatings.EXP_PLUS}
-                  onChange={(e) => setStarRatings({ ...starRatings, EXP_PLUS: e.target.value })}
+                  value={starRatings.EXP}
+                  onChange={(e) => setStarRatings({ ...starRatings, EXP: e.target.value })}
                   className='px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
                 />
               </div>

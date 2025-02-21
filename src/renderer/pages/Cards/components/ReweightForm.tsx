@@ -25,16 +25,16 @@ interface OldStarRatings {
   ES: string;
   NOR: string;
   HARD: string;
+  EX: string;
   EXP: string;
-  EXP_PLUS: string;
 }
 
 interface NewStarRatings {
   ES: string;
   NOR: string;
   HARD: string;
+  EX: string;
   EXP: string;
-  EXP_PLUS: string;
 }
 
 interface UploadedMap {
@@ -99,8 +99,8 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
       ES: '',
       NOR: '',
       HARD: '',
-      EXP: '',
-      EXP_PLUS: ''
+      EX: '',
+      EXP: ''
     };
 
     for (let i = 0; i < diffs.length; i++) {
@@ -175,17 +175,17 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
             diffKey = 'HARD';
             break;
           case 7:
-            diffKey = 'EXP';
+            diffKey = 'EX';
             break;
           case 9:
-            diffKey = 'EXP_PLUS';
+            diffKey = 'EXP';
             break;
           default:
             diffKey = 'ES';
         }
 
-        const manualOld: OldStarRatings = { ES: '', NOR: '', HARD: '', EXP: '', EXP_PLUS: '' };
-        const manualNew: NewStarRatings = { ES: '', NOR: '', HARD: '', EXP: '', EXP_PLUS: '' };
+        const manualOld: OldStarRatings = { ES: '', NOR: '', HARD: '', EX: '', EXP: '' };
+        const manualNew: NewStarRatings = { ES: '', NOR: '', HARD: '', EX: '', EXP: '' };
         manualOld[diffKey as keyof OldStarRatings] = map.old_stars.toString();
         manualNew[diffKey as keyof NewStarRatings] = map.new_stars.toString();
 
@@ -288,8 +288,8 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
                 <option value="ES">Easy</option>
                 <option value="NOR">Normal</option>
                 <option value="HARD">Hard</option>
-                <option value="EXP">Expert</option>
-                <option value="EXP_PLUS">Expert+</option>
+                <option value="EX">Expert</option>
+                <option value="EXP">Expert+</option>
               </select>
               <div className='absolute w-full bg-white dark:bg-neutral-800 p-6 left-0'/>
             </div>
