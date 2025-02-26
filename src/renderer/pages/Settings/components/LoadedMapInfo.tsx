@@ -39,10 +39,10 @@ const LoadedMapInfo: React.FC<LoadedMapInfoProps> = ({ loadedMapInfo, setConfirm
                 )}
                 <div className="flex flex-col">
                     <div className="flex justify-between space-x-2 items-start">
-                        <div className="flex items-center space-x-1">
-                            <h3 className="text-lg font-semibold">{songName}</h3>
-                            { songSubName && <h3 className="text-lg font-semibold">({songSubName})</h3> }
-                            <h3 className="text-md font-semibold">by {songAuthor}</h3>
+                        <div className="flex flex-col space-1">
+                          <h3 className="text-md">{songAuthor}</h3>
+                          <h3 className="text-lg font-semibold">{songName} { songSubName && <span className="text-sm font-normal truncate">{songSubName}</span> }</h3>
+
                         </div>
                         <div className="flex flex-col items-end">
                             <h4 className="text-right text-sm font-semibold">BPM: {bpm}</h4>
@@ -50,9 +50,9 @@ const LoadedMapInfo: React.FC<LoadedMapInfoProps> = ({ loadedMapInfo, setConfirm
                         </div>
                     </div>
                     <div className="flex items-center">
-                        <p className="m-0">Mapped by {mapper}</p>
+                        <p className="m-0">Mapped by <span className='font-semibold'>{mapper}</span></p>
                     </div>
-                    <button 
+                    <button
                         className="absolute bottom-0 right-0 bg-red-500 text-white px-2 py-1 rounded-tl-xl hover:bg-red-600 transition duration-200"
                         onClick={() => {
                             setConfirmResetMapOpen(true);
