@@ -48,6 +48,7 @@ const Thumbnails: React.FC = () => {
   const [progress, setProgress] = useState<Progress>({process: "", progress: 0, visible: false });
   const [mapInfo, setMapInfo] = useState<MapInfo | null>(null);
   const [starRatings, setStarRatings] = useState<StarRatings>({ ES: "", NOR: "", HARD: "", EX: "", EXP: "" });
+  const [chosenDiff, setChosenDiff] = React.useState('ES');
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [thumbnailFormModal, setThumbnailFormModal] = useState<boolean>(false);
   const [thumbnailPreviewModal, setThumbnailPreviewModal] = useState<boolean>(false);
@@ -66,23 +67,16 @@ const Thumbnails: React.FC = () => {
     if (storedStarRatings) {
       setStarRatings(JSON.parse(storedStarRatings));
     }
+    const storedChosenDiff = localStorage.getItem('chosenDiff');
+    if (storedChosenDiff) {
+      setChosenDiff(storedChosenDiff);
+    }
   }, []);
-
-  const removeMapInfo = () => {
-    setMapId('');
-    setMapInfo(null);
-    setImageSrc(null);
-    localStorage.removeItem('mapId');
-    localStorage.removeItem('mapInfo');
-    localStorage.removeItem('starRatings');
-    localStorage.removeItem('oldStarRatings');
-    createAlerts('Cleared map info!', 'alert');
-  };
 
   const downloadCard = () => {
     const link = document.createElement('a');
     link.href = imageSrc || '';
-    link.download = `${mapInfo?.metadata.songName} - ${mapInfo?.metadata.songAuthorName} - ${mapInfo?.metadata.levelAuthorName}.png`;
+    link.download = `${mapInfo?.metadata.songName} - ${mapInfo?.metadata.songAuthorName} - ${mapInfo?.metadata.levelAuthorName} - ${chosenDiff}.png`;
     document.body.appendChild(link);
     link.click();
     createAlerts('Downloaded card!', 'success');
@@ -94,7 +88,6 @@ const Thumbnails: React.FC = () => {
     setThumbnailPreviewModal(true);
   };
 
-  const mapLink = `https://beatsaver.com/maps/${mapId}`;
 
   const createAlerts = (text: string, type: 'success' | 'error' | 'alert') => {
     const id = new Date().getTime();
@@ -194,6 +187,8 @@ const Thumbnails: React.FC = () => {
           setImageSrc={setImageSrc}
           starRatings={starRatings}
           setStarRatings={setStarRatings}
+          chosenDiff={chosenDiff}
+          setChosenDiff={setChosenDiff}
           createAlerts={createAlerts}
           progress={(process: string, progress: number, visible: boolean) => setProgress({ process, progress, visible })}
           cancelGenerationRef={cancelGenerationRef}
