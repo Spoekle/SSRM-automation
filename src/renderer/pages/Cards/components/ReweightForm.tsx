@@ -14,6 +14,8 @@ interface StarRatingFormProps {
   newStarRatings: NewStarRatings;
   setNewStarRatings: (ratings: NewStarRatings) => void;
   setStarRatingFormModal: (show: boolean) => void;
+  chosenDiff: string;
+  setChosenDiff: (diff: string) => void;
   setMapInfo: (info: any) => void;
   setImageSrc: (src: string) => void;
   createAlerts: (message: string, type: 'success' | 'error' | 'alert') => void;
@@ -25,16 +27,16 @@ interface OldStarRatings {
   ES: string;
   NOR: string;
   HARD: string;
+  EX: string;
   EXP: string;
-  EXP_PLUS: string;
 }
 
 interface NewStarRatings {
   ES: string;
   NOR: string;
   HARD: string;
+  EX: string;
   EXP: string;
-  EXP_PLUS: string;
 }
 
 interface UploadedMap {
@@ -56,6 +58,8 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
   newStarRatings,
   setNewStarRatings,
   setStarRatingFormModal,
+  chosenDiff,
+  setChosenDiff,
   setMapInfo,
   setImageSrc,
   createAlerts,
@@ -63,7 +67,6 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
   cancelGenerationRef,
 }) => {
   const [songName, setSongName] = useState('');
-  const [chosenDiff, setChosenDiff] = useState('ES');
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   const handleClickOutside = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
@@ -99,8 +102,8 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
       ES: '',
       NOR: '',
       HARD: '',
-      EXP: '',
-      EXP_PLUS: ''
+      EX: '',
+      EXP: ''
     };
 
     for (let i = 0; i < diffs.length; i++) {
@@ -175,17 +178,17 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
             diffKey = 'HARD';
             break;
           case 7:
-            diffKey = 'EXP';
+            diffKey = 'EX';
             break;
           case 9:
-            diffKey = 'EXP_PLUS';
+            diffKey = 'EXP';
             break;
           default:
             diffKey = 'ES';
         }
 
-        const manualOld: OldStarRatings = { ES: '', NOR: '', HARD: '', EXP: '', EXP_PLUS: '' };
-        const manualNew: NewStarRatings = { ES: '', NOR: '', HARD: '', EXP: '', EXP_PLUS: '' };
+        const manualOld: OldStarRatings = { ES: '', NOR: '', HARD: '', EX: '', EXP: '' };
+        const manualNew: NewStarRatings = { ES: '', NOR: '', HARD: '', EX: '', EXP: '' };
         manualOld[diffKey as keyof OldStarRatings] = map.old_stars.toString();
         manualNew[diffKey as keyof NewStarRatings] = map.new_stars.toString();
 
@@ -282,14 +285,17 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
               <label className="block mt-4 mb-2 text-gray-700 dark:text-gray-200">Difficulty:</label>
               <select
                 className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white"
-                onChange={(e) => setChosenDiff(e.target.value)}
+                onChange={(e) => {
+                  setChosenDiff(e.target.value)
+                  localStorage.setItem('chosenDiff', e.target.value)
+                }}
                 value={chosenDiff}
               >
                 <option value="ES">Easy</option>
                 <option value="NOR">Normal</option>
                 <option value="HARD">Hard</option>
-                <option value="EXP">Expert</option>
-                <option value="EXP_PLUS">Expert+</option>
+                <option value="EX">Expert</option>
+                <option value="EXP">Expert+</option>
               </select>
               <div className='absolute w-full bg-white dark:bg-neutral-800 p-6 left-0'/>
             </div>

@@ -32,8 +32,8 @@ interface StarRatings {
   ES: string;
   NOR: string;
   HARD: string;
+  EX: string;
   EXP: string;
-  EXP_PLUS: string;
 }
 
 interface Progress {
@@ -47,12 +47,13 @@ const MapCards: React.FC = () => {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [progress, setProgress] = useState<Progress>({process: "", progress: 0, visible: false });
   const [mapInfo, setMapInfo] = useState<MapInfo | null>(null);
+  const [chosenDiff, setChosenDiff] = useState('ES');
   const [cardFormModal, setCardFormModal] = useState<boolean>(false);
   const [starRatingFormModal, setStarRatingFormModal] = useState<boolean>(false);
-  const [starRatings, setStarRatings] = useState<StarRatings>({ ES: "", NOR: "", HARD: "", EXP: "", EXP_PLUS: "" });
-  const [oldStarRatings, setOldStarRatings] = useState<StarRatings>({ ES: "", NOR: "", HARD: "", EXP: "", EXP_PLUS: "" });
+  const [starRatings, setStarRatings] = useState<StarRatings>({ ES: "", NOR: "", HARD: "", EX: "", EXP: "" });
+  const [oldStarRatings, setOldStarRatings] = useState<StarRatings>({ ES: "", NOR: "", HARD: "", EX: "", EXP: "" });
   const [imageSrc, setImageSrc] = useState<string | null>(null);
-  const [useBackground, setUseBackground] = React.useState(true);
+  const [useBackground, setUseBackground] = useState(true);
   const cancelGenerationRef = useRef(false);
 
   useEffect(() => {
@@ -72,18 +73,11 @@ const MapCards: React.FC = () => {
     if (storedOldStarRatings) {
       setOldStarRatings(JSON.parse(storedOldStarRatings));
     }
+    const storedChosenDiff = localStorage.getItem('chosenDiff');
+    if (storedChosenDiff) {
+      setChosenDiff(storedChosenDiff);
+    }
   }, []);
-
-  const removeMapInfo = () => {
-    setMapId('');
-    setMapInfo(null);
-    setImageSrc(null);
-    localStorage.removeItem('mapId');
-    localStorage.removeItem('mapInfo');
-    localStorage.removeItem('starRatings');
-    localStorage.removeItem('oldStarRatings');
-    createAlerts('Cleared map info!', 'alert');
-  };
 
   const downloadCard = () => {
     const link = document.createElement('a');
@@ -95,7 +89,6 @@ const MapCards: React.FC = () => {
     document.body.removeChild(link);
 
   };
-
 
   const createAlerts = (text: string, type: 'success' | 'error' | 'alert') => {
     const id = new Date().getTime();
@@ -218,6 +211,8 @@ const MapCards: React.FC = () => {
           setOldStarRatings={setOldStarRatings}
           newStarRatings={starRatings}
           setNewStarRatings={setStarRatings}
+          chosenDiff={chosenDiff}
+          setChosenDiff={setChosenDiff}
           setMapInfo={setMapInfo}
           setStarRatingFormModal={setStarRatingFormModal}
           setImageSrc={setImageSrc}

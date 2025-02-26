@@ -3,11 +3,29 @@ import ReactDOM from 'react-dom';
 import Switch from '@mui/material/Switch';
 import axios from 'axios';
 
+// Utility functions for difficulty conversion
+const difficultyToAbbreviated = (difficulty: string): string => {
+  switch (difficulty) {
+    case 'Easy':
+      return 'ES';
+    case 'Normal':
+      return 'NOR';
+    case 'Hard':
+      return 'HARD';
+    case 'Expert':
+      return 'EX';
+    case 'Expert+':
+      return 'EXP';
+    default:
+      return difficulty;
+  }
+};
+
 interface MapFormProps {
   mapId: string;
   setMapId: (id: string) => void;
-  difficulty: string;
-  setDifficulty: (difficulty: string) => void;
+  chosenDiff: string;
+  setChosenDiff: (diff: string) => void;
   useSubname: boolean;
   setUseSubname: (use: boolean) => void;
   player: string;
@@ -19,8 +37,8 @@ interface MapFormProps {
 const MapForm: React.FC<MapFormProps> = ({
   mapId,
   setMapId,
-  difficulty,
-  setDifficulty,
+  chosenDiff,
+  setChosenDiff,
   useSubname,
   setUseSubname,
   player,
@@ -50,7 +68,7 @@ const MapForm: React.FC<MapFormProps> = ({
       }
       setMapInfo(data);
       localStorage.setItem('mapId', `${mapId}`);
-      localStorage.setItem('mapInfo', JSON.stringify(data)); // Serialize the mapInfo object
+      localStorage.setItem('mapInfo', JSON.stringify(data));
       console.log(data);
       setMapFormModal(false);
     } catch (error) {
@@ -86,42 +104,46 @@ const MapForm: React.FC<MapFormProps> = ({
                     <label className='block mb-2 text-gray-700 dark:text-gray-200'>Difficulty:</label>
                     <select
                           className='w-full px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
-                          value={difficulty}
-                          onChange={(e) => setDifficulty(e.target.value)}
+                          value={chosenDiff}
+                          onChange={(e) => {
+                            const selectedDifficulty = e.target.value;
+                            setChosenDiff(selectedDifficulty);
+                            localStorage.setItem('chosenDiff', difficultyToAbbreviated(selectedDifficulty));
+                          }}
                         >
-                          <option value="Easy">Easy</option>
-                          <option value="Normal">Normal</option>
-                          <option value="Hard">Hard</option>
-                          <option value="Expert">Expert</option>
-                          <option value="Expert+">Expert+</option>
+                          <option value="Easy">Easy (ES)</option>
+                          <option value="Normal">Normal (NOR)</option>
+                          <option value="Hard">Hard (HARD)</option>
+                          <option value="Expert">Expert (EX)</option>
+                          <option value="Expert+">Expert+ (EXP)</option>
                         </select>
                     </div>
                     <div className='flex flex-col my-2'>
-                        <label>Player:</label>
-                        <select
-                          value={player}
-                          onChange={(e) => setPlayer(e.target.value)}
-                          className='w-full px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
-                        >
-                          <option value="Mr_bjo">Mr_bjo</option>
-                          <option value="yabje">yabje</option>
-                          <option value="BigOlDumplin">BigOlDumplin</option>
-                          <option value="RaccoonVR">RaccoonVR</option>
-                          <option value="voltage">voltage</option>
-                          <option value="olliemine">olliemine</option>
-                        </select>
+                      <label>Player:</label>
+                      <select
+                        className='w-full px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
+                        onChange={(e) => setPlayer(e.target.value)}
+                        value={player}
+                      >
+                        <option value="praunt">praunt</option>
+                        <option value="olliemine">olliemine</option>
+                        <option value="voltage">voltage</option>
+                        <option value="RaccoonVR">RaccoonVR</option>
+                        <option value="BigOlDumplin">BigOlDumplin</option>
+                        <option value="yabje">yabje</option>
+                        <option value="Mr_bjo">Mr_bjo</option>
+                      </select>
                     </div>
                 </div>
-
             </div>
-            <div className='flex flex-col md:flex-row justify-end items-center'>
-            <button type="submit" className='w-full md:w-auto bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600 transition duration-200'>
-              Generate
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>,
+            <div className='flex justify-end'>
+              <button type="submit" className='w-full md:w-auto bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600 transition duration-200'>
+                Generate
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>,
     document.body
   );
 };

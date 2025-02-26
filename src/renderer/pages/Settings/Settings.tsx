@@ -1,9 +1,4 @@
-import React, {
-  useState,
-  useEffect,
-  forwardRef,
-  useImperativeHandle,
-} from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle, ChangeEvent } from 'react';
 import Switch from '@mui/material/Switch';
 import LinearProgress from '@mui/material/LinearProgress';
 import { FaTimes, FaGithub } from 'react-icons/fa';
@@ -34,11 +29,23 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(({ onClose, appVersi
   const [installStatus, setInstallStatus] = useState('');
   const [installProgressPercent, setInstallProgressPercent] = useState<number | null>(null);
 
-
   const [confirmResetAllOpen, setConfirmResetAllOpen] = useState(false);
   const [confirmResetMapOpen, setConfirmResetMapOpen] = useState(false);
   const [loadedMapInfo, setLoadedMapInfo] = useState<string | null>(null);
- 
+  // New state to hold stored card config file name
+  const [storedCardConfigName, setStoredCardConfigName] = useState<string | null>(() => {
+    try {
+      const storedConfig = localStorage.getItem('cardConfig');
+      if (storedConfig) {
+        const parsed = JSON.parse(storedConfig);
+        return parsed.configName || null;
+      }
+    } catch (error) {
+      console.error("Error parsing cardConfig:", error);
+    }
+    return null;
+  });
+
   useEffect(() => {
     setIsOverlayVisible(true);
     setIsPanelOpen(true);
@@ -64,6 +71,28 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(({ onClose, appVersi
       ipcRenderer.removeListener('ffmpeg-install-progress', updateInstallStatus);
     };
   }, []);
+
+  // Updated: store card configuration with the file name.
+  const handleCardConfigUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const cardConfig = JSON.parse(text);
+      // Validate basic structure
+      if (!cardConfig.width || !cardConfig.height || !cardConfig.background || !cardConfig.components) {
+        throw new Error("Invalid card configuration format.");
+      }
+      // Add the file name to the configuration
+      cardConfig.configName = file.name;
+      localStorage.setItem('cardConfig', JSON.stringify(cardConfig));
+      setStoredCardConfigName(file.name);
+      window.alert("Card configuration saved successfully!");
+    } catch (error) {
+      console.error("Error uploading card configuration:", error);
+      window.alert("Failed to upload card configuration. Please check the file format.");
+    }
+  };
 
   useImperativeHandle(ref, () => ({ close: handleClose }));
 
@@ -160,7 +189,7 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(({ onClose, appVersi
 
           {/* Content Container */}
           <div className="px-4 pb-4 space-y-4">
-            {/* Loaded Map Info (moved to top, no background) */}
+            {/* Loaded Map Info */}
             <div className="p-4 rounded-lg">
               <p className="font-medium text-neutral-800 dark:text-neutral-100">
                 Currently Loaded Map:
@@ -177,13 +206,52 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(({ onClose, appVersi
                 <h1 className="font-medium text-xl text-neutral-800 dark:text-neutral-100">
                   Preferences
                 </h1>
-                <p className="text-neutral-800 dark:text-neutral-100 text-sm">
-                  Change the theme and more soon...
+                <p className="text-neutral-800 dark:text-neutral-100 text-sm text-end">
+                  Change the theme, upload or remove card configuration...
                 </p>
               </div>
-              <div className="mt-2 flex items-center space-x-4 bg-neutral-200 dark:bg-neutral-600 p-2 rounded-lg">
-                <span className="font-medium text-neutral-800 dark:text-neutral-100">Dark Mode</span>
-                <Switch checked={isDarkMode} onChange={toggleTheme} color="primary" />
+              <div className="mt-4 flex flex-col">
+                <div className="flex flex-col">
+                  <div className="flex items-center space-x-4">
+                    <span className="font-medium text-neutral-800 dark:text-neutral-100">Dark Mode</span>
+                    <Switch checked={isDarkMode} onChange={toggleTheme} color="primary" />
+                  </div>
+                </div>
+                <div className="flex flex-col bg-neutral-800 p-2 rounded-lg mt-4">
+                  <div className="flex justify-between items-center">
+                    <p className="text-sm text-neutral-800 dark:text-neutral-100">
+                      {storedCardConfigName ? (
+                      <>
+                        Stored Card Config: <br />
+                        {storedCardConfigName}
+                      </>
+                      ) : "No Card Configuration Stored"}
+                    </p>
+                    <div className="flex space-x-4">
+                      <label className="flex items-center justify-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md cursor-pointer transition duration-200">
+                        <span>Select File</span>
+                        <input
+                          type="file"
+                          accept=".json"
+                          onChange={handleCardConfigUpload}
+                          className="hidden"
+                        />
+                      </label>
+                      {storedCardConfigName && (
+                        <button
+                          onClick={() => {
+                          localStorage.removeItem('cardConfig');
+                          setStoredCardConfigName(null);
+                          window.alert("Card configuration removed.");
+                          }}
+                          className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md transition duration-200"
+                        >
+                          Remove File
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 

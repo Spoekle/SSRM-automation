@@ -1,15 +1,15 @@
 import { Canvas, ExportFormat, Image } from 'skia-canvas';
 import { CanvasRenderingContext2D as SkiaCanvasRenderingContext2D } from 'skia-canvas';
 
-interface StarRating {
+export interface StarRating {
   ES: string;
   NOR: string;
   HARD: string;
+  EX: string;
   EXP: string;
-  EXP_PLUS: string;
 }
 
-interface MapInfo {
+export interface MapInfo {
   metadata: {
     songAuthorName: string;
     songName: string;
@@ -29,19 +29,19 @@ export interface NewStarRatings {
   ES: string;
   NOR: string;
   HARD: string;
+  EX: string;
   EXP: string;
-  EXP_PLUS: string;
 }
 
 export interface OldStarRatings {
   ES: string;
   NOR: string;
   HARD: string;
+  EX: string;
   EXP: string;
-  EXP_PLUS: string;
 }
 
-async function loadImage(urlOrBuffer: string | ArrayBuffer): Promise<Image> {
+export async function loadImage(urlOrBuffer: string | ArrayBuffer): Promise<Image> {
   let buffer;
   if (typeof urlOrBuffer === 'string') {
     const response = await fetch(urlOrBuffer);
@@ -58,13 +58,13 @@ async function loadImage(urlOrBuffer: string | ArrayBuffer): Promise<Image> {
   });
 }
 
-function formatDuration(seconds = 0): string {
+export function formatDuration(seconds = 0): string {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
   return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
 }
 
-function truncateText(ctx: SkiaCanvasRenderingContext2D, text: string, maxWidth: number): string {
+export function truncateText(ctx: SkiaCanvasRenderingContext2D, text: string, maxWidth: number): string {
   const ellipsis = '…';
   let truncatedText = text;
 
@@ -164,8 +164,8 @@ export async function generateCard(data: MapInfo, starRatings: StarRating, useBa
     { rating: starRatings.ES, color: 'rgb(22 163 74)' },
     { rating: starRatings.NOR, color: 'rgb(59 130 246)' },
     { rating: starRatings.HARD, color: 'rgb(249 115 22)' },
-    { rating: starRatings.EXP, color: 'rgb(220 38 38)' },
-    { rating: starRatings.EXP_PLUS, color: 'rgb(126 34 206)' }
+    { rating: starRatings.EX, color: 'rgb(220 38 38)' },
+    { rating: starRatings.EXP, color: 'rgb(126 34 206)' }
   ];
 
   let x = 300;
@@ -263,10 +263,10 @@ export async function generateReweightCard(data: MapInfo, oldStarRatings: OldSta
     case 'HARD':
       color = 'rgb(249 115 22)';
       break;
-    case 'EXP':
+    case 'EX':
       color = 'rgb(220 38 38)';
       break;
-    case 'EXP_PLUS':
+    case 'EXP':
       color = 'rgb(126 34 206)';
       break;
     default:
@@ -332,7 +332,7 @@ export async function generateReweightCard(data: MapInfo, oldStarRatings: OldSta
   return canvas.toDataURL('image/png' as ExportFormat);
 }
 
-export async function generateThumbnail(data: MapInfo, chosenDiff: keyof StarRating, starRatings: StarRating, processedBackground: string | ArrayBuffer | null): Promise<string> {
+export async function generateThumbnail(data: MapInfo, chosenDiff: keyof StarRating, starRatings: StarRating, backgroundUrl: string): Promise<string> {
   const canvas = new Canvas(1920, 1080);
   const ctx = canvas.getContext('2d');
 
@@ -343,25 +343,16 @@ export async function generateThumbnail(data: MapInfo, chosenDiff: keyof StarRat
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, 1920, 1080);
 
-  console.log('Before loading cover image');
-  const img = await loadImage(data.versions[0].coverURL);
-  console.log('Cover image loaded');
+  // Load cover image
+  const coverImg = await loadImage(data.versions[0].coverURL);
 
-  console.log('Before loading background image');
+  // Load background image
   let backgroundImg: Image | null = null;
-  if (
-    processedBackground &&
-    typeof processedBackground === 'object' &&
-    'thumbnail' in processedBackground &&
-    typeof (processedBackground as any).thumbnail === 'string'
-  ) {
-    try {
-      backgroundImg = await loadImage((processedBackground as any).thumbnail);
-    } catch (error) {
-      console.error('Failed to load background image from thumbnail, using cover image instead', error);
-    }
-  } else {
-    console.log('Skipping background image loading');
+  try {
+    backgroundImg = await loadImage(backgroundUrl);
+  } catch (error) {
+    console.error('Error loading background:', error);
+    backgroundImg = coverImg;
   }
 
   ctx.save();
@@ -369,11 +360,12 @@ export async function generateThumbnail(data: MapInfo, chosenDiff: keyof StarRat
   ctx.roundRect(20, 20, 1880, 1040, 50);
   ctx.clip();
 
+  // Draw background with blur effect
   ctx.filter = 'blur(10px)';
   if (backgroundImg) {
-    ctx.drawImage(backgroundImg, 20, 20, 1880, 1040);
+    ctx.drawImage(backgroundImg, 0, 0, 1920, 1080);
   } else {
-    ctx.drawImage(img, 20, 20, 1880, 1040);
+    ctx.drawImage(coverImg, 0, 0, 1920, 1080);
   }
   ctx.filter = 'none';
 
@@ -392,7 +384,7 @@ export async function generateThumbnail(data: MapInfo, chosenDiff: keyof StarRat
   ctx.beginPath();
   ctx.roundRect(75, 495, 510, 510, 50);
   ctx.clip();
-  ctx.drawImage(img, 75, 495, 510, 510);
+  ctx.drawImage(coverImg, 75, 495, 510, 510);
   ctx.restore();
 
   // Draw outline around the image
@@ -454,11 +446,11 @@ export async function generateThumbnail(data: MapInfo, chosenDiff: keyof StarRat
       color = 'rgb(249 115 22)';
       difficulty = 'Hard';
       break;
-    case 'EXP':
+    case 'EX':
       color = 'rgb(220 38 38)';
       difficulty = 'Expert';
       break;
-    case 'EXP_PLUS':
+    case 'EXP':
       color = 'rgb(126 34 206)';
       difficulty = 'Expert+';
       break;
@@ -482,7 +474,7 @@ export async function generateThumbnail(data: MapInfo, chosenDiff: keyof StarRat
     ctx.fillStyle = 'white';
     ctx.textBaseline = 'middle';
     ctx.font = 'bold 48px Heebo, sans-serif';
-    ctx.fillText(`${difficulty} ${rating}`, x + 255, 410);
+    ctx.fillText(`${difficulty} ${rating}${rating !== 'Unranked' && rating !== 'Qualified' ? ' ★' : ''}`, x + 255, 410);
   }
 
   const dot = new Path2D();

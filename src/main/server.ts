@@ -7,10 +7,29 @@ import os from 'os';
 import path from 'path';
 import ffmpeg from 'fluent-ffmpeg';
 import { v4 as uuidv4 } from 'uuid';
+import multer from 'multer';
 
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: '5000mb' }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, os.tmpdir());
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname);
+    cb(null, 'upload-' + uniqueSuffix + ext);
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 20 * 1024 * 1024 * 1024 } // 20GB limit
+});
 
 interface ScoreSaberRequest {
   params: {
@@ -64,34 +83,35 @@ app.get('/api/beatsaver/:hash', async (req: BeatSaverRequest, res: BeatSaverResp
 });
 
 // POST /api/generate-thumbnail
-app.post('/api/generate-thumbnail', async (req: any, res: any) => {
-  const { background, video } = req.body;
-  if (video) {
-    try {
-      const base64Data = video.includes('base64,') ? video.split('base64,')[1] : video;
-      const videoBuffer = Buffer.from(base64Data, 'base64');
-      const tempVideoPath = path.join(os.tmpdir(), `temp-${uuidv4()}.mp4`);
-      fs.writeFileSync(tempVideoPath, videoBuffer);
-      log.info('Video written to temporary path:', tempVideoPath);
-      console.log('Video written to temporary path:', tempVideoPath);
+app.post('/api/generate-thumbnail', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
 
-      ffmpeg.ffprobe(tempVideoPath, (err: any, metadata: any) => {
+    const fileType = req.body.fileType;
+    const filePath = req.file.path;
+
+    // Process based on file type
+    if (fileType === 'video') {
+      log.info('Processing video file:', filePath);
+
+      // Use ffprobe to get video metadata
+      ffmpeg.ffprobe(filePath, (err, metadata) => {
         if (err) {
           log.error('ffprobe error:', err);
-          console.error('ffprobe error:', err);
-          fs.unlinkSync(tempVideoPath);
-          return res.status(500).json({ error: 'Error processing video in ffprobe, no ffmpeg installed?', details: err.message });
+          fs.unlinkSync(filePath);
+          return res.status(500).json({ error: 'Error analyzing video' });
         }
-        log.info('Video metadata:', metadata);
-        console.log('Video metadata:', metadata);
 
-        const duration = metadata.format.duration;
+        const duration = metadata.format.duration || 10;
         const randomTime = Math.random() * duration;
         const tempImagePath = path.join(os.tmpdir(), `thumb-${uuidv4()}.png`);
-        log.info(`Extracting screenshot at random time ${randomTime} (duration: ${duration})`);
-        console.log(`Extracting screenshot at random time ${randomTime} (duration: ${duration})`);
 
-        ffmpeg(tempVideoPath)
+        log.info(`Extracting frame at ${randomTime}s from video (duration: ${duration}s)`);
+
+        // Extract a random frame from the video
+        ffmpeg(filePath)
           .screenshots({
             timestamps: [randomTime],
             filename: path.basename(tempImagePath),
@@ -100,42 +120,72 @@ app.post('/api/generate-thumbnail', async (req: any, res: any) => {
           })
           .on('end', () => {
             try {
-              log.info('Screenshot generated at:', tempImagePath);
-              console.log('Screenshot generated at:', tempImagePath);
+              log.info('Frame extracted successfully to:', tempImagePath);
+
+              // Read the image and convert to base64
               const imgBuffer = fs.readFileSync(tempImagePath);
               const imgBase64 = 'data:image/png;base64,' + imgBuffer.toString('base64');
-              // Cleanup temp files
-              fs.unlinkSync(tempVideoPath);
+
+              // Clean up temp files
+              fs.unlinkSync(filePath);
               fs.unlinkSync(tempImagePath);
-              log.info('Temporary files cleaned up.');
-              console.log('Temporary files cleaned up.');
-              // Send back the generated thumbnail image.
+
               res.json({ thumbnail: imgBase64 });
-            } catch (readErr: any) {
+            } catch (readErr) {
               log.error('Error reading generated thumbnail:', readErr);
-              console.error('Error reading generated thumbnail:', readErr);
-              res.status(500).json({ error: 'Error reading generated thumbnail', details: readErr.message });
+
+              // Clean up on error
+              if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+              if (fs.existsSync(tempImagePath)) fs.unlinkSync(tempImagePath);
+
+              res.status(500).json({ error: 'Error reading generated thumbnail' });
             }
           })
-          .on('error', (ffmpegErr: any) => {
-            log.error('Error during ffmpeg screenshot generation:', ffmpegErr);
-            console.error('Error during ffmpeg screenshot generation:', ffmpegErr);
-            fs.unlinkSync(tempVideoPath);
-            if (fs.existsSync(tempImagePath)) {
-              fs.unlinkSync(tempImagePath);
-            }
-            res.status(500).json({ error: 'Error generating thumbnail from video', details: ffmpegErr.message });
+          .on('error', (ffmpegErr) => {
+            log.error('Error during ffmpeg processing:', ffmpegErr);
+
+            // Clean up on error
+            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+            if (fs.existsSync(tempImagePath)) fs.unlinkSync(tempImagePath);
+
+            res.status(500).json({ error: 'Error generating thumbnail from video' });
           });
       });
-    } catch (error: any) {
-      log.error('Unexpected error processing video:', error);
-      console.error('Unexpected error processing video:', error);
-      return res.status(500).json({ error: 'Unexpected error processing video', details: error.message });
+    } else {
+      // For images, read the file and return as base64
+      log.info('Processing image file:', filePath);
+
+      fs.readFile(filePath, (err, data) => {
+        if (err) {
+          log.error('Error reading image file:', err);
+          return res.status(500).json({ error: 'Error reading image file' });
+        }
+
+        // Get mime type from file extension
+        const ext = path.extname(req.file!.originalname).toLowerCase();
+        let mimeType = 'image/jpeg';
+
+        if (ext === '.png') mimeType = 'image/png';
+        else if (ext === '.gif') mimeType = 'image/gif';
+        else if (ext === '.webp') mimeType = 'image/webp';
+
+        const base64Image = `data:${mimeType};base64,${data.toString('base64')}`;
+
+        // Clean up
+        fs.unlinkSync(filePath);
+
+        res.json({ thumbnail: base64Image });
+      });
     }
-  } else if (background) {
-    return res.json({ thumbnail: background });
-  } else {
-    return res.status(400).json({ error: 'No video or background provided' });
+  } catch (error) {
+    log.error('Unexpected error processing file:', error);
+
+    // Clean up if file exists
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+
+    res.status(500).json({ error: 'Unexpected error processing file' });
   }
 });
 
