@@ -323,12 +323,6 @@ const CardForm: React.FC<CardFormProps> = ({
             <FaTimes/>
           </button>
         </div>
-        {songName &&
-          <div className='absolute left-0 ml-6 mt-8'>
-            <h1 className='text-2xl font-bold'>Chosen Song:</h1>
-            <h1 className='text-lg font-semibold'>{songName}</h1>
-          </div>
-        }
         <form onSubmit={getMapInfo} className='space-y-6'>
           <div className='flex flex-col md:flex-row md:space-x-6'>
             {/* Manual Inputs */}
