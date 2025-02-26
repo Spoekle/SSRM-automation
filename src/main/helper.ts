@@ -332,7 +332,7 @@ export async function generateReweightCard(data: MapInfo, oldStarRatings: OldSta
   return canvas.toDataURL('image/png' as ExportFormat);
 }
 
-export async function generateThumbnail(data: MapInfo, chosenDiff: keyof StarRating, starRatings: StarRating, processedBackground: string | ArrayBuffer | null): Promise<string> {
+export async function generateThumbnail(data: MapInfo, chosenDiff: keyof StarRating, starRatings: StarRating, backgroundUrl: string): Promise<string> {
   const canvas = new Canvas(1920, 1080);
   const ctx = canvas.getContext('2d');
 
@@ -343,25 +343,16 @@ export async function generateThumbnail(data: MapInfo, chosenDiff: keyof StarRat
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, 1920, 1080);
 
-  console.log('Before loading cover image');
-  const img = await loadImage(data.versions[0].coverURL);
-  console.log('Cover image loaded');
+  // Load cover image
+  const coverImg = await loadImage(data.versions[0].coverURL);
 
-  console.log('Before loading background image');
+  // Load background image
   let backgroundImg: Image | null = null;
-  if (
-    processedBackground &&
-    typeof processedBackground === 'object' &&
-    'thumbnail' in processedBackground &&
-    typeof (processedBackground as any).thumbnail === 'string'
-  ) {
-    try {
-      backgroundImg = await loadImage((processedBackground as any).thumbnail);
-    } catch (error) {
-      console.error('Failed to load background image from thumbnail, using cover image instead', error);
-    }
-  } else {
-    console.log('Skipping background image loading');
+  try {
+    backgroundImg = await loadImage(backgroundUrl);
+  } catch (error) {
+    console.error('Error loading background:', error);
+    backgroundImg = coverImg;
   }
 
   ctx.save();
@@ -369,11 +360,12 @@ export async function generateThumbnail(data: MapInfo, chosenDiff: keyof StarRat
   ctx.roundRect(20, 20, 1880, 1040, 50);
   ctx.clip();
 
+  // Draw background with blur effect
   ctx.filter = 'blur(10px)';
   if (backgroundImg) {
-    ctx.drawImage(backgroundImg, 20, 20, 1880, 1040);
+    ctx.drawImage(backgroundImg, 0, 0, 1920, 1080);
   } else {
-    ctx.drawImage(img, 20, 20, 1880, 1040);
+    ctx.drawImage(coverImg, 0, 0, 1920, 1080);
   }
   ctx.filter = 'none';
 
@@ -392,7 +384,7 @@ export async function generateThumbnail(data: MapInfo, chosenDiff: keyof StarRat
   ctx.beginPath();
   ctx.roundRect(75, 495, 510, 510, 50);
   ctx.clip();
-  ctx.drawImage(img, 75, 495, 510, 510);
+  ctx.drawImage(coverImg, 75, 495, 510, 510);
   ctx.restore();
 
   // Draw outline around the image
@@ -482,7 +474,7 @@ export async function generateThumbnail(data: MapInfo, chosenDiff: keyof StarRat
     ctx.fillStyle = 'white';
     ctx.textBaseline = 'middle';
     ctx.font = 'bold 48px Heebo, sans-serif';
-    ctx.fillText(`${difficulty} ${rating}`, x + 255, 410);
+    ctx.fillText(`${difficulty} ${rating}${rating !== 'Unranked' && rating !== 'Qualified' ? ' ★' : ''}`, x + 255, 410);
   }
 
   const dot = new Path2D();

@@ -119,15 +119,16 @@ export async function generateCardFromConfig(
       }
       case 'text': {
         let text = comp.text || '';
-        // Replace tokens with nested values (e.g., {metadata.songName})
         if (data) {
           text = text.replace(/{([^}]+)}/g, (_, key) => getNestedValue(data, key) || '');
         }
         ctx.font = comp.font || '24px sans-serif';
         ctx.fillStyle = comp.fillStyle || 'black';
         ctx.textAlign = comp.textAlign || 'left';
+        ctx.textBaseline = 'middle';
         const displayText = comp.maxWidth ? truncateText(ctx, text, comp.maxWidth) : text;
-        ctx.fillText(displayText, comp.x, comp.y);
+        const textY = comp.height ? comp.y + comp.height / 2 : comp.y;
+        ctx.fillText(displayText, comp.x, textY);
         break;
       }
       case 'image': {
