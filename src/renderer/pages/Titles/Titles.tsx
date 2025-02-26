@@ -24,10 +24,26 @@ interface Alert {
   fadeOut: boolean;
   type: 'success' | 'error' | 'alert';
 }
+const abbreviatedToDifficulty = (abbreviated: string): string => {
+  switch (abbreviated) {
+    case 'ES':
+      return 'Easy';
+    case 'NOR':
+      return 'Normal';
+    case 'HARD':
+      return 'Hard';
+    case 'EX':
+      return 'Expert';
+    case 'EXP':
+      return 'Expert+';
+    default:
+      return abbreviated;
+  }
+};
 
 const Titles: React.FC = () => {
   const [mapId, setMapId] = useState<string>('');
-  const [difficulty, setDifficulty] = useState<string>('Easy');
+  const [chosenDiff, setChosenDiff] = useState<string>('Easy');
   const [player, setPlayer] = useState<string>('Mr_bjo');
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [mapInfo, setMapInfo] = useState<MapInfo | null>(null);
@@ -43,15 +59,11 @@ const Titles: React.FC = () => {
     if (storedMapInfo) {
       setMapInfo(JSON.parse(storedMapInfo));
     }
+    const storedChosenDiff = localStorage.getItem('chosenDiff');
+    if (storedChosenDiff) {
+      setChosenDiff(abbreviatedToDifficulty(storedChosenDiff));
+    }
   }, []);
-
-  const removeMapInfo = () => {
-    setMapId('');
-    setMapInfo(null);
-    localStorage.removeItem('mapId');
-    localStorage.removeItem('mapInfo');
-    createAlerts('Cleared map info!', 'alert');
-  };
 
   const copyToClipboard = (text: string, type: 'title' | 'description') => {
     navigator.clipboard.writeText(text).then(() => {
@@ -96,12 +108,12 @@ const Titles: React.FC = () => {
               <div className='flex w-full'>
                 <div className='flex flex-grow bg-neutral-300 dark:bg-neutral-800 mt-2 p-4 rounded-l-md'>
                   <div className='justify-items-center'>
-                    <h1 className='flex text-md'>{mapInfo.metadata.songName} {mapInfo.metadata.songSubName ? ` ${mapInfo.metadata.songSubName} | ` : ' | '}{mapInfo.metadata.songAuthorName} | {mapInfo.metadata.levelAuthorName} | {difficulty}</h1>
+                    <h1 className='flex text-md'>{mapInfo.metadata.songName} {mapInfo.metadata.songSubName ? ` ${mapInfo.metadata.songSubName} | ` : ' | '}{mapInfo.metadata.songAuthorName} | {mapInfo.metadata.levelAuthorName} | {chosenDiff}</h1>
                   </div>
                 </div>
                 <button
                   className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mt-2 rounded-r-xl'
-                  onClick={() => copyToClipboard(`${mapInfo.metadata.songName}${mapInfo.metadata.songSubName ? ` ${mapInfo.metadata.songSubName} | ` : ' | '}${mapInfo.metadata.songAuthorName} | ${mapInfo.metadata.levelAuthorName} | ${difficulty}`, 'title')}
+                  onClick={() => copyToClipboard(`${mapInfo.metadata.songName}${mapInfo.metadata.songSubName ? ` ${mapInfo.metadata.songSubName} | ` : ' | '}${mapInfo.metadata.songAuthorName} | ${mapInfo.metadata.levelAuthorName} | ${chosenDiff}`, 'title')}
                 >
                   Copy
                 </button>
@@ -140,8 +152,8 @@ const Titles: React.FC = () => {
         <MapForm
           mapId={mapId}
           setMapId={setMapId}
-          difficulty={difficulty}
-          setDifficulty={setDifficulty}
+          chosenDiff={chosenDiff}
+          setChosenDiff={setChosenDiff}
           useSubname={useSubname}
           setUseSubname={setUseSubname}
           player={player}

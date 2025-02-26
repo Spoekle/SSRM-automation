@@ -14,6 +14,8 @@ interface StarRatingFormProps {
   newStarRatings: NewStarRatings;
   setNewStarRatings: (ratings: NewStarRatings) => void;
   setStarRatingFormModal: (show: boolean) => void;
+  chosenDiff: string;
+  setChosenDiff: (diff: string) => void;
   setMapInfo: (info: any) => void;
   setImageSrc: (src: string) => void;
   createAlerts: (message: string, type: 'success' | 'error' | 'alert') => void;
@@ -56,6 +58,8 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
   newStarRatings,
   setNewStarRatings,
   setStarRatingFormModal,
+  chosenDiff,
+  setChosenDiff,
   setMapInfo,
   setImageSrc,
   createAlerts,
@@ -63,7 +67,6 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
   cancelGenerationRef,
 }) => {
   const [songName, setSongName] = useState('');
-  const [chosenDiff, setChosenDiff] = useState('ES');
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   const handleClickOutside = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
@@ -282,7 +285,10 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
               <label className="block mt-4 mb-2 text-gray-700 dark:text-gray-200">Difficulty:</label>
               <select
                 className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white"
-                onChange={(e) => setChosenDiff(e.target.value)}
+                onChange={(e) => {
+                  setChosenDiff(e.target.value)
+                  localStorage.setItem('chosenDiff', e.target.value)
+                }}
                 value={chosenDiff}
               >
                 <option value="ES">Easy</option>
