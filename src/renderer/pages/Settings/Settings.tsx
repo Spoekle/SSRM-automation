@@ -217,7 +217,8 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(({ onClose, appVersi
                     <Switch checked={isDarkMode} onChange={toggleTheme} color="primary" />
                   </div>
                 </div>
-                <div className="flex flex-col bg-neutral-800 p-2 rounded-lg mt-4">
+                {/*
+                <div className="flex flex-col bg-neutral-200 dark:bg-neutral-800 p-2 rounded-lg mt-4">
                   <div className="flex justify-between items-center">
                     <p className="text-sm text-neutral-800 dark:text-neutral-100">
                       {storedCardConfigName ? (
@@ -252,6 +253,7 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(({ onClose, appVersi
                     </div>
                   </div>
                 </div>
+                */}
               </div>
             </div>
 
