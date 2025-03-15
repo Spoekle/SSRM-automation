@@ -63,6 +63,17 @@ const configuration: webpack.Configuration = {
   resolve: {
     fallback: {
       fs: false,
+      querystring: require.resolve('querystring-es3'),
+      os: require.resolve('os-browserify/browser'),
+      path: require.resolve('path-browserify'),
+      crypto: require.resolve('crypto-browserify'),
+      stream: require.resolve('stream-browserify'),
+      util: require.resolve('util/'),
+      assert: require.resolve('assert/'),
+      buffer: require.resolve('buffer/'),
+      url: require.resolve('url/'),
+      http: require.resolve('stream-http'),
+      https: require.resolve('https-browserify'),
     },
   },
 
