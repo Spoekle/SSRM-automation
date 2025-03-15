@@ -4,6 +4,7 @@ import axios from 'axios';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { FaTimes } from "react-icons/fa";
+import log from 'electron-log';
 import { generateReweightCard } from '../../../../main/helper';
 
 interface StarRatingFormProps {
@@ -91,7 +92,7 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
       createAlerts("Star change image generated successfully.", "success");
       setStarRatingFormModal(false);
     } catch (error) {
-      console.error('Error fetching map info:', error);
+      log.error('Error fetching map info:', error);
       createAlerts("Error fetching map info.", "error");
     }
   };
@@ -113,9 +114,9 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
         const key = Object.keys(fetchedStarRatings)[i] as keyof NewStarRatings;
         fetchedStarRatings[key] = data.stars === 0 ? 'Unranked' : data.stars.toString();
         localStorage.setItem('starRatings', JSON.stringify(fetchedStarRatings));
-        console.log(fetchedStarRatings);
+        log.info(fetchedStarRatings);
       } catch (error) {
-        console.error(error);
+        log.error("Error fetching star rating, diff " + diffs[i] + " probably doesnt exist :)");
       }
     }
     return fetchedStarRatings;
@@ -136,7 +137,7 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
       });
       return data.metadata.songName;
     } catch (error) {
-      console.error('Error fetching map info:', error);
+      log.error('Error fetching map info:', error);
     }
   };
 
@@ -225,7 +226,7 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
 
           zip.file(fileName, byteArray, { binary: true });
         } catch (err) {
-          console.error(`Error processing map with hash ${map.songHash}:`, err);
+          log.error(`Error processing map with hash ${map.songHash}:`, err);
         } finally {
           processedCount++;
           const percent = Math.floor((processedCount / mapCount) * 100);
@@ -240,7 +241,7 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
         setProgress("", 0, false);
       }, 2000);
     } catch (err: any) {
-      console.error("Error processing uploaded JSON:", err);
+      log.error("Error processing uploaded JSON:", err);
       setUploadError("Failed to process the uploaded JSON file. Please ensure it is correctly formatted.");
       createAlerts(
         "Failed to process the uploaded JSON file. Please ensure it is correctly formatted.",

@@ -5,6 +5,7 @@ import axios from 'axios';
 import { spawn, exec } from 'child_process';
 import { installFfmpeg } from './ffmpeg-installer';
 import { app, BrowserWindow, shell, ipcMain } from 'electron';
+import log from 'electron-log';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 
@@ -30,7 +31,7 @@ const installExtensions = async () => {
       extensions.map((name) => installer[name]),
       forceDownload,
     )
-    .catch(console.log);
+    .catch(log.error);
 };
 
 const createMainWindow = async () => {
@@ -168,7 +169,7 @@ const createMainWindow = async () => {
         writer.on('error', reject);
       });
     } catch (error) {
-      console.error('Error updating application:', error);
+      log.error('Error updating application:', error);
       throw error;
     }
   });
@@ -206,7 +207,6 @@ app.on('window-all-closed', () => {
 app
   .whenReady()
   .then(async () => {
-
       await createMainWindow();
   })
-  .catch(console.log);
+  .catch(log.error);

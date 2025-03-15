@@ -1,5 +1,6 @@
 import React from 'react';
 import axios from 'axios';
+import log from 'electron-log';
 
 interface StarRatings {
   ES: string;
@@ -40,7 +41,7 @@ const MapInfoSection: React.FC<MapInfoSectionProps> = ({
       getStarRating(data.versions[0].hash).then(setStarRatings);
       return data.metadata.songName;
     } catch (error) {
-      console.error('Error fetching map info:', error);
+      log.error('Error fetching map info:', error);
     }
   };
 
@@ -55,7 +56,7 @@ const MapInfoSection: React.FC<MapInfoSectionProps> = ({
         ratings[key] = data.stars === 0 ? (data.qualified ? 'Qualified' : 'Unranked') : `${data.stars}`;
         localStorage.setItem('starRatings', JSON.stringify(ratings));
       } catch (error) {
-        console.error(error);
+        log.error(error);
       }
     }
     return ratings;

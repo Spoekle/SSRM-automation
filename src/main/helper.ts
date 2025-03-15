@@ -1,5 +1,6 @@
 import { Canvas, ExportFormat, Image } from 'skia-canvas';
 import { CanvasRenderingContext2D as SkiaCanvasRenderingContext2D } from 'skia-canvas';
+import log from 'electron-log';
 
 export interface StarRating {
   ES: string;
@@ -351,7 +352,7 @@ export async function generateThumbnail(data: MapInfo, chosenDiff: keyof StarRat
   try {
     backgroundImg = await loadImage(backgroundUrl);
   } catch (error) {
-    console.error('Error loading background:', error);
+    log.error('Error loading background:', error);
     backgroundImg = coverImg;
   }
 

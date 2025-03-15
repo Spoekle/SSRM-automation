@@ -63,8 +63,11 @@ app.get('/api/scoresaber/:hash/:difficulty', async (req: ScoreSaberRequest, res:
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.json(response.data);
   } catch (error) {
+    if (axios.isAxiosError(error) && error.response && error.response.status === 404) {
+      log.error('ScoreSaber data not found, diff does not exist probably!');
+      return res.status(404).json({ error: 'ScoreSaber data not found, diff does not exist probably!' });
+    }
     log.error(error);
-    console.error(error);
     res.status(500).json({ error: 'Failed to fetch data from ScoreSaber API' });
   }
 });
@@ -77,7 +80,6 @@ app.get('/api/beatsaver/:hash', async (req: BeatSaverRequest, res: BeatSaverResp
     res.json(response.data);
   } catch (error) {
     log.error(error);
-    console.error(error);
     res.status(500).json({ error: 'Failed to fetch data from BeatSaver API' });
   }
 });
@@ -191,5 +193,4 @@ app.post('/api/generate-thumbnail', upload.single('file'), async (req, res) => {
 
 app.listen(3000, () => {
   log.info('Proxy server running on http://localhost:3000');
-  console.log('Proxy server running on http://localhost:3000');
 });

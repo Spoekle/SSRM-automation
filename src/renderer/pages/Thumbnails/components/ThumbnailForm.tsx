@@ -2,6 +2,7 @@ import React, { FormEvent, useState } from 'react';
 import ReactDOM from 'react-dom';
 import axios from 'axios';
 import { FaTimes } from 'react-icons/fa';
+import log from 'electron-log';
 import MapInfoSection from './MapInfoSection';
 import FileUploadSection from './FileUploadSection';
 import { generateThumbnail } from '../../../../main/helper';
@@ -67,7 +68,7 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
         localStorage.setItem('mapId', mapId);
         localStorage.setItem('mapInfo', JSON.stringify(mapData));
       } catch (error) {
-        console.error('Error fetching map data:', error);
+        log.error('Error fetching map data:', error);
         createAlerts('Error fetching map info', 'error');
         setProgress("", 0, false);
         return;
@@ -113,7 +114,7 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
             throw new Error('Invalid response format from server');
           }
         } catch (error) {
-          console.error('Error processing file:', error);
+          log.error('Error processing file:', error);
           createAlerts('Error processing file, falling back to map cover', 'error');
           backgroundImage = mapData.versions[0].coverURL;
         }
@@ -133,7 +134,7 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
           backgroundImage,
         );
       } catch (error) {
-        console.error('Error generating thumbnail:', error);
+        log.error('Error generating thumbnail:', error);
         createAlerts('Error generating thumbnail', 'error');
         setProgress("", 0, false);
         return;
@@ -145,7 +146,7 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
       createAlerts('Thumbnail generated successfully', 'success');
 
     } catch (error) {
-      console.error('Unhandled error in getMapInfo:', error);
+      log.error('Unhandled error in getMapInfo:', error);
       createAlerts('An unexpected error occurred', 'error');
       setProgress("", 0, false);
     }

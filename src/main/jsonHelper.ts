@@ -51,6 +51,7 @@ export interface CardConfig {
 
 import { Canvas, ExportFormat } from 'skia-canvas';
 import { formatDuration, truncateText, loadImage, StarRating } from './helper';
+import log from 'electron-log';
 
 function getNestedValue(obj: any, path: string): any {
   return path.split('.').reduce((acc, part) => acc && acc[part], obj);
@@ -69,13 +70,13 @@ export async function generateCardFromConfig(
       data.durationFormatted = formatDuration(data.metadata.duration);
     }
   }
-  console.log('Loaded config:', config);
+  log.info('Loaded config:', config);
   const canvas = new Canvas(config.width, config.height);
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = 'transparent';
 
   const cardRadius = config.cardCornerRadius;
-  console.log('Using cardCornerRadius:', cardRadius);
+  log.info('Using cardCornerRadius:', cardRadius);
   ctx.fillRect(0, 0, config.width, config.height);
   ctx.roundRect(0, 0, config.width, config.height, cardRadius);
   ctx.clip();
@@ -119,16 +120,15 @@ export async function generateCardFromConfig(
       }
       case 'text': {
         let text = comp.text || '';
+        // Replace tokens with nested values (e.g., {metadata.songName})
         if (data) {
           text = text.replace(/{([^}]+)}/g, (_, key) => getNestedValue(data, key) || '');
         }
         ctx.font = comp.font || '24px sans-serif';
         ctx.fillStyle = comp.fillStyle || 'black';
         ctx.textAlign = comp.textAlign || 'left';
-        ctx.textBaseline = 'middle';
         const displayText = comp.maxWidth ? truncateText(ctx, text, comp.maxWidth) : text;
-        const textY = comp.height ? comp.y + comp.height / 2 : comp.y;
-        ctx.fillText(displayText, comp.x, textY);
+        ctx.fillText(displayText, comp.x, comp.y);
         break;
       }
       case 'image': {
@@ -153,7 +153,7 @@ export async function generateCardFromConfig(
               ctx.drawImage(img, comp.x, comp.y, drawWidth, drawHeight);
             }
           } catch (error) {
-            console.error('Error loading image for component:', comp, error);
+            log.error('Error loading image for component:', comp, error);
           }
         }
         break;
@@ -197,7 +197,7 @@ export async function generateCardFromConfig(
         break;
       }
       default:
-        console.warn('Unknown component type:', comp.type);
+        log.warn('Unknown component type:', comp.type);
         break;
     }
   }

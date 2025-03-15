@@ -2,6 +2,7 @@ import React, { FormEvent } from 'react';
 import ReactDOM from 'react-dom';
 import Switch from '@mui/material/Switch';
 import axios from 'axios';
+import log from 'electron-log';
 
 // Utility functions for difficulty conversion
 const difficultyToAbbreviated = (difficulty: string): string => {
@@ -69,10 +70,10 @@ const MapForm: React.FC<MapFormProps> = ({
       setMapInfo(data);
       localStorage.setItem('mapId', `${mapId}`);
       localStorage.setItem('mapInfo', JSON.stringify(data));
-      console.log(data);
+      log.info(data);
       setMapFormModal(false);
     } catch (error) {
-      console.error('Error fetching map info:', error);
+      log.error('Error fetching map info:', error);
     }
   };
 

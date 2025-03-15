@@ -1,5 +1,6 @@
 import MapForm from './components/MapForm';
 import React, { useState, useEffect } from 'react';
+import log from 'electron-log';
 import LoadedMap from '../components/LoadedMap';
 
 interface MapInfo {
@@ -69,7 +70,7 @@ const Titles: React.FC = () => {
     navigator.clipboard.writeText(text).then(() => {
       createAlerts(`Copied ${type} to clipboard!`, 'success');
     }).catch((err) => {
-      console.error('Failed to copy: ', err);
+      log.error('Failed to copy: ', err);
     });
   };
 

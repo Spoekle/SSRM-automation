@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { FaCog } from 'react-icons/fa';
 import axios from 'axios';
+import log from 'electron-log';
 import Settings, { SettingsHandles } from '../Settings/Settings';
 
 function Footer() {
   const { ipcRenderer } = window.require('electron');
-  const [appVersion] = useState<string>('1.7.1');
+  const [appVersion] = useState<string>('1.7.3');
   const [latestVersion, setLatestVersion] = useState<string>('');
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
   const [updateProgress, setUpdateProgress] = useState<string>('');
@@ -24,7 +25,7 @@ function Footer() {
 
       await ipcRenderer.invoke('update-application');
     } catch (error) {
-      console.error('Error updating application:', error);
+      log.error('Error updating application:', error);
       setIsUpdating(false);
       alert('Failed to update the application.');
     }
@@ -39,7 +40,7 @@ function Footer() {
         const data = response.data;
         setLatestVersion(data.tag_name.replace(/^v/, ''));
       } catch (error) {
-        console.error('Error fetching latest version:', error);
+        log.error('Error fetching latest version:', error);
       }
     };
     getLatestVersion();

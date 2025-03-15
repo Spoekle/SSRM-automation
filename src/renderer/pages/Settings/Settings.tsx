@@ -3,6 +3,7 @@ import Switch from '@mui/material/Switch';
 import LinearProgress from '@mui/material/LinearProgress';
 import { FaTimes, FaGithub } from 'react-icons/fa';
 import { ipcRenderer } from 'electron';
+import log from 'electron-log';
 import { ConfirmationModal } from './components/ConfirmationModal';
 import LoadedMapInfo from './components/LoadedMapInfo';
 import './styles/CustomScrollbar.css';
@@ -41,7 +42,7 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(({ onClose, appVersi
         return parsed.configName || null;
       }
     } catch (error) {
-      console.error("Error parsing cardConfig:", error);
+      log.error("Error parsing cardConfig:", error);
     }
     return null;
   });
@@ -89,7 +90,7 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(({ onClose, appVersi
       setStoredCardConfigName(file.name);
       window.alert("Card configuration saved successfully!");
     } catch (error) {
-      console.error("Error uploading card configuration:", error);
+      log.error("Error uploading card configuration:", error);
       window.alert("Failed to upload card configuration. Please check the file format.");
     }
   };
@@ -107,7 +108,7 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(({ onClose, appVersi
       const installed = await ipcRenderer.invoke('check-ffmpeg');
       setFfmpegInstalled(installed);
     } catch (error) {
-      console.error('Error checking ffmpeg:', error);
+      log.error('Error checking ffmpeg:', error);
       setFfmpegInstalled(false);
     }
   };
@@ -121,7 +122,7 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(({ onClose, appVersi
         type === 'install' ? 'install-ffmpeg' : 'reinstall-ffmpeg'
       );
     } catch (err) {
-      console.error(`Error ${type}ing ffmpeg:`, err);
+      log.error(`Error ${type}ing ffmpeg:`, err);
     } finally {
       setFfmpegLoading(false);
       checkFfmpeg();
