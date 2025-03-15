@@ -1,11 +1,11 @@
 {
   "name": "ssrm-automation",
-  "version": "1.7.2",
+  "version": "1.7.3",
   "description": "Generate everything that you need!",
   "license": "MIT",
   "author": {
     "name": "Spoekle",
-    "email": "thiangraber@gmail.com",
+    "email": "spoekle@spoekle.com",
     "url": "https://github.com/Spoekle/SSRM-automation"
   },
   "main": "./dist/main/main.js",
