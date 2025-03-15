@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import axios from 'axios';
 import Switch from '@mui/material/Switch';
 import { FaTimes } from 'react-icons/fa';
+import log from 'electron-log';
 import { generateCard } from '../../../../main/helper';
 import { generateCardFromConfig } from '../../../../main/jsonHelper';
 import JSZip from 'jszip';
@@ -80,10 +81,10 @@ const CardForm: React.FC<CardFormProps> = ({
       const image = await generateCard(data, starRatings, useBackground);
       setImageSrc(image);
 
-      console.log(data);
+      log.info(data);
       setCardFormModal(false);
     } catch (error) {
-      console.error('Error fetching map info:', error);
+      log.error('Error fetching map info:', error);
     }
   };
 
@@ -108,9 +109,9 @@ const CardForm: React.FC<CardFormProps> = ({
           starRatings[key] = data.stars.toString();
         }
         localStorage.setItem('starRatings', JSON.stringify(starRatings));
-        console.log(starRatings);
+        log.info(starRatings);
       } catch (error) {
-        console.error(error);
+        log.error("Error fetching star rating, diff " + diffs[i] + " probably doesnt exist :)");
       }
     }
     return starRatings;
@@ -131,7 +132,7 @@ const CardForm: React.FC<CardFormProps> = ({
       });
       return data.metadata.songName;
     } catch (error) {
-      console.error('Error fetching map info:', error);
+      log.error('Error fetching map info:', error);
     }
   };
 
@@ -178,7 +179,7 @@ const CardForm: React.FC<CardFormProps> = ({
       setImageSrc(imageDataUrl);
       createAlerts("Card generated from stored configuration!", "success");
     } catch (error) {
-      console.error("Error generating card from stored config:", error);
+      log.error("Error generating card from stored config:", error);
       createAlerts("Failed to generate card from stored configuration.", "error");
     }
   };
@@ -285,7 +286,7 @@ const CardForm: React.FC<CardFormProps> = ({
 
           zip.file(fileName, byteArray, { binary: true });
         } catch (error: any) {
-          console.error(`Error processing map with hash ${songHash}:`, error);
+          log.error(`Error processing map with hash ${songHash}:`, error);
         } finally {
           processedCount++;
           const percent = Math.floor((processedCount / totalHashes) * 100);
@@ -300,7 +301,7 @@ const CardForm: React.FC<CardFormProps> = ({
         setProgress("", 0, false);
       }, 2000);
     } catch (error: any) {
-      console.error("Error processing uploaded JSON:", error);
+      log.error("Error processing uploaded JSON:", error);
       createAlerts(
         "Failed to process the uploaded JSON file. Please ensure it is correctly formatted.",
         "error"
@@ -389,8 +390,8 @@ const CardForm: React.FC<CardFormProps> = ({
                 <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Expert</label>
                 <input
                   type='text'
-                  value={starRatings.EXP}
-                  onChange={(e) => setStarRatings({ ...starRatings, EXP: e.target.value })}
+                  value={starRatings.EX}
+                  onChange={(e) => setStarRatings({ ...starRatings, EX: e.target.value })}
                   className='px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
                 />
               </div>
