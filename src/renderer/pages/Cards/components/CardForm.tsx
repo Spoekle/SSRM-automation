@@ -1,13 +1,16 @@
-import React, { FormEvent, ChangeEvent } from 'react';
+import React, { FormEvent, ChangeEvent, useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import axios from 'axios';
 import Switch from '@mui/material/Switch';
-import { FaTimes } from 'react-icons/fa';
+import { FaTimes, FaCloudUploadAlt } from 'react-icons/fa';
+import { motion, AnimatePresence } from 'framer-motion';
 import log from 'electron-log';
 import { generateCard } from '../../../../main/helper';
 import { generateCardFromConfig } from '../../../../main/jsonHelper';
+import { notifyMapInfoUpdated } from '../../../utils/mapEvents';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
+import '../../../pages/Settings/styles/CustomScrollbar.css';
 
 interface CardFormProps {
   mapId: string;
@@ -19,7 +22,7 @@ interface CardFormProps {
   setImageSrc: (src: string) => void;
   useBackground: boolean;
   setUseBackground: (use: boolean) => void;
-  createAlerts: (message: string, type: 'success' | 'error' | 'alert') => void;
+  createAlert?: (text: string, type: 'success' | 'error' | 'alert' | 'info') => void;
   progress: (process: string, progress: number, visible: boolean) => void;
   cancelGenerationRef: React.MutableRefObject<boolean>;
 }
@@ -52,11 +55,26 @@ const CardForm: React.FC<CardFormProps> = ({
   setImageSrc,
   useBackground,
   setUseBackground,
-  createAlerts,
+  createAlert,
   progress: setProgress,
   cancelGenerationRef,
 }) => {
   const [songName, setSongName] = React.useState('');
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [isOverlayVisible, setIsOverlayVisible] = useState(false);
+
+  useEffect(() => {
+    setIsOverlayVisible(true);
+    setIsPanelOpen(true);
+  }, []);
+
+  const handleClose = () => {
+    setIsPanelOpen(false);
+    setIsOverlayVisible(false);
+    setTimeout(() => {
+      setCardFormModal(false);
+    }, 300);
+  };
 
   const handleClickOutside = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     if ((event.target as HTMLDivElement).classList.contains('modal-overlay')) {
@@ -77,14 +95,17 @@ const CardForm: React.FC<CardFormProps> = ({
       setMapInfo(data);
       localStorage.setItem('mapId', `${mapId}`);
       localStorage.setItem('mapInfo', JSON.stringify(data));
+      notifyMapInfoUpdated();
 
       const image = await generateCard(data, starRatings, useBackground);
       setImageSrc(image);
 
       log.info(data);
+      if (createAlert) createAlert('Card generated successfully!', 'success');
       setCardFormModal(false);
     } catch (error) {
       log.error('Error fetching map info:', error);
+      if (createAlert) createAlert('Error generating card', 'error');
     }
   };
 
@@ -157,7 +178,7 @@ const CardForm: React.FC<CardFormProps> = ({
     const configStr = localStorage.getItem('cardConfig');
     setCardFormModal(false);
     if (!configStr) {
-      createAlerts("No saved card configuration found in localStorage!", "error");
+      if (createAlert) createAlert("No saved card configuration found in localStorage!", "error");
       return;
     }
     try {
@@ -177,10 +198,10 @@ const CardForm: React.FC<CardFormProps> = ({
       // Pass cardConfig along with the fetched data, starRatings, and useBackground
       const imageDataUrl = await generateCardFromConfig(cardConfig, data, starRatings, useBackground);
       setImageSrc(imageDataUrl);
-      createAlerts("Card generated from stored configuration!", "success");
+      if (createAlert) createAlert("Card generated from stored configuration!", "success");
     } catch (error) {
       log.error("Error generating card from stored config:", error);
-      createAlerts("Failed to generate card from stored configuration.", "error");
+      if (createAlert) createAlert("Failed to generate card from stored configuration.", "error");
     }
   };
 
@@ -191,7 +212,7 @@ const CardForm: React.FC<CardFormProps> = ({
     if (!file) return;
 
     setCardFormModal(false);
-    createAlerts(`JSON processing...`, 'alert');
+    if (createAlert) createAlert(`JSON processing...`, 'info');
     setProgress("Reading JSON file...", 10, true);
 
     try {
@@ -220,7 +241,7 @@ const CardForm: React.FC<CardFormProps> = ({
 
       for (const songHash of songHashes) {
         if (cancelGenerationRef.current) {
-          createAlerts("Card generation cancelled by user!", "error");
+          if (createAlert) createAlert("Card generation cancelled by user!", "error");
           setProgress("", 0, false);
           return;
         }
@@ -302,7 +323,7 @@ const CardForm: React.FC<CardFormProps> = ({
       }, 2000);
     } catch (error: any) {
       log.error("Error processing uploaded JSON:", error);
-      createAlerts(
+      if (createAlert) createAlert(
         "Failed to process the uploaded JSON file. Please ensure it is correctly formatted.",
         "error"
       );
@@ -311,127 +332,172 @@ const CardForm: React.FC<CardFormProps> = ({
   };
 
   return ReactDOM.createPortal(
-    <div
-      className="modal-overlay fixed inset-0 bg-black/20 dark:bg-white/10 backdrop-blur-lg flex justify-center items-center z-50 rounded-3xl animate-fade animate-duration-200"
-      onMouseDown={handleClickOutside}
-    >
-      <div className="relative modal-content bg-neutral-200 dark:bg-neutral-900 text-neutral-950 dark:text-neutral-200 p-6 m-16 rounded-lg animate-jump-in animate-duration-300">
-        <div className='absolute top-8 right-8 text-center items-center text-lg'>
-          <button
-            className='bg-red-500 text-white hover:bg-red-600 rounded-md p-2 transition duration-200'
-            onClick={() => setCardFormModal(false)}
+    <AnimatePresence>
+      {true && (
+        <motion.div
+          className={`fixed top-16 left-0 right-0 bottom-16 z-40 rounded-bl-3xl backdrop-blur-md flex justify-center items-center ${
+            isOverlayVisible ? "opacity-100" : "opacity-0"
+          } bg-black/20`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: isOverlayVisible ? 1 : 0 }}
+          exit={{ opacity: 0 }}
+          onClick={handleClose}
+        >
+          <motion.div
+            className="absolute left-0 top-0 h-full w-3/4 lg:w-2/3 rounded-r-xl bg-neutral-200 dark:bg-neutral-800 text-neutral-950 dark:text-white shadow-lg overflow-y-auto custom-scrollbar"
+            initial={{ x: "-100%" }}
+            animate={{ x: isPanelOpen ? "0%" : "-100%" }}
+            exit={{ x: "-100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            onClick={(e) => e.stopPropagation()}
           >
-            <FaTimes/>
-          </button>
-        </div>
-        <form onSubmit={getMapInfo} className='space-y-6'>
-          <div className='flex flex-col md:flex-row md:space-x-6'>
-            {/* Manual Inputs */}
-            <div className='relative w-full bg-white dark:bg-neutral-800 p-4 rounded-lg shadow'>
-              <h2 className='text-xl font-semibold mb-4'>Manual Input</h2>
-              <label className='block mb-2 text-gray-700 dark:text-gray-200'>Map ID:</label>
-              <input
-              type='text'
-              value={mapId}
-              onChange={(e) => fetchName(e.target.value)}
-              className='w-full px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
-              />
-              <div className='absolute w-full bg-white dark:bg-neutral-800 p-6 left-0'/>
-            </div>
-
-            {/* Automatic Inputs */}
-            <div className='w-full bg-white dark:bg-neutral-800 p-4 rounded-lg shadow'>
-              <h2 className='text-xl font-semibold mb-4'>Automatic Input</h2>
-              <label className='block mb-2 text-gray-700 dark:text-gray-200'>Upload JSON File:</label>
-              <label className='flex items-center justify-center w-full px-4 py-2 bg-blue-500 text-white rounded-md cursor-pointer hover:bg-blue-600 transition duration-200'>
-                <span>Select File</span>
-                <input
-                  type="file"
-                  accept=".json"
-                  onChange={handleFileUpload}
-                  className='hidden'
-                />
-              </label>
-            </div>
-          </div>
-
-          {/* Star Ratings */}
-          <div className='relative bg-white dark:bg-neutral-800 px-4 pb-4 rounded-lg'>
-            <h2 className='text-xl font-semibold mb-4'>Star Ratings</h2>
-            <div className='grid grid-cols-2 md:grid-cols-5 gap-4'>
-              <div className='flex flex-col'>
-                <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Easy</label>
-                <input
-                  type='text'
-                  value={starRatings.ES}
-                  onChange={(e) => setStarRatings({ ...starRatings, ES: e.target.value })}
-                  className='px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
-                />
-              </div>
-              <div className='flex flex-col'>
-                <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Normal</label>
-                <input
-                  type='text'
-                  value={starRatings.NOR}
-                  onChange={(e) => setStarRatings({ ...starRatings, NOR: e.target.value })}
-                  className='px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
-                />
-              </div>
-              <div className='flex flex-col'>
-                <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Hard</label>
-                <input
-                  type='text'
-                  value={starRatings.HARD}
-                  onChange={(e) => setStarRatings({ ...starRatings, HARD: e.target.value })}
-                  className='px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
-                />
-              </div>
-              <div className='flex flex-col'>
-                <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Expert</label>
-                <input
-                  type='text'
-                  value={starRatings.EX}
-                  onChange={(e) => setStarRatings({ ...starRatings, EX: e.target.value })}
-                  className='px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
-                />
-              </div>
-              <div className='flex flex-col'>
-                <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Expert+</label>
-                <input
-                  type='text'
-                  value={starRatings.EXP}
-                  onChange={(e) => setStarRatings({ ...starRatings, EXP: e.target.value })}
-                  className='px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom Controls */}
-          <div className='flex flex-col md:flex-row justify-between items-center'>
-            <div className='flex items-center mb-4 md:mb-0'>
-              <label className='mr-2 text-gray-700 dark:text-gray-200'>Background:</label>
-              <Switch checked={useBackground} onChange={handleSwitch} />
-            </div>
-            <div className='flex space-x-4'>
-              {/*
-              <button
-                type="button"
-                onClick={handleStoredConfigGeneration}
-                className='w-full bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600 transition duration-200 hover:cursor-not-allowed'
-                disabled
+            <motion.div
+              className="z-10 sticky top-0 backdrop-blur-md bg-neutral-200/80 dark:bg-neutral-800/80 p-4 border-b border-neutral-200 dark:border-neutral-500 flex justify-between items-center"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1, type: "spring" }}
+            >
+              <motion.h2
+                className="text-xl bg-neutral-100 dark:bg-neutral-600 px-3 py-2 rounded-lg font-semibold"
+                whileHover={{ scale: 1.03 }}
               >
-                Generate From Stored Config
-              </button>
-              */}
-              <button type="submit" className='w-full md:w-auto bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600 transition duration-200'>
-                Generate
-              </button>
+                Card Settings
+              </motion.h2>
+              <motion.button
+                className="text-red-500 bg-neutral-300 dark:bg-neutral-700 p-2 rounded-md hover:bg-neutral-400 dark:hover:bg-neutral-600 transition duration-200"
+                onClick={handleClose}
+                whileHover={{
+                  scale: 1.1,
+                  backgroundColor: "#ef4444",
+                  color: "#ffffff",
+                }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <FaTimes />
+              </motion.button>
+            </motion.div>
+
+            <div className="mt-4 px-4 pb-4 space-y-4">
+              <form onSubmit={getMapInfo} className='space-y-8'>
+                {/* Form content - keeping the same structure but improved styling */}
+                <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
+                  {/* Manual Inputs */}
+                  <div className='bg-white dark:bg-neutral-700 p-5 rounded-xl shadow-sm'>
+                    <h2 className='text-lg font-medium mb-4 border-b pb-2 border-neutral-200 dark:border-neutral-600'>Manual Input</h2>
+                    <div className="mb-4">
+                      <label className='block mb-1 text-neutral-700 dark:text-neutral-200 font-medium'>Map ID:</label>
+                      <input
+                        type='text'
+                        value={mapId}
+                        onChange={(e) => fetchName(e.target.value)}
+                        placeholder="Enter map ID..."
+                        className='w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 dark:bg-neutral-800 dark:border-neutral-600 dark:text-white'
+                      />
+                      {songName && (
+                        <motion.p
+                          className="mt-2 text-sm text-green-600 dark:text-green-400"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                        >
+                          Found: {songName}
+                        </motion.p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Automatic Inputs */}
+                  <div className='bg-white dark:bg-neutral-700 p-5 rounded-xl shadow-sm'>
+                    <h2 className='text-lg font-medium mb-4 border-b pb-2 border-neutral-200 dark:border-neutral-600'>Automatic Input</h2>
+                    <label className='block mb-2 text-neutral-700 dark:text-neutral-200'>Upload JSON File:</label>
+                    <label className='flex items-center justify-center w-full h-24 px-4 py-4 border-2 border-dashed border-neutral-300 dark:border-neutral-600 rounded-lg cursor-pointer hover:bg-neutral-200/50 dark:hover:bg-neutral-600/50 transition duration-200'>
+                      <div className="flex flex-col items-center">
+                        <FaCloudUploadAlt className="mb-2 text-blue-500" size={24} />
+                        <span className="text-neutral-700 dark:text-neutral-200">Select JSON File</span>
+                        <span className="text-xs text-neutral-500 dark:text-neutral-400">or drag and drop</span>
+                      </div>
+                      <input
+                        type="file"
+                        accept=".json"
+                        onChange={handleFileUpload}
+                        className='hidden'
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {/* Star Ratings */}
+                <div className='bg-white dark:bg-neutral-700 p-5 rounded-xl shadow-sm'>
+                  <h2 className='text-lg font-medium mb-4 border-b pb-2 border-neutral-200 dark:border-neutral-600'>Star Ratings</h2>
+                  <div className='grid grid-cols-2 md:grid-cols-5 gap-4'>
+                    <div className='flex flex-col'>
+                      <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Easy</label>
+                      <input
+                        type='text'
+                        value={starRatings.ES}
+                        onChange={(e) => setStarRatings({ ...starRatings, ES: e.target.value })}
+                        className='px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
+                      />
+                    </div>
+                    <div className='flex flex-col'>
+                      <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Normal</label>
+                      <input
+                        type='text'
+                        value={starRatings.NOR}
+                        onChange={(e) => setStarRatings({ ...starRatings, NOR: e.target.value })}
+                        className='px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
+                      />
+                    </div>
+                    <div className='flex flex-col'>
+                      <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Hard</label>
+                      <input
+                        type='text'
+                        value={starRatings.HARD}
+                        onChange={(e) => setStarRatings({ ...starRatings, HARD: e.target.value })}
+                        className='px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
+                      />
+                    </div>
+                    <div className='flex flex-col'>
+                      <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Expert</label>
+                      <input
+                        type='text'
+                        value={starRatings.EX}
+                        onChange={(e) => setStarRatings({ ...starRatings, EX: e.target.value })}
+                        className='px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
+                      />
+                    </div>
+                    <div className='flex flex-col'>
+                      <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Expert+</label>
+                      <input
+                        type='text'
+                        value={starRatings.EXP}
+                        onChange={(e) => setStarRatings({ ...starRatings, EXP: e.target.value })}
+                        className='px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bottom Controls */}
+                <div className='flex flex-col md:flex-row justify-between items-center bg-neutral-200/50 dark:bg-neutral-700/50 p-4 rounded-xl'>
+                  <div className='flex items-center mb-4 md:mb-0'>
+                    <label className='mr-3 text-neutral-700 dark:text-neutral-200 font-medium'>Use Background:</label>
+                    <Switch checked={useBackground} onChange={handleSwitch} />
+                  </div>
+                  <motion.button
+                    type="submit"
+                    className='w-full md:w-auto bg-blue-500 text-white px-6 py-2.5 rounded-lg shadow-sm hover:bg-blue-600 transition duration-200 font-medium'
+                    whileHover={{ scale: 1.03, boxShadow: "0px 4px 8px rgba(0,0,0,0.1)" }}
+                    whileTap={{ scale: 0.97 }}
+                  >
+                    Generate Card
+                  </motion.button>
+                </div>
+              </form>
             </div>
-          </div>
-        </form>
-      </div>
-    </div>,
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>,
     document.body
   );
 };
