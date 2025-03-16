@@ -29,33 +29,28 @@ const LoadedMapInfo: React.FC<LoadedMapInfoProps> = ({ loadedMapInfo, setConfirm
 
         return (
             <div className="relative p-3 rounded-2xl overflow-hidden text-white">
-                {/* Background with image */}
                 {coverURL && (
                     <>
                         <div
-                            className="absolute top-0 bottom-0 left-0 right-0 bg-cover bg-center filter blur-lg opacity-60 z-[-2]"
+                            className="absolute top-0 bottom-0 left-0 right-0 bg-cover bg-center filter blur-lg opacity-70 z-0"
                             style={{ backgroundImage: `url(${coverURL})` }}
                         />
-                        <div className="absolute top-0 bottom-0 left-0 right-0 bg-black/50 z-[-1]" />
+                        <div className="absolute top-0 bottom-0 left-0 right-0 bg-black/60 z-[1]" />
                     </>
                 )}
 
-                <div className="flex">
-                    {/* Cover image */}
+                <div className="flex relative z-[2]">
                     {coverURL && (
-                        <motion.img
-                            src={coverURL}
-                            alt="Map Cover"
-                            className="w-16 h-16 object-cover rounded-md mr-3 z-10"
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ duration: 0.3 }}
-                            whileHover={{ scale: 1.1, rotate: 5 }}
-                        />
+                        <div className="flex-shrink-0 relative">
+                            <img
+                                src={coverURL}
+                                alt="Map Cover"
+                                className="w-16 h-16 object-cover rounded-md mr-3"
+                            />
+                        </div>
                     )}
 
-                    {/* Map info */}
-                    <div className="flex flex-col flex-grow">
+                    <div className="flex flex-col flex-grow relative">
                         <div className="flex justify-between items-start">
                             <div className="flex flex-col">
                                 <h3 className="text-md">{songAuthor}</h3>
@@ -75,9 +70,8 @@ const LoadedMapInfo: React.FC<LoadedMapInfoProps> = ({ loadedMapInfo, setConfirm
                             </p>
                         </div>
 
-                        {/* Reset button */}
                         <motion.button
-                            className="absolute bottom-0 right-0 bg-red-500 text-white px-2 py-1 rounded-tl-xl hover:bg-red-600 transition duration-200"
+                            className="absolute bottom-0 right-0 bg-red-500 text-white px-2 py-1 rounded-xl hover:bg-red-600 transition duration-200 z-10"
                             onClick={() => {
                                 setConfirmResetMapOpen(true);
                             }}
