@@ -12,6 +12,7 @@ import { resolveHtmlPath } from './util';
 require('./server');
 
 let mainWindow: BrowserWindow | null = null;
+let splashWindow: BrowserWindow | null = null;
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -32,6 +33,79 @@ const installExtensions = async () => {
       forceDownload,
     )
     .catch(log.error);
+};
+
+const createSplashWindow = async () => {
+  const RESOURCES_PATH = app.isPackaged
+    ? path.join(process.resourcesPath, 'assets')
+    : path.join(__dirname, '../../assets');
+
+  const getAssetPath = (...paths: string[]): string => {
+    return path.join(RESOURCES_PATH, ...paths);
+  };
+
+  splashWindow = new BrowserWindow({
+    width: 300,
+    height: 420,
+    transparent: true,
+    frame: false,
+    resizable: false,
+    alwaysOnTop: true,
+    center: true,
+    show: false,
+    icon: getAssetPath('favicon-32x32.png'),
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+      preload: app.isPackaged
+        ? path.join(__dirname, 'preload.js')
+        : path.join(__dirname, '../../.erb/dll/preload.js'),
+    },
+  });
+
+  splashWindow.loadURL(resolveHtmlPath('index.html', '?splash=true'));
+
+  splashWindow.once('ready-to-show', () => {
+    if (splashWindow) {
+      splashWindow.show();
+    }
+  });
+
+  // API status check handlers
+  ipcMain.handle('check-scoresaber', async () => {
+    try {
+      // Use a simple endpoint that should always work
+      const response = await axios.get('https://scoresaber.com/api/', {
+        timeout: 5000
+      });
+      return response.status >= 200 && response.status < 300;
+    } catch (error) {
+      log.error('ScoreSaber API check failed:', error);
+      return false;
+    }
+  });
+
+  ipcMain.handle('check-beatsaver', async () => {
+    try {
+      // Use a simple endpoint that should always work
+      const response = await axios.get('https://api.beatsaver.com/maps/id/3d56e', {
+        timeout: 5000
+      });
+      return response.status >= 200 && response.status < 300;
+    } catch (error) {
+      log.error('BeatSaver API check failed:', error);
+      return false;
+    }
+  });
+
+  ipcMain.handle('splash-complete', () => {
+    createMainWindow().then(() => {
+      if (splashWindow) {
+        splashWindow.close();
+        splashWindow = null;
+      }
+    });
+  });
 };
 
 const createMainWindow = async () => {
@@ -207,6 +281,6 @@ app.on('window-all-closed', () => {
 app
   .whenReady()
   .then(async () => {
-      await createMainWindow();
+    await createSplashWindow();
   })
   .catch(log.error);
