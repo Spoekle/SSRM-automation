@@ -4,6 +4,7 @@ import { FaDownload } from 'react-icons/fa';
 import CardForm from './components/CardForm';
 import StarRatingForm from './components/ReweightForm';
 import LoadedMap from '../components/LoadedMap';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface MapInfo {
   metadata: {
@@ -104,88 +105,172 @@ const MapCards: React.FC = () => {
   const mapLink = `https://beatsaver.com/maps/${mapId}`;
 
   return (
-    <div className='max-h-96 h-96 relative grid no-move justify-items-center justify-center items-center dark:text-neutral-200 bg-neutral-200 dark:bg-neutral-900 p-4 pt-8 overflow-hidden'>
-      <div className='items-center justify-items-center'>
-        <div className='text-center'>
-          <h1 className='text-2xl font-bold'>Mapcard Generator</h1>
-          <p className='text-lg'>Generate a mapcard in a single click!</p>
-          <button
-            className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mt-4 mx-2 rounded-lg hover:scale-110 transition duration-200 drop-shadow-lg'
-            onClick={() => setCardFormModal(true)}
+    <div className='max-h-96 h-96 relative dark:text-neutral-200 bg-neutral-200 dark:bg-neutral-900 p-4 pt-6 overflow-auto'>
+      <motion.div
+        className='flex flex-col items-center max-w-3xl mx-auto pl-8 pr-4'
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        <div className='text-center mb-4'>
+          <motion.h1
+            className='text-2xl font-bold'
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2, type: "spring" }}
           >
-            Open Map Form
-          </button>
-          <button
-            className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mt-4 mx-2 rounded-lg hover:scale-110 transition duration-200 drop-shadow-lg'
-            onClick={() => setStarRatingFormModal(true)}
+            Mapcard Generator
+          </motion.h1>
+          <motion.p
+            className='text-sm mb-2'
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.3 }}
           >
-            Open Reweight Form
-          </button>
-          {imageSrc && (
-            <>
-              <button
-                className='bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg ml-4 hover:scale-110 transition duration-200 drop-shadow-lg'
+            Generate a mapcard in a single click!
+          </motion.p>
+          <div className="flex justify-center space-x-2">
+            <motion.button
+              className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 text-sm rounded-lg hover:scale-110 transition duration-200 drop-shadow-lg'
+              onClick={() => setCardFormModal(true)}
+              whileHover={{ scale: 1.05, boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.2)" }}
+              whileTap={{ scale: 0.95 }}
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5, type: "spring" }}
+            >
+              Map Form
+            </motion.button>
+            <motion.button
+              className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 text-sm rounded-lg hover:scale-110 transition duration-200 drop-shadow-lg'
+              onClick={() => setStarRatingFormModal(true)}
+              whileHover={{ scale: 1.05, boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.2)" }}
+              whileTap={{ scale: 0.95 }}
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.6, type: "spring" }}
+            >
+              Reweight Form
+            </motion.button>
+            {imageSrc && (
+              <motion.button
+                className='bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-3 text-sm rounded-lg hover:scale-110 transition duration-200 drop-shadow-lg'
                 onClick={() => downloadCard()}
+                whileHover={{ scale: 1.05, backgroundColor: "#16a34a" }}
+                whileTap={{ scale: 0.95 }}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3, type: "spring" }}
               >
-                <FaDownload className='inline' /> Download
-              </button>
-            </>
-          )}
+                <FaDownload className='inline mr-1' /> Download
+              </motion.button>
+            )}
+          </div>
           {mapInfo && <LoadedMap mapInfo={mapInfo} />}
         </div>
+
         {imageSrc && (
-          <div className='mt-4 flex justify-center'>
-            <div className='flex flex-col items-center text-center'>
-              <h1 className='text-xl font-bold'>Preview:</h1>
-              <div className='w-3/5 flex justify-center drop-shadow-lg'>
-                <img src={imageSrc} alt='Card Preview' className='block mt-2' />
-              </div>
-            </div>
-          </div>
+          <motion.div
+            className='flex justify-center w-full'
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, type: "spring" }}
+          >
+            <motion.div
+              className='bg-neutral-300 dark:bg-neutral-800 p-3 rounded-lg shadow-md'
+              whileHover={{ scale: 1.02, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)" }}
+            >
+              <h2 className='text-lg font-bold mb-2'>Preview</h2>
+              <motion.div
+                className='flex justify-center'
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.8, type: "spring", stiffness: 200 }}
+                whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
+              >
+                <img src={imageSrc} alt='Card Preview' className='max-h-[300px] w-auto' />
+              </motion.div>
+            </motion.div>
+          </motion.div>
         )}
-      </div>
+      </motion.div>
 
-      <div className='absolute top-0 right-0 mt-4 mr-4 flex flex-col items-end space-y-2 overflow-hidden z-60'>
-        {alerts.map(alert => (
-          <div key={alert.id} className={`flex items-center justify-center px-4 py-2 ${alert.type === 'success' ? 'bg-green-600' : alert.type === 'error' ? 'bg-red-600' : 'bg-blue-600'} rounded-md drop-shadow-lg animate-fade-left ${alert.fadeOut ? 'animate-fade-out' : ''}`}>
-            <p className='text-white'>{alert.message}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className='absolute bottom-0 w-[90vw] items-center justify-center mb-4 z-60'>
-        {progress.visible && (
-          <div className='flex flex-col w-full text-center items-center justify-center bg-neutral-300 dark:bg-neutral-800 p-4 rounded-md drop-shadow-lg animate-fade'>
-            <div className="w-full px-4 relative">
-        <p className='text-lg font-bold mb-2'>{progress.process}</p>
-        <div className='relative'>
-          <LinearProgress
-            sx={{
-              height: 30,
-              backgroundColor: "#171717",
-              "& .MuiLinearProgress-bar": { backgroundColor: "#2563eb" }
-            }}
-            variant="determinate"
-            value={progress.progress}
-            className='w-full rounded-full text-white'
-          />
-          <span className='absolute inset-0 flex items-center justify-center text-white font-bold'>
-            {progress.progress}%
-          </span>
+      <AnimatePresence>
+        <div className='absolute top-0 right-0 mt-4 mr-4 flex flex-col items-end space-y-2 overflow-hidden z-60'>
+          {alerts.map(alert => (
+            <motion.div
+              key={alert.id}
+              className={`flex items-center justify-center px-4 py-2 ${alert.type === 'success' ? 'bg-green-600' : alert.type === 'error' ? 'bg-red-600' : 'bg-blue-600'} rounded-md drop-shadow-lg ${alert.fadeOut ? 'animate-fade-out' : ''}`}
+              initial={{ opacity: 0, x: 100 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 100 }}
+              transition={{ type: "spring", stiffness: 200 }}
+            >
+              <p className='text-white'>{alert.message}</p>
+            </motion.div>
+          ))}
         </div>
-        <button
-          className='mt-4 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200'
-          onClick={() => {
-            cancelGenerationRef.current = true;
-            setProgress({ process: "", progress: 0, visible: false });
-          }}
-        >
-          Cancel
-        </button>
-            </div>
-          </div>
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {progress.visible && (
+          <motion.div
+            className='fixed bottom-20 left-1/2 transform -translate-x-1/2 w-[90%] max-w-md z-60'
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            transition={{ type: "spring", stiffness: 200 }}
+          >
+            <motion.div
+              className='flex flex-col w-full text-center items-center justify-center bg-neutral-300 dark:bg-neutral-800 p-3 rounded-md drop-shadow-lg animate-fade'
+              animate={{
+                boxShadow: ["0px 0px 0px rgba(0, 0, 0, 0.1)", "0px 10px 20px rgba(0, 0, 0, 0.2)", "0px 0px 0px rgba(0, 0, 0, 0.1)"]
+              }}
+              transition={{ boxShadow: { repeat: Infinity, duration: 2 } }}
+            >
+              <div className="w-full px-4 relative">
+                <motion.p
+                  className='text-lg font-bold mb-2'
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  {progress.process}
+                </motion.p>
+                <div className='relative'>
+                  <LinearProgress
+                    sx={{
+                      height: 30,
+                      backgroundColor: "#171717",
+                      "& .MuiLinearProgress-bar": { backgroundColor: "#2563eb" }
+                    }}
+                    variant="determinate"
+                    value={progress.progress}
+                    className='w-full rounded-full text-white'
+                  />
+                  <motion.span
+                    className='absolute inset-0 flex items-center justify-center text-white font-bold'
+                    animate={{ scale: [1, 1.05, 1] }}
+                    transition={{ duration: 1, repeat: Infinity }}
+                  >
+                    {progress.progress}%
+                  </motion.span>
+                </div>
+                <motion.button
+                  className='mt-4 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200'
+                  onClick={() => {
+                    cancelGenerationRef.current = true;
+                    setProgress({ process: "", progress: 0, visible: false });
+                  }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Cancel
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
 
       {cardFormModal && (
         <CardForm
