@@ -34,11 +34,10 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
     beatsaver: false
   });
 
-  const [countdown, setCountdown] = useState(2000);
+  const [countdown, setCountdown] = useState(5);
   const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [isHovering, setIsHovering] = useState(false);
 
-  // Local storage state
   const [localStorageData, setLocalStorageData] = useState<{
     theme: string | null,
     skipUpdateCheck: boolean,
@@ -54,7 +53,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
   });
 
   const startTimeRef = useRef<number>(Date.now());
-  const MIN_SPLASH_TIME = 5;
+  const MIN_SPLASH_TIME = 2000;
 
   useEffect(() => {
     const loadLocalStorageData = () => {
@@ -85,7 +84,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
         log.error("Error parsing card config:", error);
       }
 
-      // Update local storage state
       setLocalStorageData({
         theme: isDarkMode ? 'dark' : 'light',
         skipUpdateCheck,
@@ -107,19 +105,17 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
   }, []);
 
   useEffect(() => {
-    if (showUpdatePrompt && !isUpdating && !isHovering) {
+    if (!isUpdating && !isHovering) {
       countdownTimerRef.current = setInterval(() => {
         setCountdown((prevCountdown) => {
           if (prevCountdown <= 1) {
             clearInterval(countdownTimerRef.current!);
-            handleSkipUpdate();
             return 0;
           }
           return prevCountdown - 1;
         });
       }, 1000);
     } else if (countdownTimerRef.current && (isHovering || isUpdating)) {
-      // Clear the interval when hovering or updating
       clearInterval(countdownTimerRef.current);
       countdownTimerRef.current = null;
     }
@@ -140,43 +136,34 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
     }, remainingTime);
   };
 
-  // Load all needed data
   useEffect(() => {
     const loadEverything = async () => {
-      // Helper function to wait for a specified duration
       const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
       try {
-      // Stage 1: Check ScoreSaber API
       setLoadingStage('Checking ScoreSaber API...');
       const ssStatus = await ipcRenderer.invoke('check-scoresaber');
       setApiStatus(prev => ({ ...prev, scoresaber: ssStatus }));
       setLoadingProgress(25);
       await wait(1000);
 
-      // Stage 2: Check BeatSaver API
       setLoadingStage('Checking BeatSaver API...');
       const bsStatus = await ipcRenderer.invoke('check-beatsaver');
       setApiStatus(prev => ({ ...prev, beatsaver: bsStatus }));
       setLoadingProgress(50);
       await wait(1000);
 
-      // Stage 3: Load configuration
       setLoadingStage('Loading configuration...');
-      // Configuration is already loaded in the earlier useEffect
       setLoadingProgress(75);
       await wait(1000);
 
-      // Stage 4: Check for updates (last)
       setLoadingStage('Checking for updates...');
       const hasUpdate = await checkForUpdates();
       setLoadingProgress(100);
       await wait(1000);
 
-      // Stage 5: Finalizing
       setLoadingStage('Ready!');
 
-      // Check if we should show update prompt or continue to main app
       if (hasUpdate && !localStorageData.skipUpdateCheck) {
         log.info("Update available and not skipped, showing prompt");
         setShowUpdatePrompt(true);
@@ -189,7 +176,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
       } catch (error) {
       log.error('Error during splash initialization:', error);
       setLoadingStage('Error during initialization');
-      // Continue to main app even on error after a delay
       setTimeout(proceedToMainApp, 1000);
       }
     };
@@ -201,35 +187,35 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
 
   const checkForUpdates = async () => {
     try {
+      log.info('SplashScreen: Checking for updates...');
       const response = await axios.get(
-        'https://api.github.com/repos/Spoekle/SSRM-automation/releases/latest'
+        'https://api.github.com/repos/Spoekle/SSRM-automation/releases/latest',
+        { timeout: 10000 }
       );
       const data = response.data;
       const latestVer = data.tag_name.replace(/^v/, '');
       setLatestVersion(latestVer);
 
-      // Compare versions more reliably by converting to numbers
       const currentVerNumber = parseFloat(appVersion.replace(/\./g, ''));
       const latestVerNumber = parseFloat(latestVer.replace(/\./g, ''));
 
-      log.info(`Version check: Current=${appVersion} (${currentVerNumber}), Latest=${latestVer} (${latestVerNumber})`);
+      log.info(`SplashScreen: Version check - Current=${appVersion} (${currentVerNumber}), Latest=${latestVer} (${latestVerNumber})`);
 
       if (latestVerNumber > currentVerNumber) {
-        log.info(`Update available: Current=${appVersion}, Latest=${latestVer}`);
+        log.info(`SplashScreen: Update available - Current=${appVersion}, Latest=${latestVer}`);
         setUpdateAvailable(true);
         return true;
       } else {
-        log.info(`No update required: Current=${appVersion}, Latest=${latestVer}`);
+        log.info(`SplashScreen: No update required - Current=${appVersion}, Latest=${latestVer}`);
         return false;
       }
     } catch (error) {
-      log.error('Error checking for updates:', error);
+      log.error('SplashScreen: Error checking for updates:', error);
       return false;
     }
   };
 
   const handleUpdateNow = async () => {
-    // Clear the countdown timer when user clicks update
     if (countdownTimerRef.current) {
       clearInterval(countdownTimerRef.current);
     }
@@ -243,7 +229,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
       });
 
       await ipcRenderer.invoke('update-application');
-      // Reset skip update flag when updates are manually applied
       localStorage.removeItem('skipUpdateCheck');
     } catch (error) {
       log.error('Error updating application:', error);
@@ -253,7 +238,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
   };
 
   const handleSkipUpdate = () => {
-    // Clear the countdown timer when user clicks skip
     if (countdownTimerRef.current) {
       clearInterval(countdownTimerRef.current);
     }
@@ -262,6 +246,92 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
     log.info("Update skipped, setting skip flag");
     proceedToMainApp();
   };
+
+  useEffect(() => {
+    const loadEverything = async () => {
+      const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+      
+      await wait(500);
+      try {
+        setLoadingStage('Checking ScoreSaber API...');
+        const ssStatus = await ipcRenderer.invoke('check-scoresaber');
+        setApiStatus(prev => ({ ...prev, scoresaber: ssStatus }));
+        setLoadingProgress(25);
+        await wait(500);
+
+        setLoadingStage('Checking BeatSaver API...');
+        const bsStatus = await ipcRenderer.invoke('check-beatsaver');
+        setApiStatus(prev => ({ ...prev, beatsaver: bsStatus }));
+        setLoadingProgress(50);
+        await wait(500);
+
+        setLoadingStage('Loading configuration...');
+        setLoadingProgress(75);
+        await wait(500);
+
+        setLoadingStage('Checking for updates...');
+        const hasUpdate = await checkForUpdates();
+        setLoadingProgress(100);
+        await wait(500);
+
+        setLoadingStage('Ready!');
+
+        if (hasUpdate && !localStorageData.skipUpdateCheck) {
+          log.info("Update available and not skipped, showing prompt");
+          setShowUpdatePrompt(true);
+        } else {
+          if (hasUpdate) {
+            log.info("Update available but skipped");
+          }
+          proceedToMainApp();
+        }
+      } catch (error) {
+        log.error('Error during splash initialization:', error);
+        setLoadingStage('Error during initialization');
+        setTimeout(proceedToMainApp, 1000);
+      }
+    };
+
+    if (localStorageData.theme !== null) {
+      loadEverything();
+    }
+  }, [localStorageData]);
+
+  useEffect(() => {
+    // Clear any existing timers first to prevent multiple timers
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current);
+      countdownTimerRef.current = null;
+    }
+
+    // Only start countdown if update prompt is visible, not updating, and not hovering
+    if (showUpdatePrompt && !isUpdating && !isHovering) {
+      countdownTimerRef.current = setInterval(() => {
+        setCountdown((prevCount) => {
+          const newCount = prevCount - 1;
+          if (newCount <= 0) {
+            // Clear the interval when we reach zero
+            if (countdownTimerRef.current) {
+              clearInterval(countdownTimerRef.current);
+              countdownTimerRef.current = null;
+            }
+            // Automatically handle skip update when countdown reaches 0
+            setTimeout(() => handleSkipUpdate(), 100);
+            return 0;
+          }
+          return newCount;
+        });
+      }, 1000);
+    }
+
+    // Cleanup function to clear interval
+    return () => {
+      if (countdownTimerRef.current) {
+        clearInterval(countdownTimerRef.current);
+        countdownTimerRef.current = null;
+      }
+    };
+  }, [showUpdatePrompt, isUpdating, isHovering]);
 
   return (
     <div className="flex flex-col items-center justify-center h-full bg-neutral-200 dark:bg-neutral-900 rounded-3xl overflow-hidden p-4">
@@ -272,7 +342,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        {/* Logo - Enhanced 2D animation */}
         <motion.div
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9, rotate: 10 }}
@@ -303,7 +372,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
           />
         </motion.div>
 
-        {/* App name and version */}
         <motion.div
           className="text-center"
           initial={{ opacity: 0 }}
@@ -327,7 +395,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
           </motion.p>
         </motion.div>
 
-        {/* Show loading progress and API status only if no update prompt is visible */}
         <AnimatePresence>
           {!showUpdatePrompt && (
             <motion.div
@@ -337,7 +404,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.3 }}
             >
-              {/* Loading progress */}
               <motion.div
                 className="w-full space-y-2"
                 initial={{ opacity: 0 }}
@@ -378,7 +444,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
                 />
               </motion.div>
 
-              {/* API Status indicators */}
               {loadingProgress >= 25 && (
                 <motion.div
                   className="flex justify-center space-x-4 w-full"
@@ -418,7 +483,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
           )}
         </AnimatePresence>
 
-        {/* Update prompt with countdown */}
         <AnimatePresence>
           {showUpdatePrompt && !isUpdating && (
             <motion.div
@@ -463,7 +527,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
                 </motion.button>
               </motion.div>
 
-              {/* Countdown bar */}
               <motion.div
                 className="mt-4 w-full"
                 initial={{ opacity: 0 }}
@@ -482,14 +545,11 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
                 <div className="w-full bg-gray-300 dark:bg-gray-600 rounded-full h-1.5 overflow-hidden">
                   <motion.div
                     className="bg-blue-500 h-1.5"
-                    style={{ width: `${countdown * 20}%` }}
-                    animate={isHovering ? {
-                      backgroundColor: ["#3b82f6", "#60a5fa", "#3b82f6"]
-                    } : {}}
-                    transition={isHovering ? {
-                      backgroundColor: { duration: 2, repeat: Infinity }
-                    } : {
-                      width: { duration: 1, ease: "linear" }
+                    initial={{ width: `${countdown * 20}%` }}
+                    animate={{ width: `${countdown * 20}%` }}
+                    transition={{
+                      duration: 0.5,
+                      ease: "easeInOut"
                     }}
                   />
                 </div>
@@ -498,7 +558,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
           )}
         </AnimatePresence>
 
-        {/* Update progress */}
         <AnimatePresence>
           {isUpdating && (
             <motion.div
