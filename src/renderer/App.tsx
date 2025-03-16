@@ -8,6 +8,7 @@ import MapCards from './pages/Cards/MapCards';
 import Thumbnails from './pages/Thumbnails/Thumbnails';
 import Navbar from './pages/components/Navbar';
 import Footer from './pages/components/Footer';
+import GlobalLoadedMap from './components/GlobalLoadedMap';
 import SplashScreen from './pages/SplashScreen/SplashScreen';
 import './App.css';
 
@@ -15,23 +16,37 @@ export default function App() {
   const appVersion = '1.7.2';
   const [isSplashScreen, setIsSplashScreen] = useState(false);
   const [latestVersion, setLatestVersion] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
   const getLatestVersion = async () => {
     try {
+      setIsLoading(true);
+      log.info('Fetching latest version from GitHub...');
       const response = await axios.get(
-        'https://api.github.com/repos/Spoekle/SSRM-automation/releases/latest'
+        'https://api.github.com/repos/Spoekle/SSRM-automation/releases/latest',
+        { timeout: 10000 }
       );
       const data = response.data;
-      setLatestVersion(data.tag_name.replace(/^v/, ''));
+      const latest = data.tag_name.replace(/^v/, '');
+      setLatestVersion(latest);
+      log.info(`Latest version fetched successfully: ${latest}`);
+      return latest;
     } catch (error) {
       log.error('Error fetching latest version:', error);
+      return null;
+    } finally {
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
     const queryParams = new URLSearchParams(window.location.search);
-    setIsSplashScreen(queryParams.get('splash') === 'true');
-    getLatestVersion();
+    const isSplash = queryParams.get('splash') === 'true';
+    setIsSplashScreen(isSplash);
+
+    if (!isSplash) {
+      getLatestVersion();
+    }
   }, []);
 
   if (isSplashScreen) {
@@ -41,6 +56,7 @@ export default function App() {
   return (
     <Router>
       <Navbar />
+      <GlobalLoadedMap />
       <div className="content">
         <Routes>
           <Route path="/" element={<Home />} />
@@ -49,7 +65,11 @@ export default function App() {
           <Route path="/thumbnails" element={<Thumbnails />} />
         </Routes>
       </div>
-      <Footer appVersion={appVersion} latestVersion={latestVersion} />
+      <Footer
+        appVersion={appVersion}
+        latestVersion={latestVersion}
+        isVersionLoading={isLoading}
+      />
     </Router>
   );
 }
