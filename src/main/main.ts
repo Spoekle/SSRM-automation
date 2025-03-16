@@ -133,6 +133,7 @@ const createMainWindow = async () => {
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
+      devTools: true,
       preload: app.isPackaged
         ? path.join(__dirname, 'preload.js')
         : path.join(__dirname, '../../.erb/dll/preload.js'),
@@ -248,6 +249,12 @@ const createMainWindow = async () => {
     }
   });
 
+  ipcMain.on('open-devtools', () => {
+    if (mainWindow) {
+      mainWindow.webContents.openDevTools();
+    }
+  });
+
   mainWindow.on('ready-to-show', () => {
     if (!mainWindow) {
       throw new Error('"mainWindow" is not defined');
@@ -261,6 +268,19 @@ const createMainWindow = async () => {
 
   mainWindow.on('closed', () => {
     mainWindow = null;
+  });
+
+  // Always register DevTools keyboard shortcut regardless of environment
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    // Register F12 and Ctrl+Shift+I/Cmd+Option+I to open DevTools
+    if (
+      (input.key === 'F12' ||
+      (input.control && input.shift && input.key.toLowerCase() === 'i') ||
+      (input.meta && input.alt && input.key.toLowerCase() === 'i'))
+    ) {
+      mainWindow?.webContents.openDevTools();
+      event.preventDefault();
+    }
   });
 
   const menuBuilder = new MenuBuilder(mainWindow);
