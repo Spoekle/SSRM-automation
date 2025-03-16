@@ -7,9 +7,10 @@ import log from 'electron-log';
 interface FooterProps {
   appVersion: string;
   latestVersion: string;
+  isVersionLoading?: boolean;
 }
 
-const Footer: React.FC<FooterProps> = ({ appVersion, latestVersion }) => {
+const Footer: React.FC<FooterProps> = ({ appVersion, latestVersion, isVersionLoading = false }) => {
   const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
   const [showUpdateTab, setShowUpdateTab] = useState<boolean>(false);
   const [hasUpdate, setHasUpdate] = useState<boolean>(false);
@@ -17,33 +18,25 @@ const Footer: React.FC<FooterProps> = ({ appVersion, latestVersion }) => {
   const settingsRef = useRef<SettingsHandles>(null);
 
   useEffect(() => {
-    // Compare versions to determine if an update is available
-    try {
-      const currentVerNumber = parseFloat(appVersion.replace(/\./g, ''));
-      const latestVerNumber = parseFloat(latestVersion.replace(/\./g, ''));
-      setHasUpdate(latestVerNumber > currentVerNumber);
-      log.info(`Version check in Footer: Current=${appVersion}, Latest=${latestVersion}, Update available: ${latestVerNumber > currentVerNumber}`);
-    } catch (error) {
-      log.error('Error comparing versions:', error);
+    if (!isVersionLoading && latestVersion) {
+      try {
+        const currentVerNumber = parseFloat(appVersion.replace(/\./g, ''));
+        const latestVerNumber = parseFloat(latestVersion.replace(/\./g, ''));
+        const updateAvailable = latestVerNumber > currentVerNumber;
+
+        setHasUpdate(updateAvailable);
+        log.info(`Version check in Footer: Current=${appVersion}, Latest=${latestVersion}, Update available: ${updateAvailable}`);
+      } catch (error) {
+        log.error('Error comparing versions:', error);
+      }
     }
-  }, [appVersion, latestVersion]);
+  }, [appVersion, latestVersion, isVersionLoading]);
 
   const handleCogClick = () => {
-    // Check if user previously skipped an update
-    const skipUpdateCheck = localStorage.getItem('skipUpdateCheck') === 'true';
-
-    if (skipUpdateCheck && hasUpdate) {
-      // Show update tab in settings
-      setShowUpdateTab(true);
-      // Reset the skip flag when user manually opens settings
-      localStorage.removeItem('skipUpdateCheck');
-    } else {
-      setShowUpdateTab(false);
-    }
-
     if (settingsOpen) {
       settingsRef.current?.close();
     } else {
+      setShowUpdateTab(false);
       setSettingsOpen(true);
     }
   };
@@ -55,40 +48,28 @@ const Footer: React.FC<FooterProps> = ({ appVersion, latestVersion }) => {
 
   return (
     <>
-      <motion.div
-        className="no-move items-center bg-neutral-200 dark:bg-neutral-900 text-neutral-950 dark:text-neutral-200 rounded-b-3xl drop-shadow-xl"
-        initial={{ opacity: 0, y: 50 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3, type: "spring" }}
-      >
+      <div className="no-move items-center bg-neutral-200 dark:bg-neutral-900 text-neutral-950 dark:text-neutral-200 rounded-b-3xl drop-shadow-xl">
         <div className="flex justify-between items-center p-4">
-          {/* Empty left side */}
           <div className="flex-1"></div>
 
-          {/* Right side with version and settings */}
           <div className="flex items-center">
             {hasUpdate && (
               <motion.div
-                className="z-20 relative rounded-full bg-blue-100 dark:bg-blue-900 px-3 py-1 shadow-sm mr-2"
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{
-                  scale: 1,
-                  opacity: 1,
-                  y: [0, -3, 0],
-                }}
-                transition={{
-                  scale: { duration: 0.3 },
-                  y: { repeat: Infinity, repeatDelay: 2, duration: 1 }
-                }}
+                className="z-20 relative rounded-full shadow-sm mr-2"
+                animate={{ y: [0, -3, 0] }}
+                transition={{ y: { repeat: Infinity, repeatDelay: 2, duration: 1 } }}
               >
-                <motion.button
-                  onClick={openUpdateTab}
-                  className="text-xs font-medium py-1 text-blue-600 dark:text-blue-300 hover:underline transition duration: 200"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  Update available
-                </motion.button>
+                <div className="relative">
+                  <motion.button
+                    onClick={openUpdateTab}
+                    className="relative z-10 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900 text-xs font-medium text-blue-600 dark:text-blue-300 hover:underline transition rainbow-shadow"
+                    style={{ isolation: 'isolate' }} /* Ensure the button content stays above the shadow */
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    Update available
+                  </motion.button>
+                </div>
               </motion.div>
             )}
 
@@ -101,17 +82,12 @@ const Footer: React.FC<FooterProps> = ({ appVersion, latestVersion }) => {
               <FaCog className="transition duration-200" />
             </motion.button>
 
-            <motion.div
-              className="text-xs ml-2 text-neutral-600 dark:text-neutral-400"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.7 }}
-              transition={{ delay: 0.7 }}
-            >
+            <div className="text-xs ml-2 text-neutral-600 dark:text-neutral-400">
               v{appVersion}
-            </motion.div>
+            </div>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {settingsOpen && (
         <Settings
