@@ -44,8 +44,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
-      # Simpler build commands by platform
-      - name: Build and publish
+      # Build but DON'T publish to GitHub - just build the artifacts
+      - name: Build application
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
@@ -55,8 +55,8 @@ jobs:
           # Build first
           npm run build
 
-          # Build for current platform
-          npm run publish
+          # Build app but don't publish to GitHub
+          npx electron-builder build --publish never
 
       # Upload the built artifacts
       - name: Upload artifacts
@@ -91,6 +91,10 @@ jobs:
           mkdir -p release_files
           # Only include executables and latest.yml files, exclude blockmaps
           find artifacts -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*latest*.yml" \) -not -name "*-blockmap*" | xargs -I{} cp {} release_files/
+
+          # List all files that will be included in the release
+          echo "Files to be included in the release:"
+          ls -la release_files/
 
       - name: Generate GitHub Token
         id: generate_token
