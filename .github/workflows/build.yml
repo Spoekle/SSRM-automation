@@ -113,11 +113,15 @@ jobs:
       - name: Generate changelog
         id: changelog
         run: |
-          # Create changelog
-          echo 'CHANGELOG<<CHANGELIMIT' >> $GITHUB_ENV
-          echo '## What'"'"'s New' >> $GITHUB_ENV
-          git log --pretty=format:"- %s" -n 10 >> $GITHUB_ENV
-          echo 'CHANGELIMIT' >> $GITHUB_ENV
+          # Create a temporary file for the changelog
+          echo "## What's New" > changelog.md
+          git log --pretty=format:"- %s" -n 10 >> changelog.md
+
+          # Read the file content and properly escape it for GitHub Environment
+          CHANGELOG=$(cat changelog.md)
+          echo "CHANGELOG<<EOF" >> $GITHUB_ENV
+          echo "$CHANGELOG" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
         shell: bash
 
       # Simplified file hash calculation - only SHA512
