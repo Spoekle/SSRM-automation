@@ -113,10 +113,12 @@ jobs:
       - name: Generate changelog
         id: changelog
         run: |
-          echo "CHANGELOG<<EOF" >> $GITHUB_ENV
-          echo "## What's New" >> $GITHUB_ENV
+          # Create changelog
+          echo 'CHANGELOG<<CHANGELIMIT' >> $GITHUB_ENV
+          echo '## What'"'"'s New' >> $GITHUB_ENV
           git log --pretty=format:"- %s" -n 10 >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          echo 'CHANGELIMIT' >> $GITHUB_ENV
+        shell: bash
 
       # Simplified file hash calculation - only SHA512
       - name: Calculate file hashes
