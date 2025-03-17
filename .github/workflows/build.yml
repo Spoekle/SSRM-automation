@@ -79,22 +79,28 @@ jobs:
         id: changelog
         run: |
           # Get all commits since last tag or use all if this is first tag
-          $commits = git log --pretty=format:"- %s (%an)" $(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || git rev-list --max-parents=0 HEAD)..HEAD
+          try {
+            $lastTag = git describe --tags --abbrev=0 HEAD^ -ErrorAction Stop
+          } catch {
+            $lastTag = git rev-list --max-parents=0 HEAD
+          }
+          $commits = git log --pretty=format:"- %s (%an)" $lastTag..HEAD
+      
           $features = $commits | Where-Object { $_ -like "- feat*" -or $_ -like "- add*" -or $_ -like "- new*" }
           $fixes = $commits | Where-Object { $_ -like "- fix*" -or $_ -like "- bug*" }
           $other = $commits | Where-Object { $_ -notlike "- feat*" -and $_ -notlike "- fix*" -and $_ -notlike "- add*" -and $_ -notlike "- new*" -and $_ -notlike "- bug*" }
-
+      
           $featuresList = if ($features) { $features -join "`n" } else { "None" }
           $fixesList = if ($fixes) { $fixes -join "`n" } else { "None" }
           $otherList = if ($other) { $other -join "`n" } else { "None" }
-
+      
           $changelog = @"
           ## Features Added
           $featuresList
-
+      
           ## Bug Fixes
           $fixesList
-
+      
           ## Other Changes
           $otherList
           "@
