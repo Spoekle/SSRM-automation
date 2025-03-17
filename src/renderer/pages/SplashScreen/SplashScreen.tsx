@@ -55,6 +55,10 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
   const startTimeRef = useRef<number>(Date.now());
   const MIN_SPLASH_TIME = 2000;
 
+  const [isDevBranch, setIsDevBranch] = useState(() => {
+    return localStorage.getItem('useDevelopmentBranch') === 'true';
+  });
+
   useEffect(() => {
     const loadLocalStorageData = () => {
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -136,77 +140,100 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
     }, remainingTime);
   };
 
-  useEffect(() => {
-    const loadEverything = async () => {
-      const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-      try {
-      setLoadingStage('Checking ScoreSaber API...');
-      const ssStatus = await ipcRenderer.invoke('check-scoresaber');
-      setApiStatus(prev => ({ ...prev, scoresaber: ssStatus }));
-      setLoadingProgress(25);
-      await wait(1000);
-
-      setLoadingStage('Checking BeatSaver API...');
-      const bsStatus = await ipcRenderer.invoke('check-beatsaver');
-      setApiStatus(prev => ({ ...prev, beatsaver: bsStatus }));
-      setLoadingProgress(50);
-      await wait(1000);
-
-      setLoadingStage('Loading configuration...');
-      setLoadingProgress(75);
-      await wait(1000);
-
-      setLoadingStage('Checking for updates...');
-      const hasUpdate = await checkForUpdates();
-      setLoadingProgress(100);
-      await wait(1000);
-
-      setLoadingStage('Ready!');
-
-      if (hasUpdate && !localStorageData.skipUpdateCheck) {
-        log.info("Update available and not skipped, showing prompt");
-        setShowUpdatePrompt(true);
-      } else {
-        if (hasUpdate) {
-        log.info("Update available but skipped");
-        }
-        proceedToMainApp();
-      }
-      } catch (error) {
-      log.error('Error during splash initialization:', error);
-      setLoadingStage('Error during initialization');
-      setTimeout(proceedToMainApp, 1000);
-      }
-    };
-
-    if (localStorageData.theme !== null) {
-      loadEverything();
-    }
-  }, [localStorageData]);
-
   const checkForUpdates = async () => {
     try {
       log.info('SplashScreen: Checking for updates...');
+
+      // Check if we've switched branches
+      const lastUsedBranch = localStorage.getItem('lastUsedBranch');
+      const currentBranch = isDevBranch ? 'dev' : 'stable';
+      const hasSwitchedBranches = lastUsedBranch !== null && lastUsedBranch !== currentBranch;
+
+      // Store current branch for future reference
+      localStorage.setItem('lastUsedBranch', currentBranch);
+
       const response = await axios.get(
-        'https://api.github.com/repos/Spoekle/SSRM-automation/releases/latest',
+        'https://api.github.com/repos/Spoekle/SSRM-automation/releases',
         { timeout: 10000 }
       );
-      const data = response.data;
-      const latestVer = data.tag_name.replace(/^v/, '');
+
+      let targetRelease;
+      if (isDevBranch) {
+        // Find the latest pre-release (development build)
+        targetRelease = response.data.find((release: any) => release.prerelease);
+        // Fall back to stable if no pre-releases
+        if (!targetRelease) {
+          targetRelease = response.data.find((release: any) => !release.prerelease);
+        }
+        log.info(`SplashScreen: Checking development branch`);
+      } else {
+        // Find the latest stable release
+        targetRelease = response.data.find((release: any) => !release.prerelease);
+        log.info(`SplashScreen: Checking stable branch`);
+      }
+
+      if (!targetRelease) {
+        log.error('SplashScreen: No suitable release found');
+        return false;
+      }
+
+      const latestVer = targetRelease.tag_name.replace(/^v/, '');
       setLatestVersion(latestVer);
 
-      const currentVerNumber = parseFloat(appVersion.replace(/\./g, ''));
-      const latestVerNumber = parseFloat(latestVer.replace(/\./g, ''));
+      // Extract version components
+      const current = appVersion;
+      const latest = latestVer;
 
-      log.info(`SplashScreen: Version check - Current=${appVersion} (${currentVerNumber}), Latest=${latestVer} (${latestVerNumber})`);
+      log.info(`SplashScreen: Version check - Current=${current}, Latest=${latest}, Branch=${isDevBranch ? 'dev' : 'stable'}`);
 
-      if (latestVerNumber > currentVerNumber) {
-        log.info(`SplashScreen: Update available - Current=${appVersion}, Latest=${latestVer}`);
+      // If branches were switched, we always want to show the update prompt
+      // For dev -> stable this may be a "downgrade"
+      // For stable -> dev this would be an "upgrade" to latest dev build
+      if (hasSwitchedBranches) {
+        log.info(`SplashScreen: Branch switch detected from ${lastUsedBranch} to ${currentBranch}`);
+        setUpdateAvailable(true);
+        return true;
+      }
+
+      // Check for version difference using semver-style comparison
+      const isUpdateNeeded = (() => {
+        // If current version contains beta/alpha/rc and we're on stable channel,
+        // we should update even if the version number is higher
+        if (!isDevBranch && /beta|alpha|rc/i.test(current)) {
+          log.info('SplashScreen: Development version on stable channel, update needed');
+          return true;
+        }
+
+        // Simple numeric comparison for release versions
+        const currentParts = current.split('-')[0].split('.').map(Number);
+        const latestParts = latest.split('-')[0].split('.').map(Number);
+
+        // Compare major, minor, patch
+        for (let i = 0; i < 3; i++) {
+          const currentPart = currentParts[i] || 0;
+          const latestPart = latestParts[i] || 0;
+
+          if (latestPart > currentPart) return true;
+          if (latestPart < currentPart) return false;
+        }
+
+        // If we get here, the version numbers are identical, check for pre-release tags
+        const currentIsPrerelease = /beta|alpha|rc/i.test(current);
+        const latestIsPrerelease = /beta|alpha|rc/i.test(latest);
+
+        // If latest is stable and current is pre-release, update
+        if (!latestIsPrerelease && currentIsPrerelease) return true;
+
+        // Otherwise, we're up to date
+        return false;
+      })();
+
+      if (isUpdateNeeded) {
+        log.info(`SplashScreen: Update available - Current=${current}, Latest=${latest}`);
         setUpdateAvailable(true);
         return true;
       } else {
-        log.info(`SplashScreen: No update required - Current=${appVersion}, Latest=${latestVer}`);
+        log.info(`SplashScreen: No update required - Current=${current}, Latest=${latest}`);
         return false;
       }
     } catch (error) {
@@ -250,7 +277,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
   useEffect(() => {
     const loadEverything = async () => {
       const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-      
+
       await wait(500);
       try {
         setLoadingStage('Checking ScoreSaber API...');
@@ -500,7 +527,13 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
               >
-                Update available! Latest: {latestVersion}, Current: {appVersion}
+                {localStorage.getItem('lastUsedBranch') !== (isDevBranch ? 'dev' : 'stable')
+                  ? isDevBranch
+                    ? `Upgrade to development build available!`
+                    : `Downgrade to stable build available!`
+                  : `Update available!`}
+                <br />
+                Latest: {latestVersion}, Current: {appVersion}
               </motion.p>
 
               <motion.div
@@ -515,7 +548,12 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
                   whileHover={{ scale: 1.05, backgroundColor: "#2563eb" }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  Update Now
+                  {localStorage.getItem('lastUsedBranch') !== (isDevBranch ? 'dev' : 'stable')
+                    ? isDevBranch
+                      ? "Upgrade to Dev"
+                      : "Downgrade to Stable"
+                    : "Update Now"
+                  }
                 </motion.button>
                 <motion.button
                   onClick={handleSkipUpdate}
