@@ -219,16 +219,6 @@
     "asarUnpack": "**\\ffmpeg\\**",
     "files": ["dist", "node_modules", "assets", "package.json"],
     "afterSign": ".erb/scripts/notarize.js",
-    "fileAssociations": {
-      "ext": ["mp4"],
-      "mimeType": "video/mp4"
-    },
-    "protocols": {
-      "name": "ssrm-protocol",
-      "schemes": ["ssrm"]
-    },
-    "verifyUpdateCodeSignature": true,
-    "checksumAlgorithm": "sha512",
     "mac": {
       "target": [
         {
@@ -287,9 +277,7 @@
       "repo": "SSRM-automation",
       "private": false,
       "releaseType": "release",
-      "publishAutoUpdate": true,
-      "verifyUpdateCodeSignature": true,
-      "useAppSupportCache": true
+      "publishAutoUpdate": true
     }
   },
   "collective": {
