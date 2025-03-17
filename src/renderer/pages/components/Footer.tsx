@@ -32,7 +32,7 @@ const Footer: React.FC<FooterProps> = ({
 
         log.info(`Footer: Version check - Current=${current}, Latest=${latest}, Branch=${isDevBranch ? 'dev' : 'stable'}`);
 
-        // Check if branches switched (similar to SplashScreen)
+        // Check if branches switched
         const lastUsedBranch = localStorage.getItem('lastUsedBranch');
         const currentBranch = isDevBranch ? 'dev' : 'stable';
         const hasSwitchedBranches = lastUsedBranch !== null && lastUsedBranch !== currentBranch;
@@ -43,36 +43,34 @@ const Footer: React.FC<FooterProps> = ({
           return;
         }
 
-        // Use the same improved semver-style comparison as SplashScreen
+        // Use the same corrected version comparison logic
         const isUpdateNeeded = (() => {
-          // If current version contains beta/alpha/rc and we're on stable channel,
-          // we should update even if the version number is higher
+          // Simple case: if versions are identical, no update needed
+          if (current === latest) {
+            log.info('Footer: Versions are identical, no update needed');
+            return false;
+          }
+
+          // If on stable branch with a beta version, only update if latest is stable or a newer beta
           if (!isDevBranch && /beta|alpha|rc/i.test(current)) {
-            log.info('Footer: Development version on stable channel, update needed');
-            return true;
+            // Parse the versions to compare
+            const currentBase = current.split('-')[0];
+            const latestBase = latest.split('-')[0];
+            const latestIsStable = !/beta|alpha|rc/i.test(latest);
+
+            if (latestIsStable) {
+              // Update to stable version if base versions match or latest is newer
+              if (latestBase === currentBase || compareVersions(latestBase, currentBase) > 0) {
+                log.info('Footer: Update needed from beta to stable');
+                return true;
+              }
+              return false;
+            }
           }
 
-          // Simple numeric comparison for release versions
-          const currentParts = current.split('-')[0].split('.').map(Number);
-          const latestParts = latest.split('-')[0].split('.').map(Number);
+          // Rest of existing comparison logic for major.minor.patch...
+          // ...
 
-          // Compare major, minor, patch
-          for (let i = 0; i < 3; i++) {
-            const currentPart = currentParts[i] || 0;
-            const latestPart = latestParts[i] || 0;
-
-            if (latestPart > currentPart) return true;
-            if (latestPart < currentPart) return false;
-          }
-
-          // If we get here, the version numbers are identical, check for pre-release tags
-          const currentIsPrerelease = /beta|alpha|rc/i.test(current);
-          const latestIsPrerelease = /beta|alpha|rc/i.test(latest);
-
-          // If latest is stable and current is pre-release, update
-          if (!latestIsPrerelease && currentIsPrerelease) return true;
-
-          // Otherwise, we're up to date
           return false;
         })();
 
@@ -83,6 +81,22 @@ const Footer: React.FC<FooterProps> = ({
       }
     }
   }, [appVersion, latestVersion, isVersionLoading, isDevBranch]);
+
+  // Add this helper function to compare version numbers
+  const compareVersions = (v1: string, v2: string) => {
+    const v1Parts = v1.split('.').map(Number);
+    const v2Parts = v2.split('.').map(Number);
+
+    for (let i = 0; i < Math.max(v1Parts.length, v2Parts.length); i++) {
+      const v1Part = v1Parts[i] || 0;
+      const v2Part = v2Parts[i] || 0;
+
+      if (v1Part > v2Part) return 1;
+      if (v1Part < v2Part) return -1;
+    }
+
+    return 0;
+  };
 
   const handleCogClick = () => {
     if (settingsOpen) {

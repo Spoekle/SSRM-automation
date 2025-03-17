@@ -197,34 +197,115 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
 
       // Check for version difference using semver-style comparison
       const isUpdateNeeded = (() => {
-        // If current version contains beta/alpha/rc and we're on stable channel,
-        // we should update even if the version number is higher
+        // Only recommend updating from beta to stable if:
+        // 1. We're on stable branch
+        // 2. Current version is a prerelease
+        // 3. Latest version is NOT a prerelease
+        // 4. Latest version is different from current base version
         if (!isDevBranch && /beta|alpha|rc/i.test(current)) {
-          log.info('SplashScreen: Development version on stable channel, update needed');
+          // Parse the versions to compare base versions without prerelease tags
+          const currentBase = current.split('-')[0];
+          const latestBase = latest.split('-')[0];
+
+          // Only update if latest is stable AND latest is different OR same base version
+          const latestIsStable = !/beta|alpha|rc/i.test(latest);
+
+          if (latestIsStable) {
+            log.info('SplashScreen: Development version on stable channel, checking if update needed');
+
+            // If the latest and current base versions are the same, we should update to stable
+            // Or if the latest base version is newer, we should update
+            if (latestBase === currentBase || compareVersions(latestBase, currentBase) > 0) {
+              log.info('SplashScreen: Update needed from beta to stable');
+              return true;
+            }
+          }
+
+          // Don't update if the latest version is the same beta or older
+          if (latest === current) {
+            log.info('SplashScreen: Current beta version matches latest, no update needed');
+            return false;
+          }
+        }
+
+        // Parse the version strings to extract base version and pre-release info
+        const parseVersion = (version: string) => {
+          // Extract base version and prerelease parts
+          const [basePart, prereleasePart] = version.split('-');
+          const versionParts = basePart.split('.').map(Number);
+          return {
+            major: versionParts[0] || 0,
+            minor: versionParts[1] || 0,
+            patch: versionParts[2] || 0,
+            prerelease: prereleasePart || null
+          };
+        };
+
+        const currentVersion = parseVersion(current);
+        const latestVersion = parseVersion(latest);
+
+        log.info(`SplashScreen: Comparing versions - Current=${JSON.stringify(currentVersion)}, Latest=${JSON.stringify(latestVersion)}`);
+
+        // If exactly the same version (including prerelease), no update needed
+        if (current === latest) {
+          log.info('SplashScreen: Versions are identical, no update needed');
+          return false;
+        }
+
+        // Compare major.minor.patch
+        if (latestVersion.major > currentVersion.major) return true;
+        if (latestVersion.major < currentVersion.major) return false;
+
+        if (latestVersion.minor > currentVersion.minor) return true;
+        if (latestVersion.minor < currentVersion.minor) return false;
+
+        if (latestVersion.patch > currentVersion.patch) return true;
+        if (latestVersion.patch < currentVersion.patch) return false;
+
+        // If we get here, the version numbers are identical (e.g., 2.0.0 vs 2.0.0-beta.1)
+        // If one has prerelease tag and the other doesn't:
+        if (!latestVersion.prerelease && currentVersion.prerelease) {
+          // Latest is stable, current is prerelease, update to stable
           return true;
         }
-
-        // Simple numeric comparison for release versions
-        const currentParts = current.split('-')[0].split('.').map(Number);
-        const latestParts = latest.split('-')[0].split('.').map(Number);
-
-        // Compare major, minor, patch
-        for (let i = 0; i < 3; i++) {
-          const currentPart = currentParts[i] || 0;
-          const latestPart = latestParts[i] || 0;
-
-          if (latestPart > currentPart) return true;
-          if (latestPart < currentPart) return false;
+        if (latestVersion.prerelease && !currentVersion.prerelease) {
+          // Latest is prerelease, current is stable, don't update
+          return false;
         }
 
-        // If we get here, the version numbers are identical, check for pre-release tags
-        const currentIsPrerelease = /beta|alpha|rc/i.test(current);
-        const latestIsPrerelease = /beta|alpha|rc/i.test(latest);
+        // Both are prereleases with same base version (e.g., 2.0.0-beta.1 vs 2.0.0-beta.2)
+        if (latestVersion.prerelease && currentVersion.prerelease) {
+          // If the prerelease tags are different
+          if (latestVersion.prerelease !== currentVersion.prerelease) {
+            // Compare prerelease versions - split by dots and compare each part
+            const latestParts = latestVersion.prerelease.split('.');
+            const currentParts = currentVersion.prerelease.split('.');
 
-        // If latest is stable and current is pre-release, update
-        if (!latestIsPrerelease && currentIsPrerelease) return true;
+            // Compare prerelease type (beta vs alpha vs rc)
+            const latestType = latestParts[0];
+            const currentType = currentParts[0];
 
-        // Otherwise, we're up to date
+            if (latestType !== currentType) {
+              // rc > beta > alpha
+              if (latestType === 'rc') return true;
+              if (currentType === 'rc') return false;
+              if (latestType === 'beta') return true;
+              if (currentType === 'beta') return false;
+              return latestType > currentType; // alphabetical otherwise
+            }
+
+            // Same prerelease type (e.g., beta.1 vs beta.2), compare numbers
+            for (let i = 1; i < Math.max(latestParts.length, currentParts.length); i++) {
+              const latestNum = parseInt(latestParts[i]) || 0;
+              const currentNum = parseInt(currentParts[i]) || 0;
+
+              if (latestNum > currentNum) return true;
+              if (latestNum < currentNum) return false;
+            }
+          }
+        }
+
+        // Everything is equal, no update needed
         return false;
       })();
 
@@ -625,6 +706,22 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
       </motion.div>
     </div>
   );
+};
+
+// Add the compareVersions utility function
+const compareVersions = (v1: string, v2: string): number => {
+  const v1Parts = v1.split('.').map(Number);
+  const v2Parts = v2.split('.').map(Number);
+
+  for (let i = 0; i < Math.max(v1Parts.length, v2Parts.length); i++) {
+    const v1Part = v1Parts[i] || 0;
+    const v2Part = v2Parts[i] || 0;
+
+    if (v1Part > v2Part) return 1;
+    if (v1Part < v2Part) return -1;
+  }
+
+  return 0;
 };
 
 export default SplashScreen;
