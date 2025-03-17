@@ -1,15 +1,34 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useConfirmationModal } from '../../../contexts/ConfirmationModalContext';
 
 interface LoadedMapInfoProps {
     loadedMapInfo: string | null;
-    setConfirmResetMapOpen: (open: boolean) => void;
+    // Remove the setConfirmResetMapOpen prop as we're using the confirmation context now
 }
 
-const LoadedMapInfo: React.FC<LoadedMapInfoProps> = ({ loadedMapInfo, setConfirmResetMapOpen }) => {
+const LoadedMapInfo: React.FC<LoadedMapInfoProps> = ({ loadedMapInfo }) => {
+    const { showConfirmation } = useConfirmationModal();
+
     if (!loadedMapInfo) {
         return <p>No map loaded</p>;
     }
+
+    const handleResetMap = () => {
+        showConfirmation({
+            title: "Reset Map Data",
+            message: "Are you sure you want to reset the loaded map data? This will remove it from local storage.",
+            confirmText: "Reset",
+            cancelText: "Cancel",
+            onConfirm: () => {
+                localStorage.removeItem("mapId");
+                localStorage.removeItem("mapInfo");
+                localStorage.removeItem("starRatings");
+                localStorage.removeItem("oldStarRatings");
+                window.location.reload();
+            }
+        });
+    };
 
     try {
         const map = JSON.parse(loadedMapInfo);
@@ -72,9 +91,7 @@ const LoadedMapInfo: React.FC<LoadedMapInfoProps> = ({ loadedMapInfo, setConfirm
 
                         <motion.button
                             className="absolute bottom-0 right-0 bg-red-500 text-white px-2 py-1 rounded-xl hover:bg-red-600 transition duration-200 z-10"
-                            onClick={() => {
-                                setConfirmResetMapOpen(true);
-                            }}
+                            onClick={handleResetMap}
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                         >
