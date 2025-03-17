@@ -40,7 +40,7 @@ jobs:
         run: |
           # Add repository info to package.json if not already there
           jq '.repository = {type: "git", url: "https://github.com/${{ github.repository }}.git"}' package.json > package.json.tmp
-          mv package.json.tmp package.json
+          Move-Item -Force package.json.tmp package.json
 
           # Set environment variables in PowerShell syntax
           $env:GH_TOKEN = "${{ steps.generate_token.outputs.token }}"
