@@ -24,8 +24,36 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build application
-        run: npm run package
+      - name: Generate GitHub Token for electron-builder
+        id: generate_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.PUBLISHER_APP_ID }}
+          private-key: ${{ secrets.PUBLISHER_PRIVATE_KEY }}
+          permissions: contents:write
+
+      - name: Build and publish application
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+          NODE_OPTIONS: "--max-old-space-size=4096"
+        run: |
+          # Add repository info to package.json if not already there
+          jq '.repository = {type: "git", url: "https://github.com/${{ github.repository }}.git"}' package.json > package.json.tmp
+          mv package.json.tmp package.json
+
+          # Set environment variables in PowerShell syntax
+          $env:GH_TOKEN = "${{ steps.generate_token.outputs.token }}"
+          $env:GITHUB_TOKEN = "${{ steps.generate_token.outputs.token }}"
+
+          # Debug token
+          echo "Token Length: $(if ($env:GH_TOKEN) { $env:GH_TOKEN.Length } else { 0 })"
+
+          # Build first
+          npm run build
+
+          # Publish with configuration file approach
+          npx electron-builder build --publish always --config.publish.token=${{ steps.generate_token.outputs.token }}
 
       - name: Determine if pre-release
         id: prerelease
@@ -74,8 +102,7 @@ jobs:
           echo "$changelog" >> $env:GITHUB_ENV
           echo "EOF" >> $env:GITHUB_ENV
 
-      - name: Create Release
-        id: create_release
+      - name: Update GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           files: ./release/build/*.exe

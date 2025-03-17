@@ -42,6 +42,8 @@
     "lint": "cross-env NODE_ENV=development eslint . --ext .js,.jsx,.ts,.tsx",
     "package": "ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder build --publish never",
     "package:dev": "cross-env RELEASE_CHANNEL=dev npm run package",
+    "publish": "ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder build --publish always",
+    "publish:local": "ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder build --publish never --verbose",
     "rebuild": "electron-rebuild --parallel --types prod,dev,optional --module-dir release/app",
     "start": "ts-node ./.erb/scripts/check-port-in-use.js && npm run start:renderer",
     "start:main": "cross-env NODE_ENV=development electronmon -r ts-node/register/transpile-only .",
@@ -260,7 +262,14 @@
       "buildResources": "assets",
       "output": "release/build"
     },
-    "extraResources": ["./assets/**"]
+    "extraResources": ["./assets/**"],
+    "publish": {
+      "provider": "github",
+      "owner": "Spoekle",
+      "repo": "SSRM-automation",
+      "private": false,
+      "releaseType": "release"
+    }
   },
   "collective": {
     "url": "https://opencollective.com/electron-react-boilerplate-594"
