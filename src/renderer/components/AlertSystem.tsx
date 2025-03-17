@@ -56,12 +56,6 @@ const AlertSystem: React.FC<AlertSystemProps> = ({ alerts, position = 'top-right
           >
             {getAlertIcon(alert.type)}
             <p className='text-sm text-white font-medium'>{alert.message}</p>
-            <motion.div
-              className="hover:bg-white/20 rounded-full p-1 cursor-pointer"
-              whileHover={{ scale: 1.1, backgroundColor: "rgba(255,255,255,0.3)" }}
-              whileTap={{ scale: 0.9 }}
-            >
-            </motion.div>
           </motion.div>
         ))}
       </div>

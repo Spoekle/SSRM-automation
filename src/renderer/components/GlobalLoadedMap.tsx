@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaChevronLeft, FaChevronRight, FaTimes } from 'react-icons/fa';
+import { useConfirmationModal } from '../contexts/ConfirmationModalContext';
 
 interface MapInfo {
   metadata: {
@@ -22,6 +23,7 @@ const GlobalLoadedMap: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [mapInfo, setMapInfo] = useState<MapInfo | null>(null);
+  const { showConfirmation } = useConfirmationModal();
 
   // Load map info from localStorage
   useEffect(() => {
@@ -49,6 +51,20 @@ const GlobalLoadedMap: React.FC = () => {
       window.removeEventListener('mapinfo-updated', handleMapInfoUpdate);
     };
   }, []);
+
+  const handleClearMapData = () => {
+    showConfirmation({
+      title: "Clear Map Data",
+      message: "Are you sure you want to clear the loaded map data? This will remove it from local storage.",
+      onConfirm: () => {
+        localStorage.removeItem("mapId");
+        localStorage.removeItem("mapInfo");
+        localStorage.removeItem("starRatings");
+        localStorage.removeItem("oldStarRatings");
+        setMapInfo(null);
+      }
+    });
+  };
 
   // If no map is loaded or component is hidden, show only the toggle button
   if (!mapInfo || !isVisible) {
@@ -116,6 +132,16 @@ const GlobalLoadedMap: React.FC = () => {
               <span>{mapInfo.metadata.bpm}BPM</span>
             </div>
           </div>
+
+          <motion.button
+            className="text-red-500 hover:text-red-700 dark:hover:text-red-400 p-1"
+            onClick={handleClearMapData}
+            whileHover={{ scale: 1.2 }}
+            whileTap={{ scale: 0.9 }}
+            title="Clear map data"
+          >
+            <FaTimes size={14} />
+          </motion.button>
         </motion.div>
 
         {/* Toggle button */}

@@ -1,25 +1,11 @@
-import React, {
-  ChangeEvent,
-  forwardRef,
-  useEffect,
-  useImperativeHandle,
-  useState,
-} from "react";
-import Switch from "@mui/material/Switch";
-import LinearProgress from "@mui/material/LinearProgress";
-import {
-  FaArrowRight,
-  FaExchangeAlt,
-  FaGithub,
-  FaTimes,
-  FaTrash,
-  FaUpload,
-} from "react-icons/fa";
-import log from "electron-log";
-import { AnimatePresence, motion } from "framer-motion";
-import { ConfirmationModal } from "./components/ConfirmationModal";
-import LoadedMapInfo from "./components/LoadedMapInfo";
-import "./styles/CustomScrollbar.css";
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, ChangeEvent } from 'react';
+import { motion } from 'framer-motion';
+import { FaTimes, FaDownload } from 'react-icons/fa';
+import Switch from '@mui/material/Switch';
+import log from 'electron-log';
+import { useConfirmationModal } from '../../contexts/ConfirmationModalContext';
+import { ConfirmationModal } from './components/ConfirmationModal';
+import LoadedMapInfo from './components/LoadedMapInfo';
 
 export interface SettingsHandles {
   close: () => void;
@@ -30,16 +16,22 @@ interface SettingsProps {
   appVersion: string;
   latestVersion: string;
   showUpdateTab?: boolean;
+  isVersionLoading?: boolean;
+  isDevBranch?: boolean;
 }
 
 const Settings = forwardRef<SettingsHandles, SettingsProps>(
-  ({ onClose, appVersion, latestVersion, showUpdateTab = false }, ref) => {
+  ({ onClose, appVersion, latestVersion, showUpdateTab = false, isVersionLoading = false, isDevBranch = false }, ref) => {
     const { ipcRenderer } = window.require("electron");
     const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [isOverlayVisible, setIsOverlayVisible] = useState(false);
     const [isDarkMode, setIsDarkMode] = useState(() => {
       const savedTheme = localStorage.getItem("theme");
       return savedTheme === "dark";
+    });
+
+    const [isDevMode, setIsDevMode] = useState(() => {
+      return localStorage.getItem("useDevelopmentBranch") === "true";
     });
 
     const [ffmpegInstalled, setFfmpegInstalled] = useState<boolean | null>(
@@ -52,7 +44,6 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
     >(null);
 
     const [confirmResetAllOpen, setConfirmResetAllOpen] = useState(false);
-    const [confirmResetMapOpen, setConfirmResetMapOpen] = useState(false);
     const [loadedMapInfo, setLoadedMapInfo] = useState<string | null>(null);
     const [isUpdating, setIsUpdating] = useState(false);
     const [updateProgress, setUpdateProgress] = useState("");
@@ -73,6 +64,7 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
     });
 
     const updateSectionRef = React.useRef<HTMLDivElement>(null);
+    const { showConfirmation } = useConfirmationModal();
 
     useEffect(() => {
       setIsOverlayVisible(true);
@@ -93,6 +85,10 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
       }
       localStorage.setItem("theme", isDarkMode ? "dark" : "light");
     }, [isDarkMode]);
+
+    useEffect(() => {
+      localStorage.setItem("useDevelopmentBranch", isDevMode ? "true" : "false");
+    }, [isDevMode]);
 
     useEffect(() => {
       checkFfmpeg();
@@ -194,20 +190,75 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
       setIsDarkMode(!isDarkMode);
     };
 
+    const toggleBranch = () => {
+      const newBranchSetting = !isDevMode;
+      const switchToDev = !isDevMode;
+
+      // First confirmation - when switching TO development branch
+      if (switchToDev) {
+        showConfirmation({
+          title: "Switch to Development Branch",
+          message: "Switching to development branch will install pre-release versions which may contain bugs or incomplete features. Continue?",
+          confirmText: "Switch",
+          cancelText: "Cancel",
+          onConfirm: () => {
+            // Apply the changes
+            applyBranchChange(newBranchSetting);
+
+            // Ask about restart
+            showConfirmation({
+              title: "Restart Required",
+              message: "The application needs to restart to switch branches. Restart now?",
+              confirmText: "Restart Now",
+              cancelText: "Later",
+              onConfirm: () => {
+                const { ipcRenderer } = window.require('electron');
+                ipcRenderer.invoke('restart-app');
+              }
+            });
+          }
+        });
+      } else {
+        // When switching FROM dev to stable, just ask for restart confirmation
+        showConfirmation({
+          title: "Switch to Stable Branch",
+          message: "Are you sure you want to switch to the stable branch? This will downgrade to the latest stable version.",
+          confirmText: "Switch",
+          cancelText: "Cancel",
+          onConfirm: () => {
+            // Apply the changes
+            applyBranchChange(newBranchSetting);
+
+            // Ask about restart
+            showConfirmation({
+              title: "Restart Required",
+              message: "The application needs to restart to switch branches. Restart now?",
+              confirmText: "Restart Now",
+              cancelText: "Later",
+              onConfirm: () => {
+                const { ipcRenderer } = window.require('electron');
+                ipcRenderer.invoke('restart-app');
+              }
+            });
+          }
+        });
+      }
+    };
+
+    // Helper function to apply branch change settings
+    const applyBranchChange = (newBranchSetting: boolean) => {
+      setIsDevMode(newBranchSetting);
+      localStorage.setItem("useDevelopmentBranch", newBranchSetting ? "true" : "false");
+      localStorage.removeItem("skipUpdateCheck");
+      localStorage.setItem("forceVersionCheck", "true");
+    };
+
     const resetLocalStorage = () => {
       setConfirmResetAllOpen(true);
     };
 
     const handleConfirmResetAll = () => {
       localStorage.clear();
-      window.location.reload();
-    };
-
-    const handleConfirmResetMap = () => {
-      localStorage.removeItem("mapId");
-      localStorage.removeItem("mapInfo");
-      localStorage.removeItem("starRatings");
-      localStorage.removeItem("oldStarRatings");
       window.location.reload();
     };
 
@@ -261,403 +312,238 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
               transition={{ delay: 0.1, type: "spring" }}
             >
               <motion.h2
-                className="text-xl bg-neutral-100 dark:bg-neutral-600 px-3 py-2 rounded-lg font-semibold"
-                whileHover={{ scale: 1.03 }}
+                className="text-xl font-bold"
+                whileHover={{ scale: 1.05 }}
+                transition={{ type: "spring", stiffness: 300 }}
               >
                 Settings
               </motion.h2>
               <motion.button
-                className="text-red-500 bg-neutral-300 dark:bg-neutral-700 p-2 rounded-md hover:bg-neutral-400 dark:hover:bg-neutral-600 transition duration-200"
                 onClick={handleClose}
-                whileHover={{
-                  scale: 1.1,
-                  backgroundColor: "#ef4444",
-                  color: "#ffffff",
-                }}
-                whileTap={{ scale: 0.95 }}
+                className="p-2 rounded-lg hover:bg-neutral-300 dark:hover:bg-neutral-700"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
               >
-                <FaTimes />
+                <FaTimes className="text-neutral-700 dark:text-neutral-300" />
               </motion.button>
             </motion.div>
 
-            <div className="px-4 pb-4 space-y-4">
-              <motion.div
-                className="p-4 rounded-lg"
-                custom={0}
-                variants={sectionVariants}
-                initial="hidden"
-                animate="visible"
-              >
-                <motion.p
-                  className="font-medium text-neutral-800 dark:text-neutral-100"
-                  whileHover={{ x: 5 }}
-                  transition={{ type: "spring", stiffness: 300 }}
-                >
-                  Currently Loaded Map:
-                </motion.p>
-                <LoadedMapInfo
-                  loadedMapInfo={loadedMapInfo}
-                  setConfirmResetMapOpen={setConfirmResetMapOpen}
-                />
-              </motion.div>
-
-              <motion.div
-                className="p-4 bg-neutral-100 dark:bg-neutral-700 rounded-lg"
-                custom={1}
-                variants={sectionVariants}
-                initial="hidden"
-                animate="visible"
-                whileHover={{
-                  scale: 1.01,
-                  boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-                }}
-                transition={{ type: "spring", stiffness: 300 }}
-              >
-                <div className="flex justify-between items-center">
-                  <motion.h1
-                    className="font-medium text-xl text-neutral-800 dark:text-neutral-100"
-                    initial={{ x: -10, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                  >
-                    Preferences
-                  </motion.h1>
-                  <motion.p
-                    className="text-neutral-800 dark:text-neutral-100 text-sm text-end"
-                    initial={{ x: 10, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.4 }}
-                  >
-                    Change the theme, upload or remove card configuration...
-                  </motion.p>
-                </div>
-                <motion.div
-                  className="mt-4 flex flex-col space-y-4"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5 }}
-                >
-                  <div className="flex flex-col space-y-3">
-                    <motion.div
-                      className="flex items-center space-x-4"
-                      whileHover={{ scale: 1.02, x: 5 }}
-                      transition={{ type: "spring", stiffness: 400 }}
-                    >
-                      <span className="font-medium text-neutral-800 dark:text-neutral-100">
-                        Dark Mode
-                      </span>
-                      <Switch
-                        checked={isDarkMode}
-                        onChange={toggleTheme}
-                        color="primary"
-                      />
-                    </motion.div>
-                  </div>
-                </motion.div>
-              </motion.div>
-
-              <motion.div
-                className="p-4 bg-neutral-100 dark:bg-neutral-600 rounded-lg"
-                custom={2}
-                variants={sectionVariants}
-                initial="hidden"
-                animate="visible"
-                whileHover={{
-                  scale: 1.01,
-                  boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-                }}
-              >
-                <div className="flex justify-between items-center">
-                  <motion.h1
-                    className="font-medium text-xl text-neutral-800 dark:text-neutral-100"
-                    whileHover={{ x: 3 }}
-                  >
-                    Reset Local Storage
-                  </motion.h1>
-                  <motion.p
-                    className="text-neutral-800 dark:text-neutral-100 text-sm"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 0.8 }}
-                    transition={{ delay: 0.7 }}
-                  >
-                    Reset all local storage data.
-                  </motion.p>
-                </div>
-                <motion.button
-                  onClick={resetLocalStorage}
-                  className="mt-2 w-full bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition duration-200"
-                  whileHover={{
-                    scale: 1.02,
-                    boxShadow: "0px 5px 10px rgba(0, 0, 0, 0.2)",
-                  }}
-                  whileTap={{ scale: 0.98 }}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 }}
-                >
-                  <motion.div
-                    className="flex items-center justify-center space-x-2"
-                    whileHover={{ x: 5 }}
-                  >
-                    <FaTrash />
-                    <span>Reset Local Storage</span>
-                  </motion.div>
-                </motion.button>
-              </motion.div>
-
-              {/* ffmpeg Install Section */}
-              <motion.div
-                className="p-4 bg-neutral-100 dark:bg-neutral-600 rounded-lg text-center space-y-4"
-                custom={3}
-                variants={sectionVariants}
-                initial="hidden"
-                animate="visible"
-                whileHover={{
-                  scale: 1.01,
-                  boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-                }}
-              >
-                <div className="flex justify-between items-center">
-                  <motion.h1
-                    className="font-medium text-xl text-neutral-800 dark:text-neutral-100"
-                    whileHover={{ x: 3 }}
-                  >
-                    ffmpeg
-                  </motion.h1>
-                  <motion.p
-                    className="text-neutral-800 dark:text-neutral-100 text-sm"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.8 }}
-                  >
-                    ffmpeg is required for video thumbnail extractions.
-                  </motion.p>
-                </div>
-
-                <AnimatePresence>
-                  {ffmpegLoading && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                    >
-                      <LinearProgress
-                        variant={installProgressPercent !== null
-                          ? "determinate"
-                          : "indeterminate"}
-                        value={installProgressPercent || 0}
-                      />
-                      <motion.p
-                        className="text-sm mt-1"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                      >
-                        {installStatus}
-                      </motion.p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <AnimatePresence>
-                  {!ffmpegLoading && ffmpegInstalled && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                    >
-                      <motion.button
-                        onClick={() => handleFfmpegAction("reinstall")}
-                        className="w-full bg-blue-500 hover:bg-blue-600 transition duration-200 text-white px-4 py-2 rounded mt-2"
-                        whileHover={{
-                          scale: 1.02,
-                          boxShadow: "0px 5px 10px rgba(0, 0, 0, 0.2)",
-                        }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        <motion.div className="flex items-center justify-center space-x-2">
-                          <FaExchangeAlt />
-                          <span>Reinstall ffmpeg</span>
-                        </motion.div>
-                      </motion.button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <AnimatePresence>
-                  {!ffmpegLoading && ffmpegInstalled === false && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                    >
-                      <motion.button
-                        onClick={() => handleFfmpegAction("install")}
-                        className="w-full bg-green-500 text-white px-4 py-2 rounded"
-                        whileHover={{
-                          scale: 1.02,
-                          boxShadow: "0px 5px 10px rgba(0, 0, 0, 0.2)",
-                        }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        <motion.div className="flex items-center justify-center space-x-2">
-                          <FaUpload />
-                          <span>Install ffmpeg</span>
-                        </motion.div>
-                      </motion.button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-
-              {/* Update section */}
-              {parseFloat(latestVersion.replace(/\./g, "")) >
-                  parseFloat(appVersion.replace(/\./g, "")) && (
-                <motion.div
-                  ref={updateSectionRef}
-                  className={`p-4 bg-neutral-100 dark:bg-neutral-600 rounded-lg transition-colors duration-300`}
-                  custom={4}
-                  variants={sectionVariants}
+            {/* Settings content */}
+            <div className="p-4">
+              <div className="space-y-6">
+                {/* Theme Settings */}
+                <motion.section
+                  className="bg-white dark:bg-neutral-700 rounded-xl shadow p-4"
                   initial="hidden"
                   animate="visible"
-                  whileHover={{
-                    scale: 1.01,
-                    boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-                  }}
+                  variants={sectionVariants}
+                  custom={2}
                 >
-                  <div className="flex justify-between items-center">
-                    <motion.h1
-                      className="font-medium text-xl text-neutral-800 dark:text-neutral-100"
-                      whileHover={{ x: 3 }}
-                      animate={{
-                        scale: [1, 1.03, 1],
-                        color: ["#3b82f6", "#60a5fa", "#3b82f6"],
-                      }}
-                      transition={{
-                        repeat: Infinity,
-                        duration: 2,
-                        color: { repeat: Infinity, duration: 3 },
-                      }}
-                    >
-                      Update! {latestVersion}
-                    </motion.h1>
-                    <motion.p
-                      className="text-neutral-800 dark:text-neutral-100 text-sm"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.8 }}
-                    >
-                      Update available! Please update your application.
-                    </motion.p>
+                  <h3 className="text-lg font-semibold border-b pb-2 mb-4 border-neutral-200 dark:border-neutral-600">Theme Settings</h3>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">Dark Mode</p>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">Toggle dark mode on/off</p>
+                    </div>
+                    <Switch checked={isDarkMode} onChange={toggleTheme} />
+                  </div>
+                </motion.section>
+
+                {/* Data Management */}
+                <motion.section
+                  className="bg-white dark:bg-neutral-700 rounded-xl shadow p-4"
+                  initial="hidden"
+                  animate="visible"
+                  variants={sectionVariants}
+                  custom={4}
+                >
+                  <h3 className="text-lg font-semibold border-b pb-2 mb-4 border-neutral-200 dark:border-neutral-600">Data Management</h3>
+
+                  {/* Loaded Map Data */}
+                  <div className="mb-4">
+                    <h4 className="text-base font-medium mb-2">Currently Loaded Map:</h4>
+                    {loadedMapInfo ? (
+                      <LoadedMapInfo loadedMapInfo={loadedMapInfo} />
+                    ) : (
+                      <p className="text-sm text-neutral-500 dark:text-neutral-400">No map loaded</p>
+                    )}
                   </div>
 
-                  <AnimatePresence>
-                    {isUpdating && (
-                      <motion.div
-                        className="mt-2 p-2 bg-blue-500 text-white rounded-lg text-center"
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ type: "spring", stiffness: 300 }}
-                      >
-                        <motion.p
-                          animate={{
-                            scale: [1, 1.02, 1],
-                          }}
-                          transition={{ repeat: Infinity, duration: 1.5 }}
-                        >
-                          {updateProgress}
-                        </motion.p>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  <motion.button
-                    onClick={updateApplication}
-                    className={`mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition duration-200`}
-                    disabled={isUpdating}
-                    whileHover={!isUpdating
-                      ? {
-                        scale: 1.02,
-                        boxShadow: "0px 5px 10px rgba(0, 0, 0, 0.2)",
-                      }
-                      : {}}
-                    whileTap={!isUpdating ? { scale: 0.98 } : {}}
-                    animate={!isUpdating
-                      ? {
-                        scale: [1, 1.02, 1],
-                        boxShadow: [
-                          "0px 0px 0px rgba(37, 99, 235, 0.2)",
-                          "0px 0px 15px rgba(37, 99, 235, 0.5)",
-                          "0px 0px 0px rgba(37, 99, 235, 0.2)",
-                        ],
-                      }
-                      : {}}
-                    transition={{
-                      repeat: isUpdating ? 0 : Infinity,
-                      duration: 2,
-                    }}
-                  >
-                    <motion.div className="flex items-center justify-center space-x-2">
-                      {isUpdating ? "Updating..." : (
-                        <>
-                          <FaArrowRight />
-                          <span>Update Now!</span>
-                        </>
+                  {/* Card Configuration */}
+                  <div className="mb-4">
+                    <h4 className="text-base font-medium mb-2">Card Configuration:</h4>
+                    <div className="flex items-center">
+                      {storedCardConfigName ? (
+                        <p className="text-sm text-neutral-600 dark:text-neutral-400 flex-grow">
+                          Loaded: <span className="font-medium text-neutral-800 dark:text-neutral-200">{storedCardConfigName}</span>
+                        </p>
+                      ) : (
+                        <p className="text-sm text-neutral-500 dark:text-neutral-400 flex-grow">
+                          No card configuration loaded
+                        </p>
                       )}
-                    </motion.div>
-                  </motion.button>
-                </motion.div>
-              )}
+                      <label className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg cursor-pointer">
+                        Upload Config
+                        <input
+                          type="file"
+                          accept=".json"
+                          className="hidden"
+                          onChange={handleCardConfigUpload}
+                        />
+                      </label>
+                    </div>
+                  </div>
 
-              {/* Credits */}
-              <motion.div
-                className="p-4 flex justify-between items-center bg-neutral-200 dark:bg-neutral-800 rounded-lg"
-                custom={5}
-                variants={sectionVariants}
-                initial="hidden"
-                animate="visible"
-                whileHover={{ scale: 1.01 }}
-              >
-                <p className="text-lg flex text-neutral-800 dark:text-neutral-100">
-                  Made by <a className="ml-1 font-bold">Spoekle :D</a>
-                </p>
-                <div className="flex flex-col items-center">
-                  <motion.a
-                    href="https://github.com/Spoekle/SSRM-automation"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:text-neutral-300"
-                    whileHover={{ scale: 1.2, rotate: 5 }}
-                    whileTap={{ scale: 0.9 }}
-                  >
-                    <FaGithub size={32} />
-                  </motion.a>
-                </div>
-              </motion.div>
+                  {/* Reset Options */}
+                  <div className="pt-2 border-t border-neutral-200 dark:border-neutral-600">
+                    <motion.button
+                      className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg mt-2"
+                      onClick={resetLocalStorage}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      Reset All Data
+                    </motion.button>
+                  </div>
+                </motion.section>
+
+                {/* FFmpeg Settings */}
+                <motion.section
+                  className="bg-white dark:bg-neutral-700 rounded-xl shadow p-4"
+                  initial="hidden"
+                  animate="visible"
+                  variants={sectionVariants}
+                  custom={3}
+                >
+                  <h3 className="text-lg font-semibold border-b pb-2 mb-4 border-neutral-200 dark:border-neutral-600">FFmpeg Settings</h3>
+                  <div className="space-y-3">
+                    <p className="text-sm">
+                      Status: {ffmpegInstalled === null ? "Checking..." : ffmpegInstalled ? "Installed" : "Not Installed"}
+                    </p>
+
+                    {ffmpegLoading && (
+                      <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded-md">
+                        <p className="text-sm text-blue-800 dark:text-blue-200">
+                          {installStatus || "Installing FFmpeg..."}
+                        </p>
+                        {installProgressPercent !== null && (
+                          <div className="w-full bg-blue-200 dark:bg-blue-800 h-2 rounded-full mt-1">
+                            <div
+                              className="bg-blue-600 h-full rounded-full"
+                              style={{ width: `${installProgressPercent}%` }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="flex space-x-2">
+                      {!ffmpegInstalled && !ffmpegLoading && (
+                        <motion.button
+                          className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg"
+                          onClick={() => handleFfmpegAction("install")}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          Install FFmpeg
+                        </motion.button>
+                      )}
+
+                      {ffmpegInstalled && !ffmpegLoading && (
+                        <motion.button
+                          className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg"
+                          onClick={() => handleFfmpegAction("reinstall")}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          Reinstall FFmpeg
+                        </motion.button>
+                      )}
+                    </div>
+                  </div>
+                </motion.section>
+
+                {/* Update Section */}
+                <motion.section
+                  ref={updateSectionRef}
+                  className="bg-white dark:bg-neutral-700 rounded-xl shadow p-4"
+                  initial="hidden"
+                  animate="visible"
+                  variants={sectionVariants}
+                  custom={0}
+                  id="updates-section"
+                >
+                  <h3 className="text-lg font-semibold border-b pb-2 mb-4 border-neutral-200 dark:border-neutral-600">Updates</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="text-sm">Current Version: <span className="font-semibold">{appVersion}</span></p>
+                        <p className="text-sm">Latest Version: <span className="font-semibold">{isVersionLoading ? "Checking..." : latestVersion}</span></p>
+                        {isDevBranch && (
+                          <p className="text-xs mt-1 text-amber-500 dark:text-amber-400">
+                            Using development branch
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex flex-col space-y-2">
+                        {isUpdating ? (
+                          <div className="text-center">
+                            <motion.div
+                              className="inline-block w-6 h-6 border-2 border-t-blue-500 border-r-transparent border-b-transparent border-l-transparent rounded-full"
+                              animate={{ rotate: 360 }}
+                              transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                            />
+                            <p className="text-xs mt-1">{updateProgress}</p>
+                          </div>
+                        ) : (
+                          <>
+                            <motion.button
+                              onClick={updateApplication}
+                              className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg flex items-center justify-center space-x-1"
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              disabled={isVersionLoading || appVersion === latestVersion}
+                            >
+                              <FaDownload size={12} />
+                              <span>Update Now</span>
+                            </motion.button>
+                            <motion.button
+                              onClick={async () => {
+                                localStorage.removeItem("skipUpdateCheck");
+                                window.location.reload();
+                              }}
+                              className="px-3 py-1.5 bg-neutral-300 hover:bg-neutral-400 dark:bg-neutral-600 dark:hover:bg-neutral-500 text-sm rounded-lg"
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                            >
+                              Check for Updates
+                            </motion.button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </motion.section>
+
+                {/* Branch Settings */}
+                <motion.section
+                  className="bg-white dark:bg-neutral-700 rounded-xl shadow p-4"
+                  initial="hidden"
+                  animate="visible"
+                  variants={sectionVariants}
+                  custom={1}
+                >
+                  <h3 className="text-lg font-semibold border-b pb-2 mb-4 border-neutral-200 dark:border-neutral-600">Branch Settings</h3>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">Use Development Branch</p>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">Receive pre-release updates with new features</p>
+                    </div>
+                    <Switch checked={isDevMode} onChange={toggleBranch} />
+                  </div>
+                </motion.section>
+              </div>
             </div>
-            <motion.button
-              className="flex items-center justify-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs py-1 px-2 rounded-tr-lg transition duration-200"
-              onClick={() => ipcRenderer.send("open-devtools")}
-              whileHover={{
-                scale: 1.02,
-                boxShadow: "0px 5px 10px rgba(0, 0, 0, 0.2)",
-              }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <span>Open DevTools</span>
-            </motion.button>
           </motion.div>
         </motion.div>
 
@@ -670,17 +556,6 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
           onConfirm={() => {
             setConfirmResetAllOpen(false);
             handleConfirmResetAll();
-          }}
-        />
-
-        <ConfirmationModal
-          open={confirmResetMapOpen}
-          title="Reset Map Data"
-          message="Are you sure you want to reset only the map data?"
-          onCancel={() => setConfirmResetMapOpen(false)}
-          onConfirm={() => {
-            setConfirmResetMapOpen(false);
-            handleConfirmResetMap();
           }}
         />
       </>

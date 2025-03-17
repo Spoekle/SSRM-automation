@@ -65,7 +65,7 @@
 }
 
 .rainbow-shadow::after {
-  inset: -4px;
+  inset: -8px;
   filter: blur(8px);
   opacity: 0.7;
 }

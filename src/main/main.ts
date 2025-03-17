@@ -176,14 +176,45 @@ const createMainWindow = async () => {
     return true;
   });
 
-  ipcMain.handle('update-application', async () => {
+  ipcMain.handle('update-application', async (event) => {
     try {
-      const response = await axios.get('https://api.github.com/repos/Spoekle/SSRM-automation/releases/latest');
-      const latestRelease = response.data;
-      const asset = latestRelease.assets.find((a: any) => a.name.endsWith('.exe'));
+      // Get the update branch preference
+      let useDevelopmentBranch = false;
+      try {
+        // Try to read from the renderer process
+        const result = await event.sender.executeJavaScript(
+          'localStorage.getItem("useDevelopmentBranch")'
+        );
+        useDevelopmentBranch = result === 'true';
+      } catch (e) {
+        // If we can't access localStorage, default to stable
+        log.error('Error reading branch preference:', e);
+      }
 
+      // Get all releases including pre-releases
+      const response = await axios.get('https://api.github.com/repos/Spoekle/SSRM-automation/releases');
+
+      // Select the appropriate release based on the branch preference
+      let targetRelease;
+      if (useDevelopmentBranch) {
+        // Get the latest pre-release
+        targetRelease = response.data.find((release: any) => release.prerelease);
+        // Fall back to stable if no pre-releases
+        if (!targetRelease) {
+          targetRelease = response.data.find((release: any) => !release.prerelease);
+        }
+      } else {
+        // Get the latest stable release
+        targetRelease = response.data.find((release: any) => !release.prerelease);
+      }
+
+      if (!targetRelease) {
+        throw new Error('No release found.');
+      }
+
+      const asset = targetRelease.assets.find((a: any) => a.name.endsWith('.exe'));
       if (!asset) {
-        throw new Error('No executable found in the latest release.');
+        throw new Error('No executable found in the release.');
       }
 
       const downloadPath = path.join(os.tmpdir(), asset.name);
@@ -247,6 +278,12 @@ const createMainWindow = async () => {
       log.error('Error updating application:', error);
       throw error;
     }
+  });
+
+  // Add a handler for restarting the app
+  ipcMain.handle('restart-app', () => {
+    app.relaunch();
+    app.exit(0);
   });
 
   ipcMain.on('open-devtools', () => {

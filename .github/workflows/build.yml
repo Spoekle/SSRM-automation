@@ -1,0 +1,99 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run package
+
+      - name: Determine if pre-release
+        id: prerelease
+        run: |
+          $isPrerelease = "false"
+          if ("${{ github.ref_name }}" -match "-alpha|-beta|-rc") {
+            $isPrerelease = "true"
+          }
+          echo "IS_PRERELEASE=$isPrerelease" >> $env:GITHUB_ENV
+
+          # Extract version without "v" prefix for filenames
+          $versionName = "${{ github.ref_name }}".substring(1)
+          echo "VERSION=$versionName" >> $env:GITHUB_ENV
+
+      - name: Calculate checksums
+        run: |
+          $exePath = Get-ChildItem ./release/build/SSRM-automation-*.exe | Select-Object -First 1
+          $sha512 = (Get-FileHash -Path $exePath -Algorithm SHA512).Hash.ToLower()
+          echo "SHA512_EXE=$sha512" >> $env:GITHUB_ENV
+          echo "EXE_FILENAME=$($exePath.Name)" >> $env:GITHUB_ENV
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get all commits since last tag or use all if this is first tag
+          $commits = git log --pretty=format:"- %s (%an)" $(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || git rev-list --max-parents=0 HEAD)..HEAD
+          $features = $commits | Where-Object { $_ -like "- feat*" -or $_ -like "- add*" -or $_ -like "- new*" }
+          $fixes = $commits | Where-Object { $_ -like "- fix*" -or $_ -like "- bug*" }
+          $other = $commits | Where-Object { $_ -notlike "- feat*" -and $_ -notlike "- fix*" -and $_ -notlike "- add*" -and $_ -notlike "- new*" -and $_ -notlike "- bug*" }
+
+          $featuresList = if ($features) { $features -join "`n" } else { "None" }
+          $fixesList = if ($fixes) { $fixes -join "`n" } else { "None" }
+          $otherList = if ($other) { $other -join "`n" } else { "None" }
+
+          $changelog = @"
+          ## Features Added
+          $featuresList
+
+          ## Bug Fixes
+          $fixesList
+
+          ## Other Changes
+          $otherList
+          "@
+          echo "CHANGELOG<<EOF" >> $env:GITHUB_ENV
+          echo "$changelog" >> $env:GITHUB_ENV
+          echo "EOF" >> $env:GITHUB_ENV
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ./release/build/*.exe
+          draft: false
+          prerelease: ${{ env.IS_PRERELEASE == 'true' }}
+          name: "SSRM Automation ${{ github.ref_name }}"
+          body: |
+            ## SSRM Automation ${{ github.ref_name }}
+
+            ${{ env.IS_PRERELEASE == 'true' && '⚠️ This is a pre-release development build and may contain bugs or incomplete features.' || '✅ This is a stable release.' }}
+
+            ### Installation
+            Download the .exe file and run it to install. This will also update existing installations.
+
+            ${{ env.IS_PRERELEASE == 'true' && '> **Note**: Development builds may be unstable. Use at your own risk!' || '' }}
+
+            ${{ env.CHANGELOG }}
+
+            ### File Hashes
+            - ${{ env.EXE_FILENAME }}
+              - SHA512: `${{ env.SHA512_EXE }}`
