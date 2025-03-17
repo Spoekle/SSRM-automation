@@ -7,7 +7,12 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+      fail-fast: false
+
+    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Checkout code
@@ -32,86 +37,191 @@ jobs:
           private-key: ${{ secrets.PUBLISHER_PRIVATE_KEY }}
           permissions: contents:write
 
-      - name: Build and publish application
+      # Install additional Linux dependencies
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf
+
+      # Build and publish application
+      - name: Build and publish application (Windows/Linux)
+        if: matrix.os != 'macos-latest'
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
           NODE_OPTIONS: "--max-old-space-size=4096"
         run: |
-          # Add repository info to package.json if not already there
-          jq '.repository = {type: "git", url: "https://github.com/${{ github.repository }}.git"}' package.json > package.json.tmp
-          Move-Item -Force package.json.tmp package.json
-
-          # Set environment variables in PowerShell syntax
-          $env:GH_TOKEN = "${{ steps.generate_token.outputs.token }}"
-          $env:GITHUB_TOKEN = "${{ steps.generate_token.outputs.token }}"
-
-          # Debug token
-          echo "Token Length: $(if ($env:GH_TOKEN) { $env:GH_TOKEN.Length } else { 0 })"
-
           # Build first
           npm run build
 
           # Publish with configuration file approach
-          npx electron-builder build --publish always --config.publish.token=${{ steps.generate_token.outputs.token }}
+          npx electron-builder build --publish always --config.publish.token=${{ steps.generate_token.outputs.token }} --${{ matrix.os == 'ubuntu-latest' && 'linux' || 'win' }}
+
+      # Special handling for macOS
+      - name: Build and publish application (macOS)
+        if: matrix.os == 'macos-latest'
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+          NODE_OPTIONS: "--max-old-space-size=4096"
+          CSC_IDENTITY_AUTO_DISCOVERY: false  # Disable code signing for now
+        run: |
+          # Build first
+          npm run build
+
+          # Publish with configuration file approach
+          npx electron-builder build --publish always --config.publish.token=${{ steps.generate_token.outputs.token }} --mac
+
+      # Calculate checksums for each platform's artifacts
+      - name: Calculate checksums (Windows)
+        if: matrix.os == 'windows-latest'
+        id: windows_checksums
+        run: |
+          $exePath = Get-ChildItem ./release/build/SSRM-automation-*.exe | Select-Object -First 1
+          $sha256 = (Get-FileHash -Path $exePath -Algorithm SHA256).Hash.ToLower()
+          $sha512 = (Get-FileHash -Path $exePath -Algorithm SHA512).Hash.ToLower()
+          echo "WIN_EXE_NAME=$($exePath.Name)" >> $env:GITHUB_ENV
+          echo "WIN_SHA256=$sha256" >> $env:GITHUB_ENV
+          echo "WIN_SHA512=$sha512" >> $env:GITHUB_ENV
+
+          # Upload artifact for the release job
+          echo "::set-output name=artifact_path::$exePath"
+          echo "::set-output name=artifact_name::$($exePath.Name)"
+
+      - name: Calculate checksums (macOS)
+        if: matrix.os == 'macos-latest'
+        id: macos_checksums
+        run: |
+          DMG_PATH=$(ls ./release/build/SSRM-automation-*.dmg | head -1)
+          SHA256=$(shasum -a 256 "$DMG_PATH" | awk '{print $1}')
+          SHA512=$(shasum -a 512 "$DMG_PATH" | awk '{print $1}')
+          echo "MAC_DMG_NAME=$(basename $DMG_PATH)" >> $GITHUB_ENV
+          echo "MAC_SHA256=$SHA256" >> $GITHUB_ENV
+          echo "MAC_SHA512=$SHA512" >> $GITHUB_ENV
+
+          # Upload artifact for the release job
+          echo "::set-output name=artifact_path::$DMG_PATH"
+          echo "::set-output name=artifact_name::$(basename $DMG_PATH)"
+
+      - name: Calculate checksums (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        id: linux_checksums
+        run: |
+          APPIMAGE_PATH=$(ls ./release/build/SSRM-automation-*.AppImage | head -1)
+          SHA256=$(sha256sum "$APPIMAGE_PATH" | awk '{print $1}')
+          SHA512=$(sha512sum "$APPIMAGE_PATH" | awk '{print $1}')
+          echo "LINUX_APPIMAGE_NAME=$(basename $APPIMAGE_PATH)" >> $GITHUB_ENV
+          echo "LINUX_SHA256=$SHA256" >> $GITHUB_ENV
+          echo "LINUX_SHA512=$SHA512" >> $GITHUB_ENV
+
+          # Upload artifact for the release job
+          echo "::set-output name=artifact_path::$APPIMAGE_PATH"
+          echo "::set-output name=artifact_name::$(basename $APPIMAGE_PATH)"
+
+      # Upload the built artifacts
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.os }}-artifacts
+          path: |
+            ./release/build/*.exe
+            ./release/build/*.dmg
+            ./release/build/*.AppImage
+          if-no-files-found: warn
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+
+      # Move artifacts to a single directory for the release
+      - name: Prepare artifacts for release
+        run: |
+          mkdir -p release_files
+          # Only include executables and latest.yml files, exclude blockmaps
+          find artifacts -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*latest*.yml" \) -not -name "*-blockmap*" | xargs -I{} cp {} release_files/
+
+      - name: Generate GitHub Token for electron-builder
+        id: generate_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.PUBLISHER_APP_ID }}
+          private-key: ${{ secrets.PUBLISHER_PRIVATE_KEY }}
+          permissions: contents:write
 
       - name: Determine if pre-release
         id: prerelease
         run: |
-          $isPrerelease = "false"
-          if ("${{ github.ref_name }}" -match "-alpha|-beta|-rc") {
-            $isPrerelease = "true"
-          }
-          echo "IS_PRERELEASE=$isPrerelease" >> $env:GITHUB_ENV
+          if [[ "${{ github.ref_name }}" =~ -alpha|-beta|-rc ]]; then
+            echo "IS_PRERELEASE=true" >> $GITHUB_ENV
+          else
+            echo "IS_PRERELEASE=false" >> $GITHUB_ENV
+          fi
 
           # Extract version without "v" prefix for filenames
-          $versionName = "${{ github.ref_name }}".substring(1)
-          echo "VERSION=$versionName" >> $env:GITHUB_ENV
-
-      - name: Calculate checksums
-        run: |
-          $exePath = Get-ChildItem ./release/build/SSRM-automation-*.exe | Select-Object -First 1
-          $sha512 = (Get-FileHash -Path $exePath -Algorithm SHA512).Hash.ToLower()
-          echo "SHA512_EXE=$sha512" >> $env:GITHUB_ENV
-          echo "EXE_FILENAME=$($exePath.Name)" >> $env:GITHUB_ENV
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Generate changelog
         id: changelog
         run: |
-          # Get all commits since last tag or use all if this is first tag
-          try {
-            $lastTag = git describe --tags --abbrev=0 HEAD^ -ErrorAction Stop
-          } catch {
-            $lastTag = git rev-list --max-parents=0 HEAD
-          }
-          $commits = git log --pretty=format:"- %s (%an)" $lastTag..HEAD
+          # Find the previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || git rev-list --max-parents=0 HEAD)
 
-          $features = $commits | Where-Object { $_ -like "- feat*" -or $_ -like "- add*" -or $_ -like "- new*" }
-          $fixes = $commits | Where-Object { $_ -like "- fix*" -or $_ -like "- bug*" }
-          $other = $commits | Where-Object { $_ -notlike "- feat*" -and $_ -notlike "- fix*" -and $_ -notlike "- add*" -and $_ -notlike "- new*" -and $_ -notlike "- bug*" }
+          # Get all commits since previous tag
+          COMMITS=$(git log --pretty=format:"- %s (%an)" $PREV_TAG..HEAD)
 
-          $featuresList = if ($features) { $features -join "`n" } else { "None" }
-          $fixesList = if ($fixes) { $fixes -join "`n" } else { "None" }
-          $otherList = if ($other) { $other -join "`n" } else { "None" }
+          # Categorize commits
+          FEATURES=$(echo "$COMMITS" | grep -E "^- feat|^- add|^- new" || echo "None")
+          FIXES=$(echo "$COMMITS" | grep -E "^- fix|^- bug" || echo "None")
+          OTHER=$(echo "$COMMITS" | grep -v -E "^- feat|^- add|^- new|^- fix|^- bug" || echo "None")
 
-          $changelog = @"
-          ## Features Added
-          $featuresList
+          # Create changelog
+          echo "CHANGELOG<<EOF" >> $GITHUB_ENV
+          echo "## Features Added" >> $GITHUB_ENV
+          echo "$FEATURES" >> $GITHUB_ENV
+          echo "" >> $GITHUB_ENV
+          echo "## Bug Fixes" >> $GITHUB_ENV
+          echo "$FIXES" >> $GITHUB_ENV
+          echo "" >> $GITHUB_ENV
+          echo "## Other Changes" >> $GITHUB_ENV
+          echo "$OTHER" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
 
-          ## Bug Fixes
-          $fixesList
-
-          ## Other Changes
-          $otherList
-          "@
-          echo "CHANGELOG<<EOF" >> $env:GITHUB_ENV
-          echo "$changelog" >> $env:GITHUB_ENV
-          echo "EOF" >> $env:GITHUB_ENV
+      # Calculate combined checksums for final release notes
+      - name: Calculate release file checksums
+        run: |
+          cd release_files
+          echo "FILE_HASHES<<EOF" >> $GITHUB_ENV
+          for file in *; do
+            if [[ "$file" != *latest*.yml ]]; then
+              echo "### $file" >> $GITHUB_ENV
+              echo "- SHA512: \`$(sha512sum "$file" | awk '{print $1}')\`" >> $GITHUB_ENV
+              echo "" >> $GITHUB_ENV
+            fi
+          done
+          echo "EOF" >> $GITHUB_ENV
 
       - name: Update GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          files: ./release/build/*.exe
+          files: |
+            ./release_files/*.exe
+            ./release_files/*.dmg
+            ./release_files/*.AppImage
+            ./release_files/*latest*.yml
           draft: false
           prerelease: ${{ env.IS_PRERELEASE == 'true' }}
           name: "SSRM Automation ${{ github.ref_name }}"
@@ -122,12 +232,14 @@ jobs:
             ${{ env.IS_PRERELEASE == 'true' && '⚠️ This is a pre-release development build and may contain bugs or incomplete features.' || '✅ This is a stable release.' }}
 
             ### Installation
-            Download the .exe file and run it to install. This will also update existing installations.
+            Download the appropriate file for your platform:
+            - Windows: .exe file
+            - macOS: .dmg file
+            - Linux: .AppImage file
 
             ${{ env.IS_PRERELEASE == 'true' && '> **Note**: Development builds may be unstable. Use at your own risk!' || '' }}
 
             ${{ env.CHANGELOG }}
 
             ### File Hashes
-            - ${{ env.EXE_FILENAME }}
-              - SHA512: `${{ env.SHA512_EXE }}`
+            ${{ env.FILE_HASHES }}
