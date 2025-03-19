@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, ChangeEvent } from 'react';
 import { motion } from 'framer-motion';
-import { FaTimes, FaDownload } from 'react-icons/fa';
+import { FaTimes, FaDownload, FaGithub, FaDiscord } from 'react-icons/fa';
 import Switch from '@mui/material/Switch';
 import log from 'electron-log';
 import { useConfirmationModal } from '../../contexts/ConfirmationModalContext';
@@ -331,7 +331,6 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
               </motion.button>
             </motion.div>
 
-            {/* Add Developer Tools section */}
             <div className="p-4">
               <div className="space-y-6">
 
@@ -341,7 +340,7 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
                   initial="hidden"
                   animate="visible"
                   variants={sectionVariants}
-                  custom={2}
+                  custom={1}
                 >
                   <h3 className="text-lg font-semibold border-b pb-2 mb-4 border-neutral-200 dark:border-neutral-600">Theme Settings</h3>
                   <div className="flex items-center justify-between">
@@ -359,7 +358,7 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
                   initial="hidden"
                   animate="visible"
                   variants={sectionVariants}
-                  custom={4}
+                  custom={2}
                 >
                   <h3 className="text-lg font-semibold border-b pb-2 mb-4 border-neutral-200 dark:border-neutral-600">Data Management</h3>
 
@@ -474,7 +473,7 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
                   initial="hidden"
                   animate="visible"
                   variants={sectionVariants}
-                  custom={0}
+                  custom={4}
                   id="updates-section"
                 >
                   <h3 className="text-lg font-semibold border-b pb-2 mb-4 border-neutral-200 dark:border-neutral-600">Updates</h3>
@@ -537,7 +536,7 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
                   initial="hidden"
                   animate="visible"
                   variants={sectionVariants}
-                  custom={1}
+                  custom={5}
                 >
                   <h3 className="text-lg font-semibold border-b pb-2 mb-4 border-neutral-200 dark:border-neutral-600">Branch Settings</h3>
                   <div className="flex items-center justify-between">
@@ -555,7 +554,7 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
                   initial="hidden"
                   animate="visible"
                   variants={sectionVariants}
-                  custom={5}
+                  custom={6}
                 >
                   <h3 className="text-lg font-semibold border-b pb-2 mb-4 border-neutral-200 dark:border-neutral-600">Developer Tools</h3>
                   <div className="flex items-center justify-between">
@@ -568,6 +567,45 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
                     >
                       Open DevTools
                     </motion.button>
+                  </div>
+                </motion.section>
+
+                {/* Credits section */}
+                <motion.section
+                  className="bg-white dark:bg-neutral-700 rounded-xl shadow p-4"
+                  initial="hidden"
+                  animate="visible"
+                  variants={sectionVariants}
+                  custom={7}
+                >
+                  <h3 className="text-lg font-semibold border-b pb-2 mb-4 border-neutral-200 dark:border-neutral-600">Credits & Links</h3>
+                  <div className="flex items-center justify-between">
+                    <motion.div
+                      className="flex items-center space-x-4"
+                    >
+                      <motion.button
+                        className="rounded-lg"
+                        whileHover={{ scale: 1.05, rotate: 5 }}
+                        whileTap={{ scale: 0.95, rotate: -10 }}
+                        onClick={() => window.open('https://github.com/Spoekle/SSRM-automation', '_blank')}
+                        title='View on GitHub'
+                      >
+                        <FaGithub size={32} />
+                      </motion.button>
+                      <motion.button
+                        className="rounded-lg"
+                        whileHover={{ scale: 1.05, rotate: 5 }}
+                        whileTap={{ scale: 0.95, rotate: -10 }}
+                        onClick={() => window.open('https://github.com/Spoekle/SSRM-automation', '_blank')}
+                        title='ScoreSaber Discord'
+                      >
+                        <FaDiscord size={32} />
+                      </motion.button>
+                    </motion.div>
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400 text-center mb-4 md:mb-0">
+                      © {new Date().getFullYear()} Spoekle. All rights reserved.
+                    </p>
+
                   </div>
                 </motion.section>
               </div>
