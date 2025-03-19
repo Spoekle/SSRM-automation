@@ -9,13 +9,15 @@ interface FooterProps {
   latestVersion: string;
   isVersionLoading?: boolean;
   isDevBranch?: boolean;
+  getLatestVersion: () => void;
 }
 
 const Footer: React.FC<FooterProps> = ({
   appVersion,
   latestVersion,
   isVersionLoading = false,
-  isDevBranch = false
+  isDevBranch = false,
+  getLatestVersion
 }) => {
   const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
   const [showUpdateTab, setShowUpdateTab] = useState<boolean>(false);
@@ -44,38 +46,103 @@ const Footer: React.FC<FooterProps> = ({
         }
 
         // Use the same corrected version comparison logic
-        const isUpdateNeeded = (() => {
-          // Simple case: if versions are identical, no update needed
-          if (current === latest) {
-            log.info('Footer: Versions are identical, no update needed');
+        const isUpdateNeeded = (): boolean => {
+          if (!appVersion || !latestVersion) {
             return false;
           }
 
-          // If on stable branch with a beta version, only update if latest is stable or a newer beta
-          if (!isDevBranch && /beta|alpha|rc/i.test(current)) {
-            // Parse the versions to compare
-            const currentBase = current.split('-')[0];
-            const latestBase = latest.split('-')[0];
-            const latestIsStable = !/beta|alpha|rc/i.test(latest);
+          try {
+            // Clean version strings
+            const currentVersion = appVersion.replace(/^v/, '');
+            const latestVer = latestVersion.replace(/^v/, '');
 
-            if (latestIsStable) {
-              // Update to stable version if base versions match or latest is newer
-              if (latestBase === currentBase || compareVersions(latestBase, currentBase) > 0) {
-                log.info('Footer: Update needed from beta to stable');
-                return true;
-              }
+            // Check for branch switching scenarios
+            const isCurrentBeta = currentVersion.includes('-beta') ||
+                                 currentVersion.includes('-alpha') ||
+                                 currentVersion.includes('-rc');
+            const isLatestBeta = latestVer.includes('-beta') ||
+                                latestVer.includes('-alpha') ||
+                                latestVer.includes('-rc');
+
+            // Check if we're in a branch switching scenario
+            // If current is beta but latest is stable - suggest update (downgrade to stable)
+            if (isCurrentBeta && !isLatestBeta) {
+              console.log("Footer: Update needed - downgrade from dev to stable");
+              return true;
+            }
+
+            // If current is stable but latest is beta - suggest update (upgrade to beta)
+            if (!isCurrentBeta && isLatestBeta) {
+              console.log("Footer: Update needed - upgrade from stable to dev");
+              return true;
+            }
+
+            // If both are from same branch type (both beta or both stable)
+            // then do regular version comparison
+
+            // Parse versions to extract components
+            const parseVersion = (version: string) => {
+              const [basePart, prereleasePart] = version.split('-');
+              const versionParts = basePart.split('.').map(Number);
+              return {
+                major: versionParts[0] || 0,
+                minor: versionParts[1] || 0,
+                patch: versionParts[2] || 0,
+                prerelease: prereleasePart || null
+              };
+            };
+
+            const current = parseVersion(currentVersion);
+            const latest = parseVersion(latestVer);
+
+            // Compare major.minor.patch
+            if (latest.major > current.major) return true;
+            if (latest.major < current.major) return false;
+
+            if (latest.minor > current.minor) return true;
+            if (latest.minor < current.minor) return false;
+
+            if (latest.patch > current.patch) return true;
+            if (latest.patch < current.patch) return false;
+
+            // Base versions are identical - check prerelease tags
+            // If latest has no prerelease tag but current does, update (stable is newer than prerelease)
+            if (!latest.prerelease && current.prerelease) {
+              return true;
+            }
+
+            // If current has no prerelease but latest does, don't update (don't downgrade stable to prerelease)
+            if (latest.prerelease && !current.prerelease) {
               return false;
             }
+
+            // Both have prerelease tags - compare them
+            if (latest.prerelease && current.prerelease) {
+              // Compare prerelease types (rc > beta > alpha)
+              const latestType = latest.prerelease.split('.')[0];
+              const currentType = current.prerelease.split('.')[0];
+
+              if (latestType !== currentType) {
+                if (latestType === 'rc' && (currentType === 'beta' || currentType === 'alpha')) return true;
+                if (latestType === 'beta' && currentType === 'alpha') return true;
+                return false;
+              }
+
+              // Same prerelease type, compare numbers
+              const latestNum = parseInt(latest.prerelease.split('.')[1]) || 0;
+              const currentNum = parseInt(current.prerelease.split('.')[1]) || 0;
+              return latestNum > currentNum;
+            }
+
+            return false;
+          } catch (error) {
+            console.error("Error comparing versions:", error);
+            return false;
           }
+        };
 
-          // Rest of existing comparison logic for major.minor.patch...
-          // ...
-
-          return false;
-        })();
-
-        setHasUpdate(isUpdateNeeded);
-        log.info(`Footer: Update status - ${isUpdateNeeded ? 'Update available' : 'No update needed'}`);
+        setHasUpdate(isUpdateNeeded());
+        log.info(`Footer: Update status - ${isUpdateNeeded() ? 'Update available' : 'No update needed'}`);
       } catch (error) {
         log.error('Error comparing versions:', error);
       }
@@ -169,7 +236,9 @@ const Footer: React.FC<FooterProps> = ({
       {settingsOpen && (
         <Settings
           ref={settingsRef}
+          isDevBranch={isDevBranch}
           appVersion={appVersion}
+          getLatestVersion={getLatestVersion}
           latestVersion={latestVersion}
           showUpdateTab={showUpdateTab}
           onClose={() => {

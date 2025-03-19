@@ -4,7 +4,7 @@ import { FaTimes, FaDownload } from 'react-icons/fa';
 import Switch from '@mui/material/Switch';
 import log from 'electron-log';
 import { useConfirmationModal } from '../../contexts/ConfirmationModalContext';
-import { ConfirmationModal } from './components/ConfirmationModal';
+import ConfirmationModal from './components/ConfirmationModal';
 import LoadedMapInfo from './components/LoadedMapInfo';
 
 export interface SettingsHandles {
@@ -18,10 +18,11 @@ interface SettingsProps {
   showUpdateTab?: boolean;
   isVersionLoading?: boolean;
   isDevBranch?: boolean;
+  getLatestVersion?: () => void;
 }
 
 const Settings = forwardRef<SettingsHandles, SettingsProps>(
-  ({ onClose, appVersion, latestVersion, showUpdateTab = false, isVersionLoading = false, isDevBranch = false }, ref) => {
+  ({ onClose, getLatestVersion, appVersion, latestVersion, showUpdateTab = false, isVersionLoading = false, isDevBranch = false }, ref) => {
     const { ipcRenderer } = window.require("electron");
     const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [isOverlayVisible, setIsOverlayVisible] = useState(false);
@@ -194,7 +195,6 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
       const newBranchSetting = !isDevMode;
       const switchToDev = !isDevMode;
 
-      // First confirmation - when switching TO development branch
       if (switchToDev) {
         showConfirmation({
           title: "Switch to Development Branch",
@@ -202,8 +202,8 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
           confirmText: "Switch",
           cancelText: "Cancel",
           onConfirm: () => {
-            // Apply the changes
             applyBranchChange(newBranchSetting);
+            getLatestVersion && getLatestVersion();
 
             // Ask about restart
             showConfirmation({
@@ -228,6 +228,7 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
           onConfirm: () => {
             // Apply the changes
             applyBranchChange(newBranchSetting);
+            getLatestVersion && getLatestVersion();
 
             // Ask about restart
             showConfirmation({
@@ -331,27 +332,6 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
             {/* Add Developer Tools section */}
             <div className="p-4">
               <div className="space-y-6">
-                {/* Developer Tools section */}
-                <motion.section
-                  className="bg-white dark:bg-neutral-700 rounded-xl shadow p-4"
-                  initial="hidden"
-                  animate="visible"
-                  variants={sectionVariants}
-                  custom={5} // Set the custom value higher than existing sections
-                >
-                  <h3 className="text-lg font-semibold border-b pb-2 mb-4 border-neutral-200 dark:border-neutral-600">Developer Tools</h3>
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-neutral-600 dark:text-neutral-400">Open Chromium DevTools</p>
-                    <motion.button
-                      className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => ipcRenderer.send('open-devtools')}
-                    >
-                      Open DevTools
-                    </motion.button>
-                  </div>
-                </motion.section>
 
                 {/* Theme Settings */}
                 <motion.section
@@ -531,8 +511,9 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
                             </motion.button>
                             <motion.button
                               onClick={async () => {
+                                getLatestVersion && await getLatestVersion();
                                 localStorage.removeItem("skipUpdateCheck");
-                                window.location.reload();
+
                               }}
                               className="px-3 py-1.5 bg-neutral-300 hover:bg-neutral-400 dark:bg-neutral-600 dark:hover:bg-neutral-500 text-sm rounded-lg"
                               whileHover={{ scale: 1.05 }}
@@ -562,6 +543,28 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
                       <p className="text-xs text-neutral-500 dark:text-neutral-400">Receive pre-release updates with new features</p>
                     </div>
                     <Switch checked={isDevMode} onChange={toggleBranch} />
+                  </div>
+                </motion.section>
+
+                {/* Developer Tools section */}
+                <motion.section
+                  className="bg-white dark:bg-neutral-700 rounded-xl shadow p-4"
+                  initial="hidden"
+                  animate="visible"
+                  variants={sectionVariants}
+                  custom={5} // Set the custom value higher than existing sections
+                >
+                  <h3 className="text-lg font-semibold border-b pb-2 mb-4 border-neutral-200 dark:border-neutral-600">Developer Tools</h3>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400">Open Chromium DevTools</p>
+                    <motion.button
+                      className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => ipcRenderer.send('open-devtools')}
+                    >
+                      Open DevTools
+                    </motion.button>
                   </div>
                 </motion.section>
               </div>
