@@ -203,11 +203,13 @@ const Footer: React.FC<FooterProps> = ({
                     <button
                       className="flex items-center bg-blue-500 dark:bg-blue-600 text-xs font-semibold text-white px-2 py-1 rounded-full hover:underline transition"
                     >
-                      {localStorage.getItem('lastUsedBranch') !== (isDevBranch ? 'dev' : 'stable')
-                        ? isDevBranch
-                          ? "Upgrade to Dev"
-                          : "Downgrade to Stable"
-                        : "Update Available"
+                      {isDevBranch
+                        ? appVersion.includes('-beta') || appVersion.includes('-alpha') || appVersion.includes('-rc')
+                          ? "Update Available"
+                          : "Update to Dev"
+                        : appVersion.includes('-beta') || appVersion.includes('-alpha') || appVersion.includes('-rc')
+                          ? "Downgrade to Stable"
+                          : "Update Available"
                       }
                     </button>
 
