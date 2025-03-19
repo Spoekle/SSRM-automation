@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaTimes, FaMinus } from 'react-icons/fa';
+import { FaTimes, FaMinus, FaHome, FaFileAlt, FaLayerGroup, FaImage } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import logo from '../../../../assets/icons/logo.svg';
 import background from '../../../../assets/images/easter.png';
@@ -53,15 +53,15 @@ const Navbar: React.FC = () => {
   }, []);
 
   const navItems = [
-    { path: '/', label: 'Home' },
-    { path: '/titles', label: 'Titles' },
-    { path: '/mapcards', label: 'Mapcards' },
-    { path: '/thumbnails', label: 'Thumbnails' }
+    { path: '/', label: 'Home', icon: <FaHome className="mr-1" /> },
+    { path: '/titles', label: 'Titles', icon: <FaFileAlt className="mr-1" /> },
+    { path: '/mapcards', label: 'Mapcards', icon: <FaLayerGroup className="mr-1" /> },
+    { path: '/thumbnails', label: 'Thumbnails', icon: <FaImage className="mr-1" /> }
   ];
 
   return (
-    <div className='drag items-center justify-center bg-neutral-300 dark:bg-neutral-950 text-neutral-950 dark:text-neutral-200 p-4 rounded-t-3xl'>
-      <div className='flex text-center justify-between'>
+    <div className='drag items-center justify-center bg-neutral-300 dark:bg-neutral-950 text-neutral-950 dark:text-neutral-200 rounded-t-3xl shadow-md border-b border-neutral-200/30 dark:border-neutral-800/30'>
+      <div className='mx-4 flex text-center justify-between'>
         <div className='flex text-center items-center text-lg'>
           <motion.img
             src={logo}
@@ -82,13 +82,13 @@ const Navbar: React.FC = () => {
               transition={{ type: "spring", stiffness: 200 }}
             />
           }
-          <h1 className='text-xl font-bold items-center'>
+          <h1 className='ml-1 text-xl text-left font-bold items-center'>
             SSRM Automation
           </h1>
         </div>
-        <div className='no-drag flex text-center items-center text-lg'>
-          <div className='no-drag text-center items-center text-lg relative' ref={navRef}>
-            <div className="flex space-x-1">
+        <div className='mx-2 my-2 no-drag flex text-center items-center'>
+          <div className='no-drag text-center items-center text-md relative' ref={navRef}>
+            <div className="flex space-x-1 bg-neutral-200 dark:bg-neutral-800 rounded-full px-2 py-1 shadow-inner">
               {navItems.map((item) => (
                 <motion.div
                   key={item.path}
@@ -97,18 +97,14 @@ const Navbar: React.FC = () => {
                 >
                   <Link
                     to={item.path}
-                    className={`p-2 px-4 hover:text-neutral-950 dark:hover:text-neutral-200 transition-colors relative ${
-                      location.pathname === item.path ? 'text-neutral-950 dark:text-neutral-200' : 'text-neutral-400'
+                    className={`p-2 px-4 rounded-full flex items-center hover:text-blue-500 dark:hover:text-blue-400 transition-colors ${
+                      location.pathname === item.path
+                        ? 'bg-white dark:bg-neutral-700 shadow-md text-blue-600 dark:text-blue-400'
+                        : 'text-neutral-600 dark:text-neutral-400'
                     }`}
                   >
+                    {item.icon}
                     {item.label}
-                    {location.pathname === item.path && (
-                      <motion.div
-                        className="absolute bottom-0 left-0 right-0 h-1 bg-yellow-400 rounded-full"
-                        layoutId="navUnderline"
-                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                      />
-                    )}
                   </Link>
                 </motion.div>
               ))}
@@ -116,9 +112,9 @@ const Navbar: React.FC = () => {
           </div>
         </div>
         {os !== 'darwin' ? (
-          <div className='no-drag text-center items-center text-lg'>
+          <div className='no-drag text-center items-center text-lg flex space-x-2'>
             <motion.button
-              className='hover:bg-orange-500 hover:text-white rounded-md p-2 mr-2 transition duration-200'
+              className='hover:bg-orange-500 hover:text-white rounded-full p-2 transition duration-200 bg-neutral-200 dark:bg-neutral-800 shadow-md'
               onClick={minimizeWindow}
               whileHover={{ scale: 1.1, backgroundColor: "#f97316" }}
               whileTap={{ scale: 0.9 }}
@@ -126,9 +122,9 @@ const Navbar: React.FC = () => {
               <FaMinus/>
             </motion.button>
             <motion.button
-              className='hover:bg-red-500 hover:text-white rounded-md p-2 transition duration-200'
+              className='hover:bg-red-500 hover:text-white rounded-full p-2 transition duration-200 bg-neutral-200 dark:bg-neutral-800 shadow-md'
               onClick={clearAndCloseWindow}
-              whileHover={{ scale: 1.1, backgroundColor: "#ef4444" }}
+              whileHover={{ scale: 1.1}}
               whileTap={{ scale: 0.9 }}
             >
               <FaTimes/>
