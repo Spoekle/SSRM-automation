@@ -1,5 +1,5 @@
 import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import log from 'electron-log';
 import Home from './pages/Home';
@@ -22,8 +22,12 @@ export default function App() {
     return localStorage.getItem('useDevelopmentBranch') === 'true';
   });
 
+  const [showSplash, setShowSplash] = useState(false);
+  const [forceVersionCheck, setForceVersionCheck] = useState(false);
+
   const getLatestVersion = async () => {
     try {
+      const isDevBranch = localStorage.getItem('useDevelopmentBranch') === 'true';
       setIsLoading(true);
       log.info(`Fetching latest version from GitHub for ${isDevBranch ? 'development' : 'stable'} branch...`);
 
@@ -99,6 +103,19 @@ export default function App() {
     };
   }, [isDevBranch]);
 
+  useEffect(() => {
+    const queryParams = new URLSearchParams(window.location.search);
+    const splash = queryParams.get('splash');
+    const forceCheck = queryParams.get('forceCheck') === 'true';
+
+    setShowSplash(splash === 'true');
+    setForceVersionCheck(forceCheck);
+  }, []);
+
+  if (showSplash) {
+    return <SplashScreen appVersion={appVersion} forceVersionCheck={forceVersionCheck} />;
+  }
+
   if (isSplashScreen) {
     return <SplashScreen appVersion={appVersion} />;
   }
@@ -121,6 +138,7 @@ export default function App() {
           latestVersion={latestVersion}
           isVersionLoading={isLoading}
           isDevBranch={isDevBranch}
+          getLatestVersion={getLatestVersion}
         />
       </ConfirmationModalProvider>
     </Router>

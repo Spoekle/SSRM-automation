@@ -35,7 +35,12 @@ const installExtensions = async () => {
     .catch(log.error);
 };
 
-const createSplashWindow = async () => {
+// Update this function to include forceCheck option
+const createSplashWindow = async (forceCheck = false) => {
+  if (splashWindow !== null) {
+    return;
+  }
+
   const RESOURCES_PATH = app.isPackaged
     ? path.join(process.resourcesPath, 'assets')
     : path.join(__dirname, '../../assets');
@@ -63,7 +68,9 @@ const createSplashWindow = async () => {
     },
   });
 
-  splashWindow.loadURL(resolveHtmlPath('index.html', '?splash=true'));
+  // Include forceCheck in the URL if needed
+  const forceCheckParam = forceCheck ? '&forceCheck=true' : '';
+  splashWindow.loadURL(resolveHtmlPath('index.html', `?splash=true${forceCheckParam}`));
 
   splashWindow.once('ready-to-show', () => {
     if (splashWindow) {
@@ -107,6 +114,15 @@ const createSplashWindow = async () => {
     });
   });
 };
+
+// Add a new IPC handler for forcing version checks
+ipcMain.handle('force-check-update', async () => {
+  if (mainWindow) {
+    mainWindow.hide();
+  }
+  await createSplashWindow(true);
+  return true;
+});
 
 const createMainWindow = async () => {
   if (isDebug) {
@@ -174,6 +190,12 @@ const createMainWindow = async () => {
       event.sender.send('ffmpeg-install-progress', progress);
     });
     return true;
+  });
+
+  ipcMain.handle('check-handler-exists', (event, channelName) => {
+    // Check if the specified channel has handlers registered
+    const channelHandlers = ipcMain.eventNames().includes(channelName);
+    return channelHandlers;
   });
 
   ipcMain.handle('update-application', async (event) => {
