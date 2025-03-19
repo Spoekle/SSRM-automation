@@ -181,7 +181,7 @@ const Footer: React.FC<FooterProps> = ({
 
   return (
     <>
-      <div className="no-move items-center bg-neutral-200 dark:bg-neutral-900 text-neutral-950 dark:text-neutral-200 rounded-b-3xl drop-shadow-xl">
+      <div className="no-move h-[69px] items-center justify-center bg-neutral-200 dark:bg-neutral-900 text-neutral-950 dark:text-neutral-200 rounded-b-3xl">
         <div className="flex justify-between items-center p-4">
           <div className="flex-1">
           </div>
@@ -189,7 +189,7 @@ const Footer: React.FC<FooterProps> = ({
           <div className="flex items-center">
             {hasUpdate && (
               <motion.div
-                className="z-20 relative rounded-full shadow-sm mr-2"
+                className="z-20 relative rounded-full shadow-sm mr-4"
                 animate={{ y: [0, -3, 0] }}
                 transition={{ y: { repeat: Infinity, repeatDelay: 2, duration: 1 } }}
               >
@@ -221,11 +221,11 @@ const Footer: React.FC<FooterProps> = ({
 
             <motion.button
               onClick={handleCogClick}
-              className="py-2 px-3 bg-transparent hover:bg-black/20 rounded-md transition duration-200"
+              className="py-2 px-2 bg-transparent hover:bg-black/20 rounded-full transition duration-200"
               whileHover={{ scale: 1.1, rotate: 90 }}
               whileTap={{ scale: 0.9 }}
             >
-              <FaCog className="transition duration-200" />
+              <FaCog size="20" className="transition duration-200" />
             </motion.button>
 
             <div className="text-xs ml-2 text-neutral-600 dark:text-neutral-400">
