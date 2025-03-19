@@ -608,22 +608,16 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion, forceVersionChe
               </motion.div>
             </motion.div>
           )}
-        </AnimatePresence>
 
-        <AnimatePresence>
           {isUpdating && (
             <motion.div
               className="mt-4 p-4 bg-blue-500 text-white rounded-lg text-center w-full"
               initial={{ opacity: 0 }}
-              animate={{ opacity: 1, boxShadow: ["0px 0px 0px rgba(59, 130, 246, 0)", "0px 0px 15px rgba(59, 130, 246, 0.5)", "0px 0px 0px rgba(59, 130, 246, 0)"] }}
-              transition={{
-                boxShadow: { duration: 2, repeat: Infinity },
-                opacity: { duration: 0.3 },
-                y: { duration: 0.3, type: "spring" }
-              }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
             >
               <motion.p
-                className="text-sm"
+                className="text-sm text-white"
                 key={updateProgress}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -639,9 +633,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion, forceVersionChe
   );
 };
 
-// Keep the compareVersions utility function for basic version comparison
 const compareVersions = (v1: string, v2: string): number => {
-  // Clean version strings by removing any pre-release tags for base comparison
   const cleanV1 = v1.split('-')[0];
   const cleanV2 = v2.split('-')[0];
 
