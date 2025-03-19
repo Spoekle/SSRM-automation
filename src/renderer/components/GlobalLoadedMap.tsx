@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaChevronLeft, FaChevronRight, FaTimes, FaMusic, FaMapMarkerAlt, FaClock } from 'react-icons/fa';
+import { FaChevronUp, FaChevronDown, FaTimes, FaMusic, FaMapMarkerAlt, FaClock } from 'react-icons/fa';
 import { useConfirmationModal } from '../contexts/ConfirmationModalContext';
 
 interface MapInfo {
@@ -79,13 +79,24 @@ const GlobalLoadedMap: React.FC = () => {
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed top-20 z-30 flex items-center"
-        initial={{ x: -240 }}
-        animate={{ x: isCollapsed ? -240 : 0 }}
+        className="z-50 fixed bottom-0 left-10 flex flex-col"
+        initial={{ y: 50 }}
+        animate={{ y: isCollapsed ? 50 : 0 }}
         transition={{ duration: 0.3, type: "spring" }}
       >
+        <motion.button
+          className="bg-gradient-to-b from-blue-500 to-blue-600 w-12 h-5 ml-3 rounded-t-md flex items-center justify-center cursor-pointer shadow-lg"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          whileHover={{ width: 44 }}
+          whileTap={{ scale: 0.9 }}
+        >
+          {isCollapsed ?
+            <FaChevronUp size={10} color="white" /> :
+            <FaChevronDown size={10} color="white" />
+          }
+        </motion.button>
         <motion.div
-          className="bg-neutral-300/80 dark:bg-neutral-800/80 backdrop-blur-md p-3 rounded-r-lg flex items-center shadow-lg space-x-3 w-[240px] border border-neutral-200/30 dark:border-neutral-700/30"
+          className="bg-neutral-300/80 dark:bg-neutral-800/80 backdrop-blur-md p-3 rounded-t-lg flex items-center space-x-2 w-[360px] h-[59px] border border-neutral-200/30 dark:border-neutral-700/30"
           layout
         >
           <motion.div
@@ -95,7 +106,7 @@ const GlobalLoadedMap: React.FC = () => {
             <motion.img
               src={mapInfo.versions[0].coverURL}
               alt="Map cover"
-              className="w-10 h-10 object-cover rounded-lg shadow-md"
+              className=" max-h-12 object-cover rounded-lg"
               transition={{ type: "spring", stiffness: 300 }}
             />
             <motion.div
@@ -109,14 +120,14 @@ const GlobalLoadedMap: React.FC = () => {
           </motion.div>
 
           <div className="flex-grow overflow-hidden">
-            <h3 className="font-bold text-xs text-neutral-800 dark:text-neutral-200 truncate">
+            <h3 className="font-bold text-sm text-neutral-800 dark:text-neutral-200 truncate" title={`${mapInfo.metadata.songName}${songSubName}`}>
               {mapInfo.metadata.songName}{songSubName}
             </h3>
             <div className="flex items-center text-xs text-neutral-600 dark:text-neutral-400 truncate">
               <FaMusic className="mr-1" size={10} />
-              <span className="truncate">{mapInfo.metadata.songAuthorName}</span>
+              <span className="truncate" title={mapInfo.metadata.songAuthorName}>{mapInfo.metadata.songAuthorName}</span>
               <span className="mx-1">•</span>
-              <span className="truncate">{mapInfo.metadata.levelAuthorName}</span>
+              <span className="truncate" title={mapInfo.metadata.levelAuthorName}>{mapInfo.metadata.levelAuthorName}</span>
             </div>
             <div className="flex items-center space-x-1 text-xs text-neutral-500 dark:text-neutral-500">
               <div className="flex items-center">
@@ -138,18 +149,6 @@ const GlobalLoadedMap: React.FC = () => {
             <FaTimes size={14} />
           </motion.button>
         </motion.div>
-
-        <motion.button
-          className="bg-gradient-to-b from-blue-500 to-blue-600 h-12 w-5 rounded-r-md flex items-center justify-center cursor-pointer shadow-lg"
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          whileHover={{ height: 44 }}
-          whileTap={{ scale: 0.9 }}
-        >
-          {isCollapsed ?
-            <FaChevronRight size={10} color="white" /> :
-            <FaChevronLeft size={10} color="white" />
-          }
-        </motion.button>
       </motion.div>
     </AnimatePresence>
   );
