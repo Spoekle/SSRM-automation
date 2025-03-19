@@ -65,23 +65,7 @@ const GlobalLoadedMap: React.FC = () => {
   };
 
   if (!mapInfo || !isVisible) {
-    return (
-      <motion.div
-        className="fixed left-0 top-20 z-30"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-      >
-        <motion.button
-          className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-2 py-1 rounded-r-lg shadow-lg flex items-center space-x-1"
-          onClick={() => setIsVisible(true)}
-          whileHover={{ scale: 1.1, x: 3 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <FaChevronRight size={12} />
-          <span className="text-xs font-medium">Map</span>
-        </motion.button>
-      </motion.div>
-    );
+    return null;
   }
 
   const formatDuration = (seconds: number) => {
@@ -95,13 +79,13 @@ const GlobalLoadedMap: React.FC = () => {
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed top-20 z-30 flex items-center shadow-lg"
+        className="fixed top-20 z-30 flex items-center"
         initial={{ x: -240 }}
         animate={{ x: isCollapsed ? -240 : 0 }}
         transition={{ duration: 0.3, type: "spring" }}
       >
         <motion.div
-          className="bg-neutral-300/80 dark:bg-neutral-800/80 backdrop-blur-md p-3 rounded-r-lg flex items-center space-x-3 w-[240px] border border-neutral-200/30 dark:border-neutral-700/30"
+          className="bg-neutral-300/80 dark:bg-neutral-800/80 backdrop-blur-md p-3 rounded-r-lg flex items-center shadow-lg space-x-3 w-[240px] border border-neutral-200/30 dark:border-neutral-700/30"
           layout
         >
           <motion.div
