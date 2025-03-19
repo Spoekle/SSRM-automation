@@ -2,7 +2,7 @@ import React, { FormEvent, ChangeEvent, useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import axios from 'axios';
 import Switch from '@mui/material/Switch';
-import { FaTimes, FaCloudUploadAlt } from 'react-icons/fa';
+import { FaTimes, FaCloudUploadAlt, FaLayerGroup, FaStar, FaToggleOn, FaCheck, FaSync } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import log from 'electron-log';
 import { generateCard } from '../../../../main/helper';
@@ -59,9 +59,10 @@ const CardForm: React.FC<CardFormProps> = ({
   progress: setProgress,
   cancelGenerationRef,
 }) => {
-  const [songName, setSongName] = React.useState('');
+  const [songName, setSongName] = useState('');
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [isOverlayVisible, setIsOverlayVisible] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
 
   useEffect(() => {
     setIsOverlayVisible(true);
@@ -87,6 +88,36 @@ const CardForm: React.FC<CardFormProps> = ({
     localStorage.setItem('useBackground', `${event.target.checked}`);
   };
 
+  const handleMapIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setMapId(e.target.value);
+  };
+
+  const fetchStarRatings = async () => {
+    if (!mapId) {
+      if (createAlert) createAlert("Please enter a map ID first", "error");
+      return;
+    }
+
+    setIsFetching(true);
+    try {
+      // First fetch the map data to get the hash
+      const response = await axios.get(`https://api.beatsaver.com/maps/id/${mapId}`);
+      const data = response.data;
+      setSongName(data.metadata.songName);
+
+      // Then get the star ratings
+      const latestStarRatings = await getStarRating(data.versions[0].hash);
+      setStarRatings(latestStarRatings);
+
+      if (createAlert) createAlert("Star ratings fetched successfully", "success");
+    } catch (error) {
+      log.error('Error fetching star ratings:', error);
+      if (createAlert) createAlert("Error fetching star ratings", "error");
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
   const getMapInfo = async (event: FormEvent) => {
     event.preventDefault();
     try {
@@ -97,7 +128,20 @@ const CardForm: React.FC<CardFormProps> = ({
       localStorage.setItem('mapInfo', JSON.stringify(data));
       notifyMapInfoUpdated();
 
-      const image = await generateCard(data, starRatings, useBackground);
+      // Fetch star ratings again to ensure we have the latest values
+      let ratingToUse = starRatings;
+      try {
+        const latestStarRatings = await getStarRating(data.versions[0].hash);
+        setStarRatings(latestStarRatings); // Update the state for next use
+        ratingToUse = latestStarRatings; // Use these for the current generation
+        localStorage.setItem('starRatings', JSON.stringify(latestStarRatings));
+      } catch (starError) {
+        log.error('Error fetching star ratings:', starError);
+        // Continue with existing ratings if fetch fails
+      }
+
+      // Use the most recent ratings (either fetched or existing)
+      const image = await generateCard(data, ratingToUse, useBackground);
       setImageSrc(image);
 
       log.info(data);
@@ -335,7 +379,7 @@ const CardForm: React.FC<CardFormProps> = ({
     <AnimatePresence>
       {true && (
         <motion.div
-          className={`fixed top-16 left-0 right-0 bottom-16 z-40 rounded-bl-3xl backdrop-blur-md flex justify-center items-center ${
+          className={`fixed top-16 left-0 right-0 bottom-16 z-40 rounded-br-3xl backdrop-blur-md flex justify-center items-center ${
             isOverlayVisible ? "opacity-100" : "opacity-0"
           } bg-black/20`}
           initial={{ opacity: 0 }}
@@ -344,7 +388,7 @@ const CardForm: React.FC<CardFormProps> = ({
           onClick={handleClose}
         >
           <motion.div
-            className="absolute left-0 top-0 h-full w-3/4 lg:w-2/3 rounded-r-xl bg-neutral-200 dark:bg-neutral-800 text-neutral-950 dark:text-white shadow-lg overflow-y-auto custom-scrollbar"
+            className="absolute left-0 top-0 h-full w-2/3 rounded-r-xl bg-neutral-200 dark:bg-neutral-800 text-neutral-950 dark:text-white shadow-lg overflow-hidden flex flex-col"
             initial={{ x: "-100%" }}
             animate={{ x: isPanelOpen ? "0%" : "-100%" }}
             exit={{ x: "-100%" }}
@@ -352,19 +396,31 @@ const CardForm: React.FC<CardFormProps> = ({
             onClick={(e) => e.stopPropagation()}
           >
             <motion.div
-              className="z-10 sticky top-0 backdrop-blur-md bg-neutral-200/80 dark:bg-neutral-800/80 p-4 border-b border-neutral-200 dark:border-neutral-500 flex justify-between items-center"
+              className="z-10 sticky top-0 backdrop-blur-md bg-gradient-to-r from-blue-500/10 to-cyan-500/10 dark:from-blue-800/20 dark:to-cyan-800/20 p-3 border-b border-neutral-300 dark:border-neutral-700 flex justify-between items-center"
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1, type: "spring" }}
             >
-              <motion.h2
-                className="text-xl bg-neutral-100 dark:bg-neutral-600 px-3 py-2 rounded-lg font-semibold"
-                whileHover={{ scale: 1.03 }}
-              >
-                Card Settings
-              </motion.h2>
+              <div className="flex items-center">
+                <motion.h2
+                  className="text-lg bg-white/70 dark:bg-neutral-700/70 px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 shadow-sm"
+                  whileHover={{ scale: 1.03 }}
+                >
+                  <FaLayerGroup className="text-blue-500" />
+                  Card Settings
+                </motion.h2>
+                {songName && (
+                  <motion.span
+                    className="ml-3 font-medium text-blue-600 dark:text-blue-400 text-sm"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                  >
+                    {songName}
+                  </motion.span>
+                )}
+              </div>
               <motion.button
-                className="text-red-500 bg-neutral-300 dark:bg-neutral-700 p-2 rounded-md hover:bg-neutral-400 dark:hover:bg-neutral-600 transition duration-200"
+                className="text-red-500 bg-white/70 dark:bg-neutral-700/70 p-1.5 rounded-md hover:bg-neutral-400 dark:hover:bg-neutral-600 transition duration-200 shadow-sm"
                 onClick={handleClose}
                 whileHover={{
                   scale: 1.1,
@@ -377,122 +433,117 @@ const CardForm: React.FC<CardFormProps> = ({
               </motion.button>
             </motion.div>
 
-            <div className="mt-4 px-4 pb-4 space-y-4">
-              <form onSubmit={getMapInfo} className='space-y-8'>
-                {/* Form content - keeping the same structure but improved styling */}
-                <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
-                  {/* Manual Inputs */}
-                  <div className='bg-white dark:bg-neutral-700 p-5 rounded-xl shadow-sm'>
-                    <h2 className='text-lg font-medium mb-4 border-b pb-2 border-neutral-200 dark:border-neutral-600'>Manual Input</h2>
-                    <div className="mb-4">
-                      <label className='block mb-1 text-neutral-700 dark:text-neutral-200 font-medium'>Map ID:</label>
+            <div className="flex-1 overflow-auto custom-scrollbar">
+              <form onSubmit={getMapInfo} className='p-3 space-y-3'>
+                {/* Automatic Inputs moved to top */}
+                <div className='bg-white dark:bg-neutral-700 p-3 rounded-xl shadow-sm'>
+                  <h2 className='text-base font-medium mb-2 border-b pb-1 border-neutral-200 dark:border-neutral-600 flex items-center gap-1.5'>
+                    <FaCloudUploadAlt className="text-purple-500" /> Automatic Input
+                  </h2>
+                  <label className='block mb-1 text-sm text-neutral-700 dark:text-neutral-200'>Upload JSON File:</label>
+                  <label className='flex items-center justify-center w-full h-16 px-3 py-2 border-2 border-dashed border-neutral-300 dark:border-neutral-600 rounded-lg cursor-pointer hover:bg-neutral-200/50 dark:hover:bg-neutral-600/50 transition duration-200'>
+                    <div className="flex flex-col items-center">
+                      <FaCloudUploadAlt className="mb-1 text-blue-500" size={18} />
+                      <span className="text-sm text-neutral-700 dark:text-neutral-200">Select JSON File</span>
+                      <span className="text-xs text-neutral-500 dark:text-neutral-400">or drag and drop</span>
+                    </div>
+                    <input
+                      type="file"
+                      accept=".json"
+                      onChange={handleFileUpload}
+                      className='hidden'
+                    />
+                  </label>
+                </div>
+
+                {/* Map ID Input */}
+                <div className='bg-white dark:bg-neutral-700 p-3 rounded-xl shadow-sm'>
+                  <h2 className='text-base font-medium mb-2 border-b pb-1 border-neutral-200 dark:border-neutral-600 flex items-center gap-1.5'>
+                    <FaLayerGroup className="text-blue-500" /> Map Details
+                  </h2>
+                  <div className="mb-2">
+                    <label className='block mb-1 text-sm text-neutral-700 dark:text-neutral-200 font-medium'>Map ID:</label>
+                    <div className="relative flex space-x-2 items-center">
                       <input
                         type='text'
                         value={mapId}
-                        onChange={(e) => fetchName(e.target.value)}
+                        onChange={handleMapIdChange}
                         placeholder="Enter map ID..."
-                        className='w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 dark:bg-neutral-800 dark:border-neutral-600 dark:text-white'
+                        className='flex-1 px-3 py-1.5 text-sm border rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-300 dark:bg-neutral-800 dark:border-neutral-600 dark:text-white'
                       />
-                      {songName && (
-                        <motion.p
-                          className="mt-2 text-sm text-green-600 dark:text-green-400"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                        >
-                          Found: {songName}
-                        </motion.p>
-                      )}
+                      <motion.button
+                        type="button"
+                        onClick={fetchStarRatings}
+                        disabled={isFetching}
+                        className="absolute right-0 bg-blue-500 text-white px-3 py-1.5 text-sm rounded-lg flex items-center gap-1"
+                        whileHover={!isFetching ? { scale: 1.05 } : {}}
+                        whileTap={!isFetching ? { scale: 0.95 } : {}}
+                      >
+                        {isFetching ? <FaSync className="animate-spin" size={12} /> : <FaStar size={12} />}
+                        <span className="hidden sm:inline">{isFetching ? 'Fetching...' : 'Fetch Ratings'}</span>
+                      </motion.button>
+                    </div>
+                    {songName && (
+                      <motion.p
+                        className="mt-1 text-xs text-green-600 dark:text-green-400"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                      >
+                        Found: {songName}
+                      </motion.p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Background Options - Compact */}
+                <div className='bg-white dark:bg-neutral-700 p-3 rounded-xl shadow-sm'>
+                  <div className='flex items-center justify-between'>
+                    <h2 className='text-base font-medium flex items-center gap-1.5'>
+                      <FaToggleOn className="text-blue-500" /> Options
+                    </h2>
+                    <div className='flex items-center'>
+                      <label className='mr-2 text-sm text-neutral-700 dark:text-neutral-200'>Use Background:</label>
+                      <Switch size="small" checked={useBackground} onChange={handleSwitch} />
                     </div>
                   </div>
+                </div>
 
-                  {/* Automatic Inputs */}
-                  <div className='bg-white dark:bg-neutral-700 p-5 rounded-xl shadow-sm'>
-                    <h2 className='text-lg font-medium mb-4 border-b pb-2 border-neutral-200 dark:border-neutral-600'>Automatic Input</h2>
-                    <label className='block mb-2 text-neutral-700 dark:text-neutral-200'>Upload JSON File:</label>
-                    <label className='flex items-center justify-center w-full h-24 px-4 py-4 border-2 border-dashed border-neutral-300 dark:border-neutral-600 rounded-lg cursor-pointer hover:bg-neutral-200/50 dark:hover:bg-neutral-600/50 transition duration-200'>
-                      <div className="flex flex-col items-center">
-                        <FaCloudUploadAlt className="mb-2 text-blue-500" size={24} />
-                        <span className="text-neutral-700 dark:text-neutral-200">Select JSON File</span>
-                        <span className="text-xs text-neutral-500 dark:text-neutral-400">or drag and drop</span>
+                {/* Star Ratings - More compact layout */}
+                <div className='bg-white dark:bg-neutral-700 p-3 rounded-xl shadow-sm'>
+                  <h2 className='text-base font-medium mb-2 border-b pb-1 border-neutral-200 dark:border-neutral-600 flex items-center gap-1.5'>
+                    <FaStar className="text-yellow-500" /> Star Ratings
+                  </h2>
+                  <div className='grid grid-cols-5 gap-2'>
+                    {['ES', 'NOR', 'HARD', 'EX', 'EXP'].map((diff, index) => (
+                      <div className='flex flex-col' key={diff}>
+                        <label className='mb-1 text-xs text-neutral-700 dark:text-neutral-300 font-medium'>
+                          {['Easy', 'Normal', 'Hard', 'Expert', 'Expert+'][index]}
+                        </label>
+                        <input
+                          type='text'
+                          value={starRatings[diff as keyof StarRatings]}
+                          onChange={(e) => setStarRatings({ ...starRatings, [diff]: e.target.value })}
+                          className='px-2 py-1 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-300 dark:bg-neutral-800 dark:border-neutral-600 dark:text-white'
+                        />
                       </div>
-                      <input
-                        type="file"
-                        accept=".json"
-                        onChange={handleFileUpload}
-                        className='hidden'
-                      />
-                    </label>
+                    ))}
                   </div>
-                </div>
-
-                {/* Star Ratings */}
-                <div className='bg-white dark:bg-neutral-700 p-5 rounded-xl shadow-sm'>
-                  <h2 className='text-lg font-medium mb-4 border-b pb-2 border-neutral-200 dark:border-neutral-600'>Star Ratings</h2>
-                  <div className='grid grid-cols-2 md:grid-cols-5 gap-4'>
-                    <div className='flex flex-col'>
-                      <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Easy</label>
-                      <input
-                        type='text'
-                        value={starRatings.ES}
-                        onChange={(e) => setStarRatings({ ...starRatings, ES: e.target.value })}
-                        className='px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
-                      />
-                    </div>
-                    <div className='flex flex-col'>
-                      <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Normal</label>
-                      <input
-                        type='text'
-                        value={starRatings.NOR}
-                        onChange={(e) => setStarRatings({ ...starRatings, NOR: e.target.value })}
-                        className='px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
-                      />
-                    </div>
-                    <div className='flex flex-col'>
-                      <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Hard</label>
-                      <input
-                        type='text'
-                        value={starRatings.HARD}
-                        onChange={(e) => setStarRatings({ ...starRatings, HARD: e.target.value })}
-                        className='px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
-                      />
-                    </div>
-                    <div className='flex flex-col'>
-                      <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Expert</label>
-                      <input
-                        type='text'
-                        value={starRatings.EX}
-                        onChange={(e) => setStarRatings({ ...starRatings, EX: e.target.value })}
-                        className='px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
-                      />
-                    </div>
-                    <div className='flex flex-col'>
-                      <label className='mb-1 text-gray-700 dark:text-gray-200 font-medium'>Expert+</label>
-                      <input
-                        type='text'
-                        value={starRatings.EXP}
-                        onChange={(e) => setStarRatings({ ...starRatings, EXP: e.target.value })}
-                        className='px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-700 dark:border-gray-600 dark:text-white'
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bottom Controls */}
-                <div className='flex flex-col md:flex-row justify-between items-center bg-neutral-200/50 dark:bg-neutral-700/50 p-4 rounded-xl'>
-                  <div className='flex items-center mb-4 md:mb-0'>
-                    <label className='mr-3 text-neutral-700 dark:text-neutral-200 font-medium'>Use Background:</label>
-                    <Switch checked={useBackground} onChange={handleSwitch} />
-                  </div>
-                  <motion.button
-                    type="submit"
-                    className='w-full md:w-auto bg-blue-500 text-white px-6 py-2.5 rounded-lg shadow-sm hover:bg-blue-600 transition duration-200 font-medium'
-                    whileHover={{ scale: 1.03, boxShadow: "0px 4px 8px rgba(0,0,0,0.1)" }}
-                    whileTap={{ scale: 0.97 }}
-                  >
-                    Generate Card
-                  </motion.button>
                 </div>
               </form>
+            </div>
+
+            {/* Sticky footer with Generate button */}
+            <div className='sticky bottom-0 bg-white/80 dark:bg-neutral-800/80 backdrop-blur-sm p-2 border-t border-neutral-300 dark:border-neutral-700 flex justify-end items-center'>
+              <motion.button
+                type="button"
+                onClick={getMapInfo}
+                className='bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-4 py-1.5 text-sm rounded-lg shadow-sm hover:shadow-md font-medium flex items-center gap-1.5'
+                whileHover={{ scale: 1.03, boxShadow: "0px 4px 8px rgba(0,0,0,0.1)" }}
+                whileTap={{ scale: 0.97 }}
+              >
+                <FaCheck size={12} />
+                Generate Card
+              </motion.button>
             </div>
           </motion.div>
         </motion.div>

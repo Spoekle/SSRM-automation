@@ -4,7 +4,7 @@ import Switch from '@mui/material/Switch';
 import axios from 'axios';
 import log from 'electron-log';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaTimes, FaMapMarkedAlt, FaGamepad, FaCheck } from 'react-icons/fa';
+import { FaTimes, FaMapMarkedAlt, FaGamepad, FaCheck, FaStar, FaSync } from 'react-icons/fa';
 import { notifyMapInfoUpdated } from '../../../utils/mapEvents';
 import '../../../pages/Settings/styles/CustomScrollbar.css';
 
@@ -55,6 +55,8 @@ const MapForm: React.FC<MapFormProps> = ({
 }) => {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [isOverlayVisible, setIsOverlayVisible] = useState(false);
+  const [songName, setSongName] = useState('');
+  const [isFetching, setIsFetching] = useState(false);
 
   useEffect(() => {
     setIsOverlayVisible(true);
@@ -67,6 +69,10 @@ const MapForm: React.FC<MapFormProps> = ({
     setTimeout(() => {
       setMapFormModal(false);
     }, 300);
+  };
+
+  const handleMapIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setMapId(e.target.value);
   };
 
   const handleSwitch = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -95,11 +101,32 @@ const MapForm: React.FC<MapFormProps> = ({
     }
   };
 
+  const fetchMapInfo = async () => {
+    if (!mapId) {
+      if (createAlert) createAlert("Please enter a map ID first", "error");
+      return;
+    }
+
+    setIsFetching(true);
+    try {
+      const response = await axios.get(`https://api.beatsaver.com/maps/id/${mapId}`);
+      const data = response.data;
+      setSongName(data.metadata.songName);
+      if (createAlert) createAlert("Map info loaded!", "success");
+    } catch (error) {
+      log.error('Error fetching map info:', error);
+      if (createAlert) createAlert("Error loading map info", "error");
+      setSongName('');
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
   return ReactDOM.createPortal(
     <AnimatePresence>
       {true && (
         <motion.div
-          className={`fixed top-16 left-0 right-0 bottom-16 z-40 rounded-bl-3xl backdrop-blur-md flex justify-center items-center ${
+          className={`fixed top-16 left-0 right-0 bottom-16 z-40 rounded-br-3xl backdrop-blur-md flex justify-center items-center ${
             isOverlayVisible ? "opacity-100" : "opacity-0"
           } bg-black/20`}
           initial={{ opacity: 0 }}
@@ -116,7 +143,11 @@ const MapForm: React.FC<MapFormProps> = ({
             onClick={(e) => e.stopPropagation()}
           >
             <motion.div
-              className="z-10 sticky top-0 backdrop-blur-md bg-gradient-to-r from-blue-500/10 to-cyan-500/10 dark:from-blue-800/20 dark:to-cyan-800/20 p-4 border-b border-neutral-300 dark:border-neutral-700 flex justify-between items-center">
+              className="z-10 sticky top-0 backdrop-blur-md bg-gradient-to-r from-blue-500/10 to-cyan-500/10 dark:from-blue-800/20 dark:to-cyan-800/20 p-4 border-b border-neutral-300 dark:border-neutral-700 flex justify-between items-center"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1, type: "spring" }}
+            >
               <motion.h2
                 className="text-xl bg-white/70 dark:bg-neutral-700/70 px-4 py-2 rounded-lg font-semibold flex items-center gap-2 shadow-sm"
                 whileHover={{ scale: 1.03 }}
@@ -149,13 +180,31 @@ const MapForm: React.FC<MapFormProps> = ({
 
                     <div className='mb-3'>
                       <label className="text-sm font-medium mb-1 text-neutral-700 dark:text-neutral-200">Map ID:</label>
-                      <input
-                        type='text'
-                        value={mapId}
-                        onChange={(e) => setMapId(e.target.value)}
-                        className='w-full px-3 py-1.5 text-sm border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-800 dark:border-neutral-600 dark:text-white'
-                        placeholder="Enter map ID..."
-                      />
+                      <div className="relative flex space-x-2 items-center">
+                        <input
+                          type='text'
+                          value={mapId}
+                          onChange={handleMapIdChange}
+                          className='w-full px-3 py-1.5 text-sm border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-800 dark:border-neutral-600 dark:text-white'
+                          placeholder="Enter map ID..."
+                        />
+                        <motion.button
+                          type="button"
+                          onClick={fetchMapInfo}
+                          disabled={isFetching}
+                          className="absolute right-0 bg-blue-500 text-white px-3 py-1.5 text-sm rounded-lg flex items-center gap-1"
+                          whileHover={!isFetching ? { scale: 1.05 } : {}}
+                          whileTap={!isFetching ? { scale: 0.95 } : {}}
+                        >
+                          {isFetching ? <FaSync className="animate-spin" size={12} /> : <FaStar size={12} />}
+                          <span className="hidden sm:inline">{isFetching ? 'Fetching...' : 'Fetch Info'}</span>
+                        </motion.button>
+                      </div>
+                      {songName && (
+                        <div className="mt-1 text-xs text-green-600 dark:text-green-400">
+                          Found: {songName}
+                        </div>
+                      )}
                     </div>
 
                     <div className='flex items-center mt-2'>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FaDownload } from 'react-icons/fa';
+import { FaDownload, FaImage, FaSearch } from 'react-icons/fa';
 import ThumbnailForm from './components/ThumbnailForm';
 import ThumbnailPreview from './components/ThumbnailPreview';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -68,6 +68,19 @@ const Thumbnails: React.FC = () => {
     }
   }, []);
 
+  const fadeIn = {
+    hidden: { opacity: 0, y: 20 },
+    visible: (i: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: i * 0.15,
+        duration: 0.5,
+        ease: "easeOut"
+      }
+    })
+  };
+
   const downloadCard = () => {
     const link = document.createElement('a');
     link.href = imageSrc || '';
@@ -93,7 +106,7 @@ const Thumbnails: React.FC = () => {
   };
 
   return (
-    <div className='max-h-96 h-96 relative dark:text-neutral-200 bg-neutral-200 dark:bg-neutral-900 p-4 pt-6 overflow-auto'>
+    <div className='max-h-96 h-96 relative dark:text-neutral-200 bg-neutral-200 dark:bg-neutral-900 p-4 pt-6 overflow-auto custom-scrollbar'>
       <ProgressBar
         visible={progress.visible}
         progress={progress.progress}
@@ -102,93 +115,77 @@ const Thumbnails: React.FC = () => {
       />
 
       <motion.div
-        className='flex flex-col items-center max-w-3xl mx-auto pl-8 pr-4'
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
+        className='flex flex-col items-center max-w-3xl mx-auto'
+        initial="hidden"
+        animate="visible"
       >
-        <div className='text-center mb-4'>
-          <motion.h1
-            className='text-2xl font-bold'
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 200 }}
-          >
-            Thumbnail Generator
-          </motion.h1>
-          <motion.p
-            className='text-sm mb-2'
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
-            Generate a thumbnail in a single click!
-          </motion.p>
-          <div className="flex justify-center space-x-2">
-            <motion.button
-              className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 text-sm rounded-lg hover:scale-110 transition duration-200 drop-shadow-lg'
-              onClick={() => setThumbnailFormModal(true)}
-              whileHover={{ scale: 1.05, boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.2)" }}
-              whileTap={{ scale: 0.95 }}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, type: "spring" }}
-            >
-              Thumbnail Form
-            </motion.button>
-            {imageSrc && (
-              <motion.button
-                className='bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-3 text-sm rounded-lg hover:scale-110 transition duration-200 drop-shadow-lg'
-                onClick={() => downloadCard()}
-                whileHover={{ scale: 1.05, backgroundColor: "#16a34a" }}
-                whileTap={{ scale: 0.95 }}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ type: "spring", stiffness: 200 }}
-              >
-                <FaDownload className='inline mr-1' /> Download
-              </motion.button>
-            )}
+        <motion.div className='text-center mb-4' variants={fadeIn} custom={0}>
+          <div className="flex items-center justify-center gap-3 mb-1">
+            <FaImage className="text-purple-500 text-xl" />
+            <h1 className='text-2xl font-bold'>Thumbnail Generator</h1>
           </div>
-        </div>
+          <p className='text-sm mb-3 text-neutral-600 dark:text-neutral-400'>
+            Generate a thumbnail in a single click!
+          </p>
+          <motion.button
+            className='bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg flex items-center justify-center gap-2 mx-auto'
+            onClick={() => setThumbnailFormModal(true)}
+            whileHover={{ scale: 1.05, boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.2)" }}
+            whileTap={{ scale: 0.95 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, type: "spring" }}
+          >
+            <FaImage size={16} />
+            <span>Create Thumbnail</span>
+          </motion.button>
+        </motion.div>
 
         {imageSrc && (
           <motion.div
-            className='mt-2 flex justify-center w-full'
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, type: "spring" }}
+            className='w-full max-w-md'
+            variants={fadeIn}
+            custom={1}
           >
             <motion.div
-              className='bg-neutral-300 dark:bg-neutral-800 p-2 rounded-lg shadow-md'
-              whileHover={{ scale: 1.02, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)" }}
+              className='relative flex flex-col w-full bg-white/40 dark:bg-neutral-800/40 backdrop-blur-sm rounded-xl p-4 shadow-md overflow-hidden group'
+              whileHover={{ y: -5, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)" }}
+              transition={{ type: "spring", stiffness: 400 }}
             >
-              <div className="flex items-center justify-between mb-1">
-                <h2 className='text-base font-bold'>Preview</h2>
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 opacity-0 group-hover:opacity-10 dark:group-hover:opacity-20 rounded-xl transition-opacity duration-300" />
+
+              <div className="flex justify-between items-center mb-3 relative z-10">
+                <h2 className='text-lg font-bold flex items-center gap-2'>
+                  <FaImage className="text-purple-500" />
+                  Preview
+                </h2>
                 <div className="flex space-x-2">
                   <motion.button
                     onClick={() => openThumbnailPreview()}
-                    className="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
+                    className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1.5 px-3 text-sm rounded-lg flex items-center gap-1.5"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
+                    <FaSearch size={14} />
                     Full View
                   </motion.button>
                   <motion.button
                     onClick={() => downloadCard()}
-                    className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700"
+                    className="bg-green-600 hover:bg-green-700 text-white font-bold py-1.5 px-3 text-sm rounded-lg flex items-center gap-1.5"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    <FaDownload className='inline mr-1' size={10} /> Save
+                    <FaDownload size={14} />
+                    Download
                   </motion.button>
                 </div>
               </div>
               <motion.div
-                className='flex justify-center'
+                className='flex justify-center bg-white dark:bg-neutral-700 p-3 rounded-lg shadow-inner overflow-hidden relative z-10'
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+                whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
               >
                 <motion.img
                   src={imageSrc}
@@ -196,13 +193,23 @@ const Thumbnails: React.FC = () => {
                   className='max-h-[180px] w-auto rounded'
                   onClick={() => openThumbnailPreview()}
                   whileHover={{
-                    scale: 1.03,
-                    boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.2)",
                     cursor: 'pointer'
                   }}
                 />
               </motion.div>
             </motion.div>
+          </motion.div>
+        )}
+
+        {!imageSrc && (
+          <motion.div
+            className="w-full max-w-md mx-auto bg-white/40 dark:bg-neutral-800/40 backdrop-blur-sm p-6 rounded-xl shadow-md mt-8 text-center"
+            variants={fadeIn}
+            custom={1}
+          >
+            <p className="text-neutral-600 dark:text-neutral-400">
+              No thumbnail generated yet. Click the button above to get started.
+            </p>
           </motion.div>
         )}
       </motion.div>
