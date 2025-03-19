@@ -15,7 +15,6 @@ interface AlertSystemProps {
 }
 
 const AlertSystem: React.FC<AlertSystemProps> = ({ alerts, position = 'top-right' }) => {
-  // Define position classes
   const positionClasses = {
     'top-right': 'top-0 right-0 mt-4 mr-4 items-end',
     'top-left': 'top-0 left-0 mt-4 ml-4 items-start',
@@ -43,23 +42,46 @@ const AlertSystem: React.FC<AlertSystemProps> = ({ alerts, position = 'top-right
   };
 
   return (
-    <AnimatePresence>
-      <div className={`absolute ${positionClasses[position]} pl-4 flex flex-col space-y-2 overflow-hidden z-60`}>
-        {alerts.map(alert => (
-          <motion.div
-            key={alert.id}
-            className={`flex items-center backdrop-blur-md px-4 py-2 rounded-xl shadow-lg border ${getBgColor(alert.type)} bg-gradient-to-r ${alert.fadeOut ? 'animate-fade-out' : ''}`}
-            initial={{ opacity: 0, x: position.includes('right') ? 100 : -100, scale: 0.9 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: position.includes('right') ? 100 : -100, scale: 0.9 }}
-            transition={{ type: "spring", stiffness: 200, damping: 20 }}
-          >
-            {getAlertIcon(alert.type)}
-            <p className='text-sm text-white font-medium'>{alert.message}</p>
-          </motion.div>
-        ))}
+    <div className={`absolute ${positionClasses[position]} pl-4 overflow-hidden z-60`}>
+      <div className="flex flex-col">
+        <AnimatePresence initial={false}>
+          {alerts.map((alert) => (
+            <motion.div
+              key={alert.id}
+              layout
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{
+                opacity: 1,
+                scale: 1,
+                transition: {
+                  opacity: { duration: 0.2 },
+                  scale: { duration: 0.2, type: "spring" }
+                }
+              }}
+              exit={{
+                opacity: 0,
+                scale: 0.8,
+                transition: {
+                  opacity: { duration: 0.15 },
+                  scale: { duration: 0.2 }
+                }
+              }}
+              className="mb-2 overflow-hidden"
+              style={{
+                transformOrigin: position.includes('bottom') ? 'bottom' : 'top'
+              }}
+            >
+              <motion.div
+                className={`flex items-center backdrop-blur-md px-4 py-2 rounded-xl shadow-lg border ${getBgColor(alert.type)} bg-gradient-to-r ${alert.fadeOut ? 'animate-fade-out' : ''}`}
+              >
+                {getAlertIcon(alert.type)}
+                <p className='text-sm text-white font-medium'>{alert.message}</p>
+              </motion.div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
-    </AnimatePresence>
+    </div>
   );
 };
 
