@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaChevronLeft, FaChevronRight, FaTimes } from 'react-icons/fa';
+import { FaChevronLeft, FaChevronRight, FaTimes, FaMusic, FaMapMarkerAlt, FaClock } from 'react-icons/fa';
 import { useConfirmationModal } from '../contexts/ConfirmationModalContext';
 
 interface MapInfo {
@@ -25,7 +25,6 @@ const GlobalLoadedMap: React.FC = () => {
   const [mapInfo, setMapInfo] = useState<MapInfo | null>(null);
   const { showConfirmation } = useConfirmationModal();
 
-  // Load map info from localStorage
   useEffect(() => {
     const loadMapInfo = () => {
       const storedMapInfo = localStorage.getItem('mapInfo');
@@ -42,7 +41,6 @@ const GlobalLoadedMap: React.FC = () => {
 
     window.addEventListener('storage', loadMapInfo);
 
-    // Custom event for direct updates
     const handleMapInfoUpdate = () => loadMapInfo();
     window.addEventListener('mapinfo-updated', handleMapInfoUpdate);
 
@@ -66,7 +64,6 @@ const GlobalLoadedMap: React.FC = () => {
     });
   };
 
-  // If no map is loaded or component is hidden, show only the toggle button
   if (!mapInfo || !isVisible) {
     return (
       <motion.div
@@ -75,18 +72,18 @@ const GlobalLoadedMap: React.FC = () => {
         animate={{ opacity: 1 }}
       >
         <motion.button
-          className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded-r-md"
+          className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-2 py-1 rounded-r-lg shadow-lg flex items-center space-x-1"
           onClick={() => setIsVisible(true)}
-          whileHover={{ scale: 1.1 }}
+          whileHover={{ scale: 1.1, x: 3 }}
           whileTap={{ scale: 0.95 }}
         >
-          <FaChevronRight size={16} />
+          <FaChevronRight size={12} />
+          <span className="text-xs font-medium">Map</span>
         </motion.button>
       </motion.div>
     );
   }
 
-  // Format duration to minutes:seconds
   const formatDuration = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = Math.floor(seconds % 60);
@@ -99,35 +96,49 @@ const GlobalLoadedMap: React.FC = () => {
     <AnimatePresence>
       <motion.div
         className="fixed top-20 z-30 flex items-center shadow-lg"
-        initial={{ x: -200 }}
-        animate={{ x: isCollapsed ? -200 : 0 }}
+        initial={{ x: -240 }}
+        animate={{ x: isCollapsed ? -240 : 0 }}
         transition={{ duration: 0.3, type: "spring" }}
       >
-        {/* Map info card */}
         <motion.div
-          className="bg-neutral-300 dark:bg-neutral-800 p-2 rounded-r-lg flex items-center space-x-2 w-[200px]"
+          className="bg-neutral-300/80 dark:bg-neutral-800/80 backdrop-blur-md p-3 rounded-r-lg flex items-center space-x-3 w-[240px] border border-neutral-200/30 dark:border-neutral-700/30"
           layout
         >
-          {/* Cover image */}
-          <motion.img
-            src={mapInfo.versions[0].coverURL}
-            alt="Map cover"
-            className="w-10 h-10 object-cover rounded-md hover:cursor-pointer"
+          <motion.div
+            className="relative group"
             whileHover={{ scale: 1.1 }}
-            transition={{ type: "spring", stiffness: 300 }}
-            onClick={() => window.open(`https://beatsaver.com/maps/${mapInfo.id}`, '_blank')}
-          />
+          >
+            <motion.img
+              src={mapInfo.versions[0].coverURL}
+              alt="Map cover"
+              className="w-10 h-10 object-cover rounded-lg shadow-md"
+              transition={{ type: "spring", stiffness: 300 }}
+            />
+            <motion.div
+              className="absolute inset-0 bg-black/0 group-hover:bg-black/30 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 hover:cursor-pointer transition-opacity"
+              whileHover={{ scale: 1.05 }}
+              onClick={() => window.open(`https://beatsaver.com/maps/${mapInfo.id}`, '_blank')}
+              title='Open map on BeatSaver'
+            >
+              <FaMapMarkerAlt className="text-white" size={16} />
+            </motion.div>
+          </motion.div>
 
-          {/* Map info */}
           <div className="flex-grow overflow-hidden">
             <h3 className="font-bold text-xs text-neutral-800 dark:text-neutral-200 truncate">
               {mapInfo.metadata.songName}{songSubName}
             </h3>
-            <p className="text-xs text-neutral-600 dark:text-neutral-400 truncate">
-              {mapInfo.metadata.songAuthorName} • {mapInfo.metadata.levelAuthorName}
-            </p>
-            <div className="flex space-x-1 text-xs text-neutral-500 dark:text-neutral-500">
-              <span>{formatDuration(mapInfo.metadata.duration)}</span>
+            <div className="flex items-center text-xs text-neutral-600 dark:text-neutral-400 truncate">
+              <FaMusic className="mr-1" size={10} />
+              <span className="truncate">{mapInfo.metadata.songAuthorName}</span>
+              <span className="mx-1">•</span>
+              <span className="truncate">{mapInfo.metadata.levelAuthorName}</span>
+            </div>
+            <div className="flex items-center space-x-1 text-xs text-neutral-500 dark:text-neutral-500">
+              <div className="flex items-center">
+                <FaClock className="mr-1" size={10} />
+                <span>{formatDuration(mapInfo.metadata.duration)}</span>
+              </div>
               <span>•</span>
               <span>{mapInfo.metadata.bpm}BPM</span>
             </div>
@@ -136,7 +147,7 @@ const GlobalLoadedMap: React.FC = () => {
           <motion.button
             className="text-red-500 hover:text-red-700 dark:hover:text-red-400 p-1"
             onClick={handleClearMapData}
-            whileHover={{ scale: 1.2 }}
+            whileHover={{ scale: 1.2, rotate: 90 }}
             whileTap={{ scale: 0.9 }}
             title="Clear map data"
           >
@@ -144,9 +155,8 @@ const GlobalLoadedMap: React.FC = () => {
           </motion.button>
         </motion.div>
 
-        {/* Toggle button */}
         <motion.button
-          className="bg-blue-500 h-12 w-5 rounded-r-md flex items-center justify-center cursor-pointer"
+          className="bg-gradient-to-b from-blue-500 to-blue-600 h-12 w-5 rounded-r-md flex items-center justify-center cursor-pointer shadow-lg"
           onClick={() => setIsCollapsed(!isCollapsed)}
           whileHover={{ height: 44 }}
           whileTap={{ scale: 0.9 }}
