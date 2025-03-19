@@ -7,6 +7,7 @@ import logo from '../../../../assets/icons/logo.svg';
 
 interface SplashScreenProps {
   appVersion: string;
+  forceVersionCheck?: boolean; // Add prop for forcing version check
 }
 
 // Local Storage Keys
@@ -20,7 +21,7 @@ const LOCAL_STORAGE_KEYS = {
   CARD_CONFIG: 'cardConfig'
 };
 
-const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
+const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion, forceVersionCheck = false }) => {
   const { ipcRenderer } = window.require('electron');
   const [loadingStage, setLoadingStage] = useState('Initializing...');
   const [loadingProgress, setLoadingProgress] = useState(0);
@@ -34,7 +35,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
     beatsaver: false
   });
 
-  const [countdown, setCountdown] = useState(5);
+  const [countdown, setCountdown] = useState(1200);
   const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [isHovering, setIsHovering] = useState(false);
 
@@ -143,15 +144,9 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
   const checkForUpdates = async () => {
     try {
       log.info('SplashScreen: Checking for updates...');
+      log.info(`SplashScreen: Using ${isDevBranch ? 'development' : 'stable'} branch for updates`);
 
-      // Check if we've switched branches
-      const lastUsedBranch = localStorage.getItem('lastUsedBranch');
-      const currentBranch = isDevBranch ? 'dev' : 'stable';
-      const hasSwitchedBranches = lastUsedBranch !== null && lastUsedBranch !== currentBranch;
-
-      // Store current branch for future reference
-      localStorage.setItem('lastUsedBranch', currentBranch);
-
+      // Get releases from GitHub API
       const response = await axios.get(
         'https://api.github.com/repos/Spoekle/SSRM-automation/releases',
         { timeout: 10000 }
@@ -180,133 +175,52 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
       const latestVer = targetRelease.tag_name.replace(/^v/, '');
       setLatestVersion(latestVer);
 
-      // Extract version components
+      // Compare versions - simplified version comparison
       const current = appVersion;
       const latest = latestVer;
 
       log.info(`SplashScreen: Version check - Current=${current}, Latest=${latest}, Branch=${isDevBranch ? 'dev' : 'stable'}`);
 
-      // If branches were switched, we always want to show the update prompt
-      // For dev -> stable this may be a "downgrade"
-      // For stable -> dev this would be an "upgrade" to latest dev build
-      if (hasSwitchedBranches) {
-        log.info(`SplashScreen: Branch switch detected from ${lastUsedBranch} to ${currentBranch}`);
-        setUpdateAvailable(true);
-        return true;
+      // If versions are identical, no update needed
+      if (current === latest) {
+        log.info('SplashScreen: Versions are identical, no update needed');
+        return false;
       }
 
-      // Check for version difference using semver-style comparison
+      // Use simpler version comparison with the compareVersions utility
+      const versionCompare = compareVersions(latest, current);
+
+      // Main version comparison logic (simplified)
       const isUpdateNeeded = (() => {
-        // Only recommend updating from beta to stable if:
-        // 1. We're on stable branch
-        // 2. Current version is a prerelease
-        // 3. Latest version is NOT a prerelease
-        // 4. Latest version is different from current base version
-        if (!isDevBranch && /beta|alpha|rc/i.test(current)) {
-          // Parse the versions to compare base versions without prerelease tags
+        // Direct check for exact version match
+        if (current === latest) return false;
+
+        // Check if current version has prerelease tag and latest doesn't
+        const currentHasPrerelease = current.includes('-');
+        const latestHasPrerelease = latest.includes('-');
+
+        // If latest is stable and current is prerelease, update to stable
+        if (!latestHasPrerelease && currentHasPrerelease) return true;
+
+        // If latest is prerelease and current is stable, only update if we're on dev branch
+        if (latestHasPrerelease && !currentHasPrerelease) return isDevBranch;
+
+        // For all other cases, use numeric comparison
+        if (currentHasPrerelease && latestHasPrerelease) {
+          // Both are prereleases, handle special case
           const currentBase = current.split('-')[0];
           const latestBase = latest.split('-')[0];
 
-          // Only update if latest is stable AND latest is different OR same base version
-          const latestIsStable = !/beta|alpha|rc/i.test(latest);
-
-          if (latestIsStable) {
-            log.info('SplashScreen: Development version on stable channel, checking if update needed');
-
-            // If the latest and current base versions are the same, we should update to stable
-            // Or if the latest base version is newer, we should update
-            if (latestBase === currentBase || compareVersions(latestBase, currentBase) > 0) {
-              log.info('SplashScreen: Update needed from beta to stable');
-              return true;
-            }
-          }
-
-          // Don't update if the latest version is the same beta or older
-          if (latest === current) {
-            log.info('SplashScreen: Current beta version matches latest, no update needed');
-            return false;
+          if (currentBase === latestBase) {
+            // Same base version, compare prerelease tags
+            const currentTag = current.split('-')[1];
+            const latestTag = latest.split('-')[1];
+            return latestTag > currentTag;
           }
         }
 
-        // Parse the version strings to extract base version and pre-release info
-        const parseVersion = (version: string) => {
-          // Extract base version and prerelease parts
-          const [basePart, prereleasePart] = version.split('-');
-          const versionParts = basePart.split('.').map(Number);
-          return {
-            major: versionParts[0] || 0,
-            minor: versionParts[1] || 0,
-            patch: versionParts[2] || 0,
-            prerelease: prereleasePart || null
-          };
-        };
-
-        const currentVersion = parseVersion(current);
-        const latestVersion = parseVersion(latest);
-
-        log.info(`SplashScreen: Comparing versions - Current=${JSON.stringify(currentVersion)}, Latest=${JSON.stringify(latestVersion)}`);
-
-        // If exactly the same version (including prerelease), no update needed
-        if (current === latest) {
-          log.info('SplashScreen: Versions are identical, no update needed');
-          return false;
-        }
-
-        // Compare major.minor.patch
-        if (latestVersion.major > currentVersion.major) return true;
-        if (latestVersion.major < currentVersion.major) return false;
-
-        if (latestVersion.minor > currentVersion.minor) return true;
-        if (latestVersion.minor < currentVersion.minor) return false;
-
-        if (latestVersion.patch > currentVersion.patch) return true;
-        if (latestVersion.patch < currentVersion.patch) return false;
-
-        // If we get here, the version numbers are identical (e.g., 2.0.0 vs 2.0.0-beta.1)
-        // If one has prerelease tag and the other doesn't:
-        if (!latestVersion.prerelease && currentVersion.prerelease) {
-          // Latest is stable, current is prerelease, update to stable
-          return true;
-        }
-        if (latestVersion.prerelease && !currentVersion.prerelease) {
-          // Latest is prerelease, current is stable, don't update
-          return false;
-        }
-
-        // Both are prereleases with same base version (e.g., 2.0.0-beta.1 vs 2.0.0-beta.2)
-        if (latestVersion.prerelease && currentVersion.prerelease) {
-          // If the prerelease tags are different
-          if (latestVersion.prerelease !== currentVersion.prerelease) {
-            // Compare prerelease versions - split by dots and compare each part
-            const latestParts = latestVersion.prerelease.split('.');
-            const currentParts = currentVersion.prerelease.split('.');
-
-            // Compare prerelease type (beta vs alpha vs rc)
-            const latestType = latestParts[0];
-            const currentType = currentParts[0];
-
-            if (latestType !== currentType) {
-              // rc > beta > alpha
-              if (latestType === 'rc') return true;
-              if (currentType === 'rc') return false;
-              if (latestType === 'beta') return true;
-              if (currentType === 'beta') return false;
-              return latestType > currentType; // alphabetical otherwise
-            }
-
-            // Same prerelease type (e.g., beta.1 vs beta.2), compare numbers
-            for (let i = 1; i < Math.max(latestParts.length, currentParts.length); i++) {
-              const latestNum = parseInt(latestParts[i]) || 0;
-              const currentNum = parseInt(currentParts[i]) || 0;
-
-              if (latestNum > currentNum) return true;
-              if (latestNum < currentNum) return false;
-            }
-          }
-        }
-
-        // Everything is equal, no update needed
-        return false;
+        // Default: use the standard version compare
+        return versionCompare > 0;
       })();
 
       if (isUpdateNeeded) {
@@ -323,27 +237,26 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
     }
   };
 
-  const handleUpdateNow = async () => {
-    if (countdownTimerRef.current) {
-      clearInterval(countdownTimerRef.current);
-    }
+  const updateApplication = async () => {
+        try {
+          setIsUpdating(true);
+          setUpdateProgress("Starting update...");
 
-    try {
-      setIsUpdating(true);
-      setUpdateProgress("Starting update...");
+          ipcRenderer.on(
+            "update-progress",
+            (_event: any, progressMsg: string) => {
+              setUpdateProgress(progressMsg);
+            },
+          );
 
-      ipcRenderer.on('update-progress', (_event: any, progressMsg: string) => {
-        setUpdateProgress(progressMsg);
-      });
-
-      await ipcRenderer.invoke('update-application');
-      localStorage.removeItem('skipUpdateCheck');
-    } catch (error) {
-      log.error('Error updating application:', error);
-      setIsUpdating(false);
-      alert('Failed to update the application.');
-    }
-  };
+          await ipcRenderer.invoke("update-application");
+          localStorage.removeItem("skipUpdateCheck");
+        } catch (error) {
+          log.error("Error updating application:", error);
+          setIsUpdating(false);
+          alert("Failed to update the application.");
+        }
+      };
 
   const handleSkipUpdate = () => {
     if (countdownTimerRef.current) {
@@ -384,7 +297,10 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
 
         setLoadingStage('Ready!');
 
-        if (hasUpdate && !localStorageData.skipUpdateCheck) {
+        // Use force check option if provided, otherwise use the skip setting
+        const skipUpdateCheck = forceVersionCheck ? false : localStorage.getItem('skipUpdateCheck') === 'true';
+
+        if (hasUpdate && !skipUpdateCheck) {
           log.info("Update available and not skipped, showing prompt");
           setShowUpdatePrompt(true);
         } else {
@@ -403,7 +319,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
     if (localStorageData.theme !== null) {
       loadEverything();
     }
-  }, [localStorageData]);
+  }, [localStorageData, forceVersionCheck]);
 
   useEffect(() => {
     // Clear any existing timers first to prevent multiple timers
@@ -442,13 +358,20 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
   }, [showUpdatePrompt, isUpdating, isHovering]);
 
   return (
-    <div className="flex flex-col items-center justify-center h-full bg-neutral-200 dark:bg-neutral-900 rounded-3xl overflow-hidden p-4">
-      <div className="drag absolute top-0 left-0 right-0 h-20"></div>
+    <motion.div
+      className="flex flex-col items-center justify-center h-full bg-neutral-200 dark:bg-neutral-900 rounded-3xl overflow-hidden p-4"
+      layout
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <div className="drag absolute top-0 left-0 right-0 h-10"></div>
       <motion.div
-        className="w-full max-w-xs flex flex-col items-center justify-center space-y-6 mt-4"
+        className="w-full max-w-xs flex flex-col items-center justify-center space-y-4 mt-4"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.3 }}
       >
         <motion.div
           whileHover={{ scale: 1.1 }}
@@ -494,7 +417,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
             SSRM Automation
           </motion.h1>
           <motion.p
-            className="text-sm text-neutral-600 dark:text-neutral-400"
+            className="text-xs text-neutral-600 dark:text-neutral-400"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6 }}
@@ -509,7 +432,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
               className="w-full space-y-4"
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.3 }}
             >
               <motion.div
@@ -552,7 +474,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
                 />
               </motion.div>
 
-              {loadingProgress >= 25 && (
+              {!showUpdatePrompt && loadingProgress >= 25 && (
                 <motion.div
                   className="flex justify-center space-x-4 w-full"
                   initial={{ opacity: 0, y: 20 }}
@@ -594,11 +516,11 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
         <AnimatePresence>
           {showUpdatePrompt && !isUpdating && (
             <motion.div
-              className="p-4 bg-blue-100 dark:bg-blue-900 rounded-2xl text-center w-full"
+              className="p-4 bg-blue-100 dark:bg-blue-900 rounded-2xl text-center w-full overflow-clip"
               onMouseEnter={() => setIsHovering(true)}
               onMouseLeave={() => setIsHovering(false)}
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               transition={{ type: "spring", stiffness: 300, damping: 25 }}
             >
@@ -614,7 +536,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
                     : `Downgrade to stable build available!`
                   : `Update available!`}
                 <br />
-                Latest: {latestVersion}, Current: {appVersion}
+                <span className='text-xs'>Latest: {latestVersion}, Current: {appVersion}</span>
               </motion.p>
 
               <motion.div
@@ -624,7 +546,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
                 transition={{ delay: 0.5 }}
               >
                 <motion.button
-                  onClick={handleUpdateNow}
+                  onClick={updateApplication}
                   className="px-4 py-2 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 transition duration-200"
                   whileHover={{ scale: 1.05, backgroundColor: "#2563eb" }}
                   whileTap={{ scale: 0.95 }}
@@ -661,7 +583,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
                 >
                   {isHovering ? "Paused" : `Continuing in ${countdown}s`}
                 </motion.p>
-                <div className="w-full bg-gray-300 dark:bg-gray-600 rounded-full h-1.5 overflow-hidden">
+                <div className="w-full bg-gray-300 dark:bg-gray-600 rounded-full h-1.5 overflow-clip">
                   <motion.div
                     className="bg-blue-500 h-1.5"
                     initial={{ width: `${countdown * 20}%` }}
@@ -704,14 +626,18 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion }) => {
           )}
         </AnimatePresence>
       </motion.div>
-    </div>
+    </motion.div>
   );
 };
 
-// Add the compareVersions utility function
+// Keep the compareVersions utility function for basic version comparison
 const compareVersions = (v1: string, v2: string): number => {
-  const v1Parts = v1.split('.').map(Number);
-  const v2Parts = v2.split('.').map(Number);
+  // Clean version strings by removing any pre-release tags for base comparison
+  const cleanV1 = v1.split('-')[0];
+  const cleanV2 = v2.split('-')[0];
+
+  const v1Parts = cleanV1.split('.').map(Number);
+  const v2Parts = cleanV2.split('.').map(Number);
 
   for (let i = 0; i < Math.max(v1Parts.length, v2Parts.length); i++) {
     const v1Part = v1Parts[i] || 0;
@@ -720,6 +646,10 @@ const compareVersions = (v1: string, v2: string): number => {
     if (v1Part > v2Part) return 1;
     if (v1Part < v2Part) return -1;
   }
+
+  // If base versions are equal, check pre-release tags
+  if (v1.includes('-') && !v2.includes('-')) return -1; // v2 is stable, v1 is pre-release
+  if (!v1.includes('-') && v2.includes('-')) return 1;  // v1 is stable, v2 is pre-release
 
   return 0;
 };
