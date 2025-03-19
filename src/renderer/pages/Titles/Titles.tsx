@@ -1,7 +1,10 @@
 import MapForm from './components/MapForm';
 import React, { useState, useEffect } from 'react';
 import log from 'electron-log';
-import LoadedMap from '../components/LoadedMap';
+import { motion } from 'framer-motion';
+import AlertSystem from '../../components/AlertSystem';
+import { useAlerts } from '../../utils/alertSystem';
+import { FaFileAlt, FaCopy, FaEdit } from 'react-icons/fa';
 
 interface MapInfo {
   metadata: {
@@ -46,10 +49,12 @@ const Titles: React.FC = () => {
   const [mapId, setMapId] = useState<string>('');
   const [chosenDiff, setChosenDiff] = useState<string>('Easy');
   const [player, setPlayer] = useState<string>('Mr_bjo');
-  const [alerts, setAlerts] = useState<Alert[]>([]);
   const [mapInfo, setMapInfo] = useState<MapInfo | null>(null);
   const [mapFormModal, setMapFormModal] = useState<boolean>(false);
   const [useSubname, setUseSubname] = useState<boolean>(false);
+
+  // Replace the old alerts with the new system
+  const { alerts, createAlert } = useAlerts();
 
   useEffect(() => {
     const storedMapId = localStorage.getItem('mapId');
@@ -66,89 +71,138 @@ const Titles: React.FC = () => {
     }
   }, []);
 
-  const copyToClipboard = (text: string, type: 'title' | 'description') => {
-    navigator.clipboard.writeText(text).then(() => {
-      createAlerts(`Copied ${type} to clipboard!`, 'success');
-    }).catch((err) => {
-      log.error('Failed to copy: ', err);
-    });
+  const fadeIn = {
+    hidden: { opacity: 0, y: 20 },
+    visible: (i: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: i * 0.15,
+        duration: 0.5,
+        ease: "easeOut"
+      }
+    })
   };
 
-  const createAlerts = (text: string, type: 'success' | 'error' | 'alert') => {
-    const id = new Date().getTime();
-    setAlerts([...alerts, { id, message: `${text}`, type, fadeOut: false }]);
-    setTimeout(() => {
-      setAlerts(alerts => alerts.map(alert => alert.id === id ? { ...alert, fadeOut: true } : alert));
-      setTimeout(() => {
-        setAlerts(alerts => alerts.filter(alert => alert.id !== id));
-      }, 500);
-    }, 2000);
+  const copyToClipboard = (text: string, type: 'title' | 'description') => {
+    navigator.clipboard.writeText(text).then(() => {
+      createAlert(`Copied ${type} to clipboard!`, 'success');
+    }).catch((err) => {
+      log.error('Failed to copy: ', err);
+      createAlert('Failed to copy to clipboard', 'error');
+    });
   };
 
   const mapLink = `https://beatsaver.com/maps/${mapId}`;
 
   return (
-    <div className='max-h-96 h-96 relative grid no-move justify-items-center dark:text-neutral-200 bg-neutral-200 dark:bg-neutral-900 p-4 pt-8 justify-center items-center overflow-hidden'>
-      <div className='items-center justify-items-center'>
-        <div className='text-center'>
-          <h1 className='text-2xl font-bold'>Titles</h1>
-          <p className='text-lg'>Generate your title and description here!</p>
-          <button
-            className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mt-4 mx-2 rounded-lg hover:scale-110 transition duration-200 drop-shadow-lg'
+    <div className='max-h-96 h-96 relative dark:text-neutral-200 bg-neutral-200 dark:bg-neutral-900 p-4 pt-6 overflow-auto custom-scrollbar'>
+      <motion.div
+        className='flex flex-col items-center justify-start max-w-4xl mx-auto'
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.div className='text-center mb-4' variants={fadeIn} custom={0}>
+          <div className="flex items-center justify-center gap-3 mb-1">
+            <FaFileAlt className="text-blue-500 text-xl" />
+            <h1 className='text-2xl font-bold'>Titles</h1>
+          </div>
+          <p className='text-sm mb-3 text-neutral-600 dark:text-neutral-400'>
+            Generate your title and description for Beat Saber videos!
+          </p>
+          <motion.button
+            className='bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg flex items-center justify-center gap-2 mx-auto'
             onClick={() => setMapFormModal(true)}
+            whileHover={{ scale: 1.05, boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.2)" }}
+            whileTap={{ scale: 0.95 }}
           >
-            Open Map Form
-          </button>
-          {mapInfo && <LoadedMap mapInfo={mapInfo} />}
-        </div>
+            <FaEdit size={16} />
+            <span>Map Settings</span>
+          </motion.button>
+        </motion.div>
 
         {mapInfo && (
-          <div className='grid grid-cols-2 gap-4 mt-4'>
-            <div className='flex-col w-full text-center'>
-              <h1 className='text-xl font-bold'>Title:</h1>
-              <div className='flex w-full'>
-                <div className='flex flex-grow bg-neutral-300 dark:bg-neutral-800 mt-2 p-4 rounded-l-md'>
-                  <div className='justify-items-center'>
-                    <h1 className='flex text-md'>{mapInfo.metadata.songName} {mapInfo.metadata.songSubName ? ` ${mapInfo.metadata.songSubName} | ` : ' | '}{mapInfo.metadata.songAuthorName} | {mapInfo.metadata.levelAuthorName} | {chosenDiff}</h1>
-                  </div>
-                </div>
-                <button
-                  className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mt-2 rounded-r-xl'
+          <motion.div
+            className='grid grid-cols-2 gap-5 w-full'
+            variants={fadeIn}
+            custom={1}
+          >
+            <motion.div
+              className='relative flex flex-col w-full bg-white/40 dark:bg-neutral-800/40 backdrop-blur-sm rounded-xl p-4 shadow-md overflow-hidden group'
+              whileHover={{ y: -5, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)" }}
+              transition={{ type: "spring", stiffness: 400 }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 opacity-0 group-hover:opacity-10 dark:group-hover:opacity-20 rounded-xl transition-opacity duration-300" />
+
+              <div className="flex justify-between items-center mb-3 relative z-10">
+                <h1 className='text-lg font-bold flex items-center gap-2'>
+                  <FaCopy className="text-blue-500" />
+                  Title
+                </h1>
+                <motion.button
+                  className='bg-blue-500 hover:bg-blue-600 text-white font-bold py-1.5 px-3 text-sm rounded-lg flex items-center gap-1.5'
                   onClick={() => copyToClipboard(`${mapInfo.metadata.songName}${mapInfo.metadata.songSubName ? ` ${mapInfo.metadata.songSubName} | ` : ' | '}${mapInfo.metadata.songAuthorName} | ${mapInfo.metadata.levelAuthorName} | ${chosenDiff}`, 'title')}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                 >
+                  <FaCopy size={14} />
                   Copy
-                </button>
+                </motion.button>
               </div>
-            </div>
-            <div className='flex-col w-full text-center'>
-              <h1 className='text-xl font-bold'>Description:</h1>
-              <div className='flex w-full'>
-                <div className='flex flex-grow bg-neutral-300 dark:bg-neutral-800 mt-2 p-4 rounded-l-md'>
-                  <div className='flex-col justify-items-center'>
-                    <h1 className='flex text-md'>{mapInfo.metadata.songName} by {mapInfo.metadata.songAuthorName}</h1>
-                    <h1 className='flex text-sm'>Mapped by {mapInfo.metadata.levelAuthorName}</h1>
-                    <h1 className='flex text-sm'>Map Link: {mapLink}</h1>
-                    <h1 className='flex text-sm'>Gameplay by {player}</h1>
-                  </div>
-                </div>
-                <button
-                  className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mt-2 rounded-r-xl'
+              <div className='bg-white dark:bg-neutral-700 p-3 rounded-lg shadow-inner h-20 overflow-auto text-left relative z-10'>
+                <p className='text-sm text-neutral-800 dark:text-neutral-100'>{mapInfo.metadata.songName}{mapInfo.metadata.songSubName ? ` ${mapInfo.metadata.songSubName} | ` : ' | '}{mapInfo.metadata.songAuthorName} | {mapInfo.metadata.levelAuthorName} | {chosenDiff}</p>
+              </div>
+            </motion.div>
+
+            <motion.div
+              className='relative flex flex-col w-full bg-white/40 dark:bg-neutral-800/40 backdrop-blur-sm rounded-xl p-4 shadow-md overflow-hidden group'
+              whileHover={{ y: -5, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)" }}
+              transition={{ type: "spring", stiffness: 400 }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 opacity-0 group-hover:opacity-10 dark:group-hover:opacity-20 rounded-xl transition-opacity duration-300" />
+
+              <div className="flex justify-between items-center mb-3 relative z-10">
+                <h1 className='text-lg font-bold flex items-center gap-2'>
+                  <FaCopy className="text-purple-500" />
+                  Description
+                </h1>
+                <motion.button
+                  className='bg-purple-500 hover:bg-purple-600 text-white font-bold py-1.5 px-3 text-sm rounded-lg flex items-center gap-1.5'
                   onClick={() => copyToClipboard(`${mapInfo.metadata.songName} by ${mapInfo.metadata.songAuthorName}\nMapped by ${mapInfo.metadata.levelAuthorName}\nMap Link: ${mapLink}\nGameplay by ${player}`, 'description')}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                 >
+                  <FaCopy size={14} />
                   Copy
-                </button>
+                </motion.button>
               </div>
-            </div>
-          </div>
+              <div className='bg-white dark:bg-neutral-700 p-3 rounded-lg shadow-inner h-32 overflow-auto text-left relative z-10'>
+                <p className='text-sm whitespace-pre-line text-neutral-800 dark:text-neutral-100'>
+                  {mapInfo.metadata.songName} by {mapInfo.metadata.songAuthorName}
+                  {"\n"}Mapped by {mapInfo.metadata.levelAuthorName}
+                  {"\n"}Map Link: {mapLink}
+                  {"\n"}Gameplay by {player}
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
-      </div>
-      <div className='absolute top-0 right-0 mt-4 mr-4 flex flex-col items-end space-y-2 overflow-hidden z-60'>
-        {alerts.map(alert => (
-          <div key={alert.id} className={`flex items-center justify-center px-4 py-2 ${alert.type === 'success' ? 'bg-green-600' : alert.type === 'error' ? 'bg-red-600' : 'bg-blue-600'} rounded-md drop-shadow-lg animate-fade-left ${alert.fadeOut ? 'animate-fade-out' : ''}`}>
-            <p className='text-white'>{alert.message}</p>
-          </div>
-        ))}
-      </div>
+
+        {!mapInfo && (
+          <motion.div
+            className="w-full max-w-md mx-auto bg-white/40 dark:bg-neutral-800/40 backdrop-blur-sm p-6 rounded-xl shadow-md mt-8 text-center"
+            variants={fadeIn}
+            custom={1}
+          >
+            <p className="text-neutral-600 dark:text-neutral-400">
+              No map loaded. Click "Map Settings" to get started.
+            </p>
+          </motion.div>
+        )}
+      </motion.div>
+
+      <AlertSystem alerts={alerts} position="top-right" />
+
       {mapFormModal && (
         <MapForm
           mapId={mapId}
@@ -161,10 +215,11 @@ const Titles: React.FC = () => {
           setPlayer={setPlayer}
           setMapInfo={setMapInfo}
           setMapFormModal={setMapFormModal}
+          createAlert={createAlert}
         />
-          )}
+      )}
     </div>
   );
 }
 
-export default Titles
+export default Titles;

@@ -1,11 +1,14 @@
-import React, { FormEvent, useState } from 'react';
+import React, { FormEvent, useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import axios from 'axios';
-import { FaTimes } from 'react-icons/fa';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FaTimes, FaImage, FaCloudUploadAlt, FaMapMarkedAlt, FaCheck } from 'react-icons/fa';
 import log from 'electron-log';
 import MapInfoSection from './MapInfoSection';
 import FileUploadSection from './FileUploadSection';
 import { generateThumbnail } from '../../../../main/helper';
+import { notifyMapInfoUpdated } from '../../../utils/mapEvents';
+import '../../../pages/Settings/styles/CustomScrollbar.css';
 
 interface ThumbnailFormProps {
   mapId: string;
@@ -17,7 +20,7 @@ interface ThumbnailFormProps {
   setStarRatings: (ratings: StarRatings) => void;
   chosenDiff: string;
   setChosenDiff: (diff: string) => void;
-  createAlerts: (message: string, type: 'success' | 'error' | 'alert') => void;
+  createAlert: (message: string, type: 'success' | 'error' | 'alert' | 'info') => void;
   progress: (process: string, progress: number, visible: boolean) => void;
   cancelGenerationRef: React.MutableRefObject<boolean>;
 }
@@ -40,15 +43,42 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
   setStarRatings,
   chosenDiff,
   setChosenDiff,
-  createAlerts,
+  createAlert,
   progress: setProgress,
+  cancelGenerationRef,
 }) => {
   const [file, setFile] = useState<File | null>(null);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [isOverlayVisible, setIsOverlayVisible] = useState(false);
 
-  const handleClickOutside = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-    if ((e.target as HTMLDivElement).classList.contains('modal-overlay'))
+  useEffect(() => {
+    setIsOverlayVisible(true);
+    setIsPanelOpen(true);
+  }, []);
+
+  const handleClose = () => {
+    setIsPanelOpen(false);
+    setIsOverlayVisible(false);
+    setTimeout(() => {
       setThumbnailFormModal(false);
+    }, 300);
   };
+
+  async function getStarRating(hash: string): Promise<StarRatings> {
+    const diffs = ['1', '3', '5', '7', '9'];
+    const ratings: StarRatings = { ES: '', NOR: '', HARD: '', EX: '', EXP: '' };
+
+    for (let i = 0; i < diffs.length; i++) {
+      try {
+        const { data } = await axios.get(`http://localhost:3000/api/scoresaber/${hash}/${diffs[i]}`);
+        const key = Object.keys(ratings)[i] as keyof StarRatings;
+        ratings[key] = data.stars === 0 ? (data.qualified ? 'Qualified' : 'Unranked') : `${data.stars}`;
+      } catch (error) {
+        log.error(`Error fetching star rating for difficulty ${diffs[i]}:`, error);
+      }
+    }
+    return ratings;
+  }
 
   const getMapInfo = async (event: FormEvent) => {
     event.preventDefault();
@@ -56,20 +86,34 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
       // Start the process.
       setImageSrc("");
       setThumbnailFormModal(false);
-      createAlerts('Generation Started...', 'alert');
+      createAlert('Generation Started...', 'info');
       setProgress('Fetching map info...', 10, true);
 
       // Fetch map data
       let mapData;
+      let currentStarRatings = starRatings; // Default to current ratings
+
       try {
         const { data } = await axios.get(`https://api.beatsaver.com/maps/id/${mapId}`);
         mapData = data;
         setMapInfo(mapData);
         localStorage.setItem('mapId', mapId);
         localStorage.setItem('mapInfo', JSON.stringify(mapData));
+        notifyMapInfoUpdated();
+
+        // Fetch latest star ratings at generation time
+        try {
+          const latestStarRatings = await getStarRating(mapData.versions[0].hash);
+          setStarRatings(latestStarRatings);
+          currentStarRatings = latestStarRatings; // Use the latest ratings
+          localStorage.setItem('starRatings', JSON.stringify(latestStarRatings));
+        } catch (starError) {
+          log.error('Error fetching star ratings:', starError);
+          // Continue with generation even if star ratings fetch fails
+        }
       } catch (error) {
         log.error('Error fetching map data:', error);
-        createAlerts('Error fetching map info', 'error');
+        createAlert('Error fetching map info', 'error');
         setProgress("", 0, false);
         return;
       }
@@ -115,11 +159,11 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
           }
         } catch (error) {
           log.error('Error processing file:', error);
-          createAlerts('Error processing file, falling back to map cover', 'error');
+          createAlert('Error processing file, falling back to map cover', 'error');
           backgroundImage = mapData.versions[0].coverURL;
         }
       } else {
-        createAlerts('No file provided, using map cover as background', 'alert');
+        createAlert('No file provided, using map cover as background', 'info');
         setProgress('Generating thumbnail with cover image', 50, true);
         backgroundImage = mapData.versions[0].coverURL;
       }
@@ -130,12 +174,12 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
         image = await generateThumbnail(
           mapData,
           chosenDiff as keyof StarRatings,
-          starRatings,
+          currentStarRatings, // Use the latest fetched ratings
           backgroundImage,
         );
       } catch (error) {
         log.error('Error generating thumbnail:', error);
-        createAlerts('Error generating thumbnail', 'error');
+        createAlert('Error generating thumbnail', 'error');
         setProgress("", 0, false);
         return;
       }
@@ -143,56 +187,111 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
       setProgress('Thumbnail generated', 100, true);
       setImageSrc(image);
       setProgress("", 0, false);
-      createAlerts('Thumbnail generated successfully', 'success');
+      createAlert('Thumbnail generated successfully', 'success');
 
     } catch (error) {
       log.error('Unhandled error in getMapInfo:', error);
-      createAlerts('An unexpected error occurred', 'error');
+      createAlert('An unexpected error occurred', 'error');
       setProgress("", 0, false);
     }
   };
 
   return ReactDOM.createPortal(
-    <div
-      className="modal-overlay fixed inset-0 bg-black/20 dark:bg-white/10 backdrop-blur-xl rounded-3xl flex justify-center items-center z-50 p-2 animate-fade animate-duration-300"
-      onMouseDown={handleClickOutside}
-    >
-      <div className="relative modal-content bg-neutral-200 dark:bg-neutral-900 text-neutral-950 dark:text-neutral-200 p-6 rounded-lg w-full max-w-lg animate-jump-in animate-duration-300">
-        <div className='absolute z-30 top-8 right-8 text-center items-center text-lg'>
-          <button
-            className='bg-red-500 text-white hover:bg-red-600 rounded-md p-2 transition duration-200'
-            onClick={() => setThumbnailFormModal(false)}
+    <AnimatePresence>
+      {true && (
+        <motion.div
+          className={`fixed top-16 left-0 right-0 bottom-16 z-40 rounded-br-3xl backdrop-blur-md flex justify-center items-center ${
+            isOverlayVisible ? "opacity-100" : "opacity-0"
+          } bg-black/20`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: isOverlayVisible ? 1 : 0 }}
+          exit={{ opacity: 0 }}
+          onClick={handleClose}
+        >
+          <motion.div
+            className="absolute left-0 top-0 h-full w-2/3 rounded-r-xl bg-neutral-200 dark:bg-neutral-800 text-neutral-950 dark:text-white shadow-lg overflow-hidden flex flex-col"
+            initial={{ x: "-100%" }}
+            animate={{ x: isPanelOpen ? "0%" : "-100%" }}
+            exit={{ x: "-100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            onClick={(e) => e.stopPropagation()}
           >
-            <FaTimes/>
-          </button>
-        </div>
-
-        <form onSubmit={getMapInfo} className="space-y-4">
-          <MapInfoSection
-            mapId={mapId}
-            setMapId={setMapId}
-            starRatings={starRatings}
-            setStarRatings={setStarRatings}
-            chosenDiff={chosenDiff}
-            setChosenDiff={setChosenDiff}
-          />
-
-          <FileUploadSection
-            file={file}
-            setFile={setFile}
-          />
-
-          <div className="flex justify-between items-center">
-            <button
-              type="submit"
-              className="w-full bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition duration-200 text-sm"
+            <motion.div
+              className="z-10 sticky top-0 backdrop-blur-md bg-gradient-to-r from-purple-500/10 to-pink-500/10 dark:from-purple-800/20 dark:to-pink-800/20 p-3 border-b border-neutral-300 dark:border-neutral-700 flex justify-between items-center"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1, type: "spring" }}
             >
-              Generate Thumbnail
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>,
+              <div className="flex items-center">
+                <motion.h2
+                  className="text-lg bg-white/70 dark:bg-neutral-700/70 px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 shadow-sm"
+                  whileHover={{ scale: 1.03 }}
+                >
+                  <FaImage className="text-purple-500" />
+                  Thumbnail Settings
+                </motion.h2>
+              </div>
+              <motion.button
+                className="text-red-500 bg-white/70 dark:bg-neutral-700/70 p-1.5 rounded-md hover:bg-neutral-400 dark:hover:bg-neutral-600 transition duration-200 shadow-sm"
+                onClick={handleClose}
+                whileHover={{
+                  scale: 1.1,
+                  backgroundColor: "#ef4444",
+                  color: "#ffffff",
+                }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <FaTimes />
+              </motion.button>
+            </motion.div>
+
+            <div className="flex-1 overflow-auto custom-scrollbar">
+              <form onSubmit={getMapInfo} className='p-3 space-y-3'>
+                {/* Background Image - File upload comes first */}
+                <div className='bg-white dark:bg-neutral-700 p-3 rounded-xl shadow-sm'>
+                  <h2 className='text-base font-medium mb-2 border-b pb-1 border-neutral-200 dark:border-neutral-600 flex items-center gap-1.5'>
+                    <FaCloudUploadAlt className="text-purple-500" /> Background Image
+                  </h2>
+                  <FileUploadSection
+                    file={file}
+                    setFile={setFile}
+                  />
+                </div>
+
+                {/* Map Details */}
+                <div className='bg-white dark:bg-neutral-700 p-3 rounded-xl shadow-sm'>
+                  <h2 className='text-base font-medium mb-2 border-b pb-1 border-neutral-200 dark:border-neutral-600 flex items-center gap-1.5'>
+                    <FaMapMarkedAlt className="text-purple-500" /> Map Details
+                  </h2>
+                  <MapInfoSection
+                    mapId={mapId}
+                    setMapId={setMapId}
+                    starRatings={starRatings}
+                    setStarRatings={setStarRatings}
+                    chosenDiff={chosenDiff}
+                    setChosenDiff={setChosenDiff}
+                  />
+                </div>
+              </form>
+            </div>
+
+            {/* Sticky footer with Generate button */}
+            <div className='sticky bottom-0 bg-white/80 dark:bg-neutral-800/80 backdrop-blur-sm p-2 border-t border-neutral-300 dark:border-neutral-700 flex justify-end items-center'>
+              <motion.button
+                type="button"
+                onClick={getMapInfo}
+                className='bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-1.5 text-sm rounded-lg shadow-sm hover:shadow-md font-medium flex items-center gap-1.5'
+                whileHover={{ scale: 1.03, boxShadow: "0px 4px 8px rgba(0,0,0,0.1)" }}
+                whileTap={{ scale: 0.97 }}
+              >
+                <FaCheck size={12} />
+                Generate Thumbnail
+              </motion.button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>,
     document.body
   );
 };

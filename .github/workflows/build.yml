@@ -1,0 +1,167 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+      fail-fast: false
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate GitHub Token
+        id: generate_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.PUBLISHER_APP_ID }}
+          private-key: ${{ secrets.PUBLISHER_PRIVATE_KEY }}
+          permissions: contents:write
+
+      # Install Linux dependencies with updated package names
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      # Build but DON'T publish to GitHub - just build the artifacts
+      - name: Build application
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+          NODE_OPTIONS: "--max-old-space-size=4096"
+          CSC_IDENTITY_AUTO_DISCOVERY: false  # Disable code signing
+        run: |
+          # Build first
+          npm run build
+
+          # Build app but don't publish to GitHub
+          npx electron-builder build --publish never
+
+      # Upload the built artifacts
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}-artifacts
+          path: |
+            ./release/build/*.exe
+            ./release/build/*.dmg
+            ./release/build/*.AppImage
+            ./release/build/*latest*.yml
+          if-no-files-found: warn
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      # Prepare release files
+      - name: Prepare release files
+        run: |
+          mkdir -p release_files
+          # Only include executables and latest.yml files, exclude blockmaps
+          find artifacts -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*latest*.yml" \) -not -name "*-blockmap*" | xargs -I{} cp {} release_files/
+
+          # List all files that will be included in the release
+          echo "Files to be included in the release:"
+          ls -la release_files/
+
+      - name: Generate GitHub Token
+        id: generate_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.PUBLISHER_APP_ID }}
+          private-key: ${{ secrets.PUBLISHER_PRIVATE_KEY }}
+          permissions: contents:write
+
+      - name: Determine if pre-release
+        id: prerelease
+        run: |
+          if [[ "${{ github.ref_name }}" =~ -alpha|-beta|-rc ]]; then
+            echo "IS_PRERELEASE=true" >> $GITHUB_ENV
+          else
+            echo "IS_PRERELEASE=false" >> $GITHUB_ENV
+          fi
+
+      # Simple changelog generation
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Create a temporary file for the changelog
+          echo "## What's New" > changelog.md
+          git log --pretty=format:"- %s" -n 10 >> changelog.md
+
+          # Read the file content and properly escape it for GitHub Environment
+          CHANGELOG=$(cat changelog.md)
+          echo "CHANGELOG<<EOF" >> $GITHUB_ENV
+          echo "$CHANGELOG" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+        shell: bash
+
+      # Simplified file hash calculation - only SHA512
+      - name: Calculate file hashes
+        run: |
+          cd release_files
+          echo "FILE_HASHES<<EOF" >> $GITHUB_ENV
+          for file in $(find . -maxdepth 1 -type f -not -name "*latest*.yml"); do
+            if [ -f "$file" ]; then
+              echo "### $(basename $file)" >> $GITHUB_ENV
+              echo "- SHA512: \`$(sha512sum "$file" | awk '{print $1}')\`" >> $GITHUB_ENV
+            fi
+          done
+          echo "EOF" >> $GITHUB_ENV
+
+      # Create GitHub release with all artifacts
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ./release_files/*
+          draft: false
+          prerelease: ${{ env.IS_PRERELEASE == 'true' }}
+          name: "SSRM Automation ${{ github.ref_name }}"
+          token: ${{ steps.generate_token.outputs.token }}
+          body: |
+            ## SSRM Automation ${{ github.ref_name }}
+
+            ${{ env.IS_PRERELEASE == 'true' && '⚠️ This is a pre-release development build and may contain bugs or incomplete features.' || '✅ This is a stable release.' }}
+
+            ### Installation
+            Download the appropriate file for your platform:
+            - Windows: .exe file
+            - macOS: .dmg file
+            - Linux: .AppImage file
+
+            ${{ env.CHANGELOG }}
+
+            ### File Hashes
+            ${{ env.FILE_HASHES }}

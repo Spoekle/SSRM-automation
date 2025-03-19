@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { FaTimes } from 'react-icons/fa';
+import { FaTimes, FaCloudUploadAlt } from 'react-icons/fa';
 
 interface FileUploadSectionProps {
   file: File | null;
@@ -45,10 +45,10 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({ file, setFile }) 
   };
 
   return (
-    <div className="w-full bg-white dark:bg-neutral-800 p-2 rounded-lg shadow relative">
-      <label className="block mb-1 text-gray-700 dark:text-gray-200 text-sm">Upload Image or Video:</label>
+    <div className="w-full">
+      <label className="block mb-1 text-sm text-neutral-700 dark:text-neutral-200">Upload Image or Video:</label>
       <div
-        className="relative flex flex-col items-center justify-center w-full h-16 border-2 border-dashed border-blue-300 rounded-md cursor-pointer hover:bg-blue-100 hover:dark:bg-neutral-700 transition duration-200 text-sm"
+        className="relative flex flex-col items-center justify-center w-full h-16 border-2 border-dashed border-purple-300 dark:border-purple-600 rounded-md cursor-pointer hover:bg-purple-100/30 hover:dark:bg-purple-900/10 transition duration-200"
         onDragOver={(e) => e.preventDefault()}
         onDrop={handleFileDrop}
         onClick={(e) => {
@@ -74,15 +74,11 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({ file, setFile }) 
             <span className="text-xs text-gray-500 dark:text-gray-400">{`${getFileType(file)} - ${getFormattedSize(file.size)}`}</span>
           </div>
         ) : (
-          <span className="text-sm text-gray-600 dark:text-gray-300">
-            Drag & drop image/video here or click to select
-          </span>
-        )}
-        {!file && (
-          <>
-            <span className="text-xs text-gray-500 dark:text-gray-400">Supported formats: .png, .jpg, .jpeg, .webp, .mp4, .avi, .mov</span>
-            <span className="text-xs text-gray-500 dark:text-gray-400">Max size: 20 GB</span>
-          </>
+          <div className="flex flex-col items-center">
+            <FaCloudUploadAlt className="mb-1 text-purple-500" size={18} />
+            <span className="text-sm text-neutral-700 dark:text-neutral-200">Select image or video</span>
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">or drag and drop</span>
+          </div>
         )}
 
         <input
@@ -93,6 +89,11 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({ file, setFile }) 
           className="hidden"
         />
       </div>
+      {!file && (
+        <div className="text-xs mt-1 text-center text-gray-500 dark:text-gray-400">
+          Supported: .png, .jpg, .webp, .mp4, .avi, .mov
+        </div>
+      )}
     </div>
   );
 };

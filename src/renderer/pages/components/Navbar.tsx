@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaTimes, FaMinus } from 'react-icons/fa';
+import { FaTimes, FaMinus, FaHome, FaFileAlt, FaLayerGroup, FaImage } from 'react-icons/fa';
+import { motion } from 'framer-motion';
 import logo from '../../../../assets/icons/logo.svg';
 import background from '../../../../assets/images/easter.png';
 
@@ -8,8 +9,6 @@ const { ipcRenderer } = window.require('electron');
 
 const Navbar: React.FC = () => {
   const location = useLocation();
-  const currentPath = location.pathname;
-  const [underlineStyle, setUnderlineStyle] = useState({});
   const navRef = useRef<HTMLDivElement>(null);
   const [easterEggCounter, setEasterEggCounter] = useState(0);
   const [os, setOS] = useState('');
@@ -40,16 +39,6 @@ const Navbar: React.FC = () => {
     setOS(os.platform());
   };
 
-useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  }, [isDarkMode]);
-
   const addToCounter = () => {
     if (easterEggCounter === 5) {
       setEasterEggCounter(0);
@@ -58,75 +47,88 @@ useEffect(() => {
     setEasterEggCounter(prevCounter => prevCounter + 1);
   };
 
+  // Initialize on component mount
   useEffect(() => {
-    const currentLink = navRef.current?.querySelector('.active') as HTMLAnchorElement | null;
-    if (currentLink) {
-      const { offsetLeft, offsetWidth } = currentLink;
-      setUnderlineStyle({
-        left: `${offsetLeft}px`,
-        width: `${offsetWidth}px`,
-        background: '#ffff00',
-      });
-    }
     getOS();
-  }, [currentPath]);
+  }, []);
 
-  const handleMouseOver = (event: React.MouseEvent<HTMLAnchorElement>) => {
-    const { offsetLeft, offsetWidth } = event.currentTarget;
-    setUnderlineStyle({
-      left: `${offsetLeft}px`,
-      width: `${offsetWidth}px`,
-      background: '#ffff00',
-    });
-  };
-
-  const handleMouseOut = () => {
-    const currentLink = navRef.current?.querySelector('.active') as HTMLAnchorElement | null;
-    if (currentLink) {
-      const { offsetLeft, offsetWidth } = currentLink;
-      setUnderlineStyle({
-        left: `${offsetLeft}px`,
-        width: `${offsetWidth}px`,
-        background: '#ffff00',
-      });
-    } else {
-      setUnderlineStyle({});
-    }
-  };
+  const navItems = [
+    { path: '/', label: 'Home', icon: <FaHome className="mr-1" /> },
+    { path: '/titles', label: 'Titles', icon: <FaFileAlt className="mr-1" /> },
+    { path: '/mapcards', label: 'Mapcards', icon: <FaLayerGroup className="mr-1" /> },
+    { path: '/thumbnails', label: 'Thumbnails', icon: <FaImage className="mr-1" /> }
+  ];
 
   return (
-    <div className='drag items-center justify-center bg-neutral-300 dark:bg-neutral-950 text-neutral-950 dark:text-neutral-200 p-4 rounded-t-3xl'>
-      <div className='flex text-center justify-between'>
+    <div className='drag items-center justify-center bg-neutral-300 dark:bg-neutral-950 text-neutral-950 dark:text-neutral-200 rounded-t-3xl shadow-md border-b border-neutral-200/30 dark:border-neutral-800/30'>
+      <div className='mx-4 flex text-center justify-between'>
         <div className='flex text-center items-center text-lg'>
-          <img src={logo} className='no-drag h-8 mr-2' onClick={addToCounter}/>
-          { easterEggCounter === 5 &&
-            <img src={background} className='absolute z-50 w-80 h-auto left-56 top-20 animate-jump-in rounded-lg drop-shadow-lg hover:invert' onClick={addToCounter}/>
+          <motion.img
+            src={logo}
+            className='no-drag h-8 mr-2'
+            onClick={addToCounter}
+            whileHover={{ rotate: 10, scale: 1.1 }}
+            whileTap={{ rotate: -10, scale: 0.9 }}
+            transition={{ type: "spring", stiffness: 300 }}
+          />
+          {easterEggCounter === 5 &&
+            <motion.img
+              src={background}
+              className='absolute z-50 w-80 h-auto left-56 top-20 rounded-lg drop-shadow-lg hover:invert'
+              onClick={addToCounter}
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0 }}
+              transition={{ type: "spring", stiffness: 200 }}
+            />
           }
-          <h1 className='text-xl font-bold items-center'>SSRM Automation</h1>
+          <h1 className='ml-1 text-xl text-left font-bold items-center'>
+            SSRM Automation
+          </h1>
         </div>
-        <div className='no-drag flex text-center items-center text-lg'>
-          <div className='no-drag text-center items-center text-lg relative' ref={navRef}>
-            <Link to='/' className={`p-2 px-4 hover:active ${currentPath === '/' ? 'active text-neutral-950 dark:text-neutral-200' : 'text-neutral-400'}`} onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}>Home</Link>
-            <Link to='/titles' className={`p-2 px-4 hover:active ${currentPath === '/titles' ? 'active text-neutral-950 dark:text-neutral-200' : 'text-neutral-400'}`} onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}>Titles</Link>
-            <Link to='/mapcards' className={`p-2 px-4 hover:active ${currentPath === '/mapcards' ? 'active text-neutral-950 dark:text-neutral-200' : 'text-neutral-400'}`} onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}>Mapcards</Link>
-            <Link to='/thumbnails' className={`p-2 px-4 hover:active ${currentPath === '/thumbnails' ? 'active text-neutral-950 dark:text-neutral-200' : 'text-neutral-400'}`} onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}>Thumbnails</Link>
-            <div className='absolute bottom--1 h-1 transition-all duration-200 rounded-full' style={underlineStyle}></div>
+        <div className='mx-2 my-2 no-drag flex text-center items-center'>
+          <div className='no-drag text-center items-center text-md relative' ref={navRef}>
+            <div className="flex space-x-1 bg-neutral-200 dark:bg-neutral-800 rounded-full px-2 py-1 shadow-inner">
+              {navItems.map((item) => (
+                <motion.div
+                  key={item.path}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Link
+                    to={item.path}
+                    className={`p-2 px-4 rounded-full flex items-center hover:text-blue-500 dark:hover:text-blue-400 transition-colors ${
+                      location.pathname === item.path
+                        ? 'bg-white dark:bg-neutral-700 shadow-md text-blue-600 dark:text-blue-400'
+                        : 'text-neutral-600 dark:text-neutral-400'
+                    }`}
+                  >
+                    {item.icon}
+                    {item.label}
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </div>
         {os !== 'darwin' ? (
-          <div className='no-drag text-center items-center text-lg'>
-            <button
-              className='hover:bg-orange-500 hover:text-white rounded-md p-2 mr-2 transition duration-200'
+          <div className='no-drag text-center items-center text-lg flex space-x-2'>
+            <motion.button
+              className='hover:bg-orange-500 hover:text-white rounded-full p-2 transition duration-200 bg-neutral-200 dark:bg-neutral-800 shadow-md'
               onClick={minimizeWindow}
+              whileHover={{ scale: 1.1, backgroundColor: "#f97316" }}
+              whileTap={{ scale: 0.9 }}
             >
               <FaMinus/>
-            </button>
-            <button
-              className='hover:bg-red-500 hover:text-white rounded-md p-2 transition duration-200'
+            </motion.button>
+            <motion.button
+              className='hover:bg-red-500 hover:text-white rounded-full p-2 transition duration-200 bg-neutral-200 dark:bg-neutral-800 shadow-md'
               onClick={clearAndCloseWindow}
+              whileHover={{ scale: 1.1}}
+              whileTap={{ scale: 0.9 }}
             >
               <FaTimes/>
-            </button>
+            </motion.button>
           </div>
         ) : (
           <div className='no-drag text-center items-center text-lg'>

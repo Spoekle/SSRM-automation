@@ -3,17 +3,53 @@
   scrollbar-color: #888 #333;
 }
 
+/* Custom Scrollbar Styling */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 12px;
+  width: 8px;
+  height: 8px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: #333;
-  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+  margin: 4px 0;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #888;
-  border-radius: 4px;
-  border: 2px solid #333;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Dark mode scrollbar */
+.dark .custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Make scrollbars invisible until hover */
+.auto-hide-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+  opacity: 0;
+}
+
+.auto-hide-scrollbar:hover::-webkit-scrollbar-thumb {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.dark .auto-hide-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
 }

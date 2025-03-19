@@ -1,12 +1,11 @@
-import React, { useState, useEffect, forwardRef, useImperativeHandle, ChangeEvent } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, ChangeEvent } from 'react';
+import { motion } from 'framer-motion';
+import { FaTimes, FaDownload, FaGithub, FaDiscord } from 'react-icons/fa';
 import Switch from '@mui/material/Switch';
-import LinearProgress from '@mui/material/LinearProgress';
-import { FaTimes, FaGithub } from 'react-icons/fa';
-import { ipcRenderer } from 'electron';
 import log from 'electron-log';
-import { ConfirmationModal } from './components/ConfirmationModal';
+import { useConfirmationModal } from '../../contexts/ConfirmationModalContext';
+import ConfirmationModal from './components/ConfirmationModal';
 import LoadedMapInfo from './components/LoadedMapInfo';
-import './styles/CustomScrollbar.css';
 
 export interface SettingsHandles {
   close: () => void;
@@ -15,355 +14,619 @@ export interface SettingsHandles {
 interface SettingsProps {
   onClose: () => void;
   appVersion: string;
+  latestVersion: string;
+  showUpdateTab?: boolean;
+  isVersionLoading?: boolean;
+  isDevBranch?: boolean;
+  getLatestVersion?: () => void;
 }
 
-const Settings = forwardRef<SettingsHandles, SettingsProps>(({ onClose, appVersion }, ref) => {
-  const [isPanelOpen, setIsPanelOpen] = useState(false);
-  const [isOverlayVisible, setIsOverlayVisible] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    const savedTheme = localStorage.getItem('theme');
-    return savedTheme === 'dark';
-  });
+const Settings = forwardRef<SettingsHandles, SettingsProps>(
+  ({ onClose, getLatestVersion, appVersion, latestVersion, showUpdateTab = false, isVersionLoading = false, isDevBranch = false }, ref) => {
+    const { ipcRenderer } = window.require("electron");
+    const [isPanelOpen, setIsPanelOpen] = useState(false);
+    const [isOverlayVisible, setIsOverlayVisible] = useState(false);
+    const [isDarkMode, setIsDarkMode] = useState(() => {
+      const savedTheme = localStorage.getItem("theme");
+      return savedTheme === "dark";
+    });
 
-  const [ffmpegInstalled, setFfmpegInstalled] = useState<boolean | null>(null);
-  const [ffmpegLoading, setFfmpegLoading] = useState(false);
-  const [installStatus, setInstallStatus] = useState('');
-  const [installProgressPercent, setInstallProgressPercent] = useState<number | null>(null);
+    const [isDevMode, setIsDevMode] = useState(() => {
+      return localStorage.getItem("useDevelopmentBranch") === "true";
+    });
 
-  const [confirmResetAllOpen, setConfirmResetAllOpen] = useState(false);
-  const [confirmResetMapOpen, setConfirmResetMapOpen] = useState(false);
-  const [loadedMapInfo, setLoadedMapInfo] = useState<string | null>(null);
-  // New state to hold stored card config file name
-  const [storedCardConfigName, setStoredCardConfigName] = useState<string | null>(() => {
-    try {
-      const storedConfig = localStorage.getItem('cardConfig');
-      if (storedConfig) {
-        const parsed = JSON.parse(storedConfig);
-        return parsed.configName || null;
+    const [ffmpegInstalled, setFfmpegInstalled] = useState<boolean | null>(
+      null,
+    );
+    const [ffmpegLoading, setFfmpegLoading] = useState(false);
+    const [installStatus, setInstallStatus] = useState("");
+    const [installProgressPercent, setInstallProgressPercent] = useState<
+      number | null
+    >(null);
+
+    const [confirmResetAllOpen, setConfirmResetAllOpen] = useState(false);
+    const [loadedMapInfo, setLoadedMapInfo] = useState<string | null>(null);
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [updateProgress, setUpdateProgress] = useState("");
+
+    const [storedCardConfigName, setStoredCardConfigName] = useState<
+      string | null
+    >(() => {
+      try {
+        const storedConfig = localStorage.getItem("cardConfig");
+        if (storedConfig) {
+          const parsed = JSON.parse(storedConfig);
+          return parsed.configName || null;
+        }
+      } catch (error) {
+        log.error("Error parsing cardConfig:", error);
       }
-    } catch (error) {
-      log.error("Error parsing cardConfig:", error);
-    }
-    return null;
-  });
+      return null;
+    });
 
-  useEffect(() => {
-    setIsOverlayVisible(true);
-    setIsPanelOpen(true);
-  }, []);
+    const updateSectionRef = React.useRef<HTMLDivElement>(null);
+    const { showConfirmation } = useConfirmationModal();
 
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
-  }, [isDarkMode]);
+    useEffect(() => {
+      setIsOverlayVisible(true);
+      setIsPanelOpen(true);
 
-  useEffect(() => {
-    checkFfmpeg();
-    ipcRenderer.on('ffmpeg-install-progress', updateInstallStatus);
-    const storedMap = localStorage.getItem('mapInfo');
-    if (storedMap) {
-      setLoadedMapInfo(storedMap);
-    }
-    return () => {
-      ipcRenderer.removeListener('ffmpeg-install-progress', updateInstallStatus);
-    };
-  }, []);
-
-  // Updated: store card configuration with the file name.
-  const handleCardConfigUpload = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    try {
-      const text = await file.text();
-      const cardConfig = JSON.parse(text);
-      // Validate basic structure
-      if (!cardConfig.width || !cardConfig.height || !cardConfig.background || !cardConfig.components) {
-        throw new Error("Invalid card configuration format.");
+      if (showUpdateTab && updateSectionRef.current) {
+        setTimeout(() => {
+          updateSectionRef.current?.scrollIntoView({ behavior: "smooth" });
+        }, 300);
       }
-      // Add the file name to the configuration
-      cardConfig.configName = file.name;
-      localStorage.setItem('cardConfig', JSON.stringify(cardConfig));
-      setStoredCardConfigName(file.name);
-      window.alert("Card configuration saved successfully!");
-    } catch (error) {
-      log.error("Error uploading card configuration:", error);
-      window.alert("Failed to upload card configuration. Please check the file format.");
-    }
-  };
+    }, [showUpdateTab]);
 
-  useImperativeHandle(ref, () => ({ close: handleClose }));
+    useEffect(() => {
+      if (isDarkMode) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+      localStorage.setItem("theme", isDarkMode ? "dark" : "light");
+    }, [isDarkMode]);
 
-  const updateInstallStatus = (_event: any, progressMessage: string) => {
-    setInstallStatus(progressMessage);
-    const match = progressMessage.match(/(\d+)%/);
-    setInstallProgressPercent(match ? parseInt(match[1], 10) : null);
-  };
+    useEffect(() => {
+      localStorage.setItem("useDevelopmentBranch", isDevMode ? "true" : "false");
+    }, [isDevMode]);
 
-  const checkFfmpeg = async () => {
-    try {
-      const installed = await ipcRenderer.invoke('check-ffmpeg');
-      setFfmpegInstalled(installed);
-    } catch (error) {
-      log.error('Error checking ffmpeg:', error);
-      setFfmpegInstalled(false);
-    }
-  };
-
-  const handleFfmpegAction = async (type: 'install' | 'reinstall') => {
-    setFfmpegLoading(true);
-    setInstallStatus('');
-    setInstallProgressPercent(null);
-    try {
-      await ipcRenderer.invoke(
-        type === 'install' ? 'install-ffmpeg' : 'reinstall-ffmpeg'
-      );
-    } catch (err) {
-      log.error(`Error ${type}ing ffmpeg:`, err);
-    } finally {
-      setFfmpegLoading(false);
+    useEffect(() => {
       checkFfmpeg();
-    }
-  };
+      ipcRenderer.on("ffmpeg-install-progress", updateInstallStatus);
+      const storedMap = localStorage.getItem("mapInfo");
+      if (storedMap) {
+        setLoadedMapInfo(storedMap);
+      }
+      return () => {
+        ipcRenderer.removeListener(
+          "ffmpeg-install-progress",
+          updateInstallStatus,
+        );
+      };
+    }, []);
 
-  const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
-  };
+    const updateApplication = async () => {
+      try {
+        setIsUpdating(true);
+        setUpdateProgress("Starting update...");
 
-  const resetLocalStorage = () => {
-    setConfirmResetAllOpen(true);
-  };
+        ipcRenderer.on(
+          "update-progress",
+          (_event: any, progressMsg: string) => {
+            setUpdateProgress(progressMsg);
+          },
+        );
 
-  const handleConfirmResetAll = () => {
-    localStorage.clear();
-    window.location.reload();
-  };
+        await ipcRenderer.invoke("update-application");
+        localStorage.removeItem("skipUpdateCheck");
+      } catch (error) {
+        log.error("Error updating application:", error);
+        setIsUpdating(false);
+        alert("Failed to update the application.");
+      }
+    };
 
-  const handleConfirmResetMap = () => {
-    localStorage.removeItem('mapId');
-    localStorage.removeItem('mapInfo');
-    localStorage.removeItem('starRatings');
-    localStorage.removeItem('oldStarRatings');
-    window.location.reload();
-  };
+    const handleCardConfigUpload = async (
+      event: ChangeEvent<HTMLInputElement>,
+    ) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const cardConfig = JSON.parse(text);
+        // Validate basic structure
+        if (
+          !cardConfig.width || !cardConfig.height || !cardConfig.background ||
+          !cardConfig.components
+        ) {
+          throw new Error("Invalid card configuration format.");
+        }
+        // Add the file name to the configuration
+        cardConfig.configName = file.name;
+        localStorage.setItem("cardConfig", JSON.stringify(cardConfig));
+        setStoredCardConfigName(file.name);
+        window.alert("Card configuration saved successfully!");
+      } catch (error) {
+        log.error("Error uploading card configuration:", error);
+        window.alert(
+          "Failed to upload card configuration. Please check the file format.",
+        );
+      }
+    };
 
-  const handleClose = () => {
-    setIsPanelOpen(false);
-    setIsOverlayVisible(false);
-    setTimeout(() => {
-      onClose();
-    }, 300);
-  };
+    const updateInstallStatus = (_event: any, progressMessage: string) => {
+      setInstallStatus(progressMessage);
+      const match = progressMessage.match(/(\d+)%/);
+      setInstallProgressPercent(match ? parseInt(match[1], 10) : null);
+    };
 
-  useImperativeHandle(ref, () => ({
-    close: handleClose,
-  }));
+    const checkFfmpeg = async () => {
+      try {
+        const installed = await ipcRenderer.invoke("check-ffmpeg");
+        setFfmpegInstalled(installed);
+      } catch (error) {
+        log.error("Error checking ffmpeg:", error);
+        setFfmpegInstalled(false);
+      }
+    };
 
-  return (
-    <>
-      <div
-        className={`fixed top-16 left-0 right-0 bottom-16 z-40 rounded-bl-3xl backdrop-blur-md flex justify-center items-center transition-opacity duration-300 ${
-          isOverlayVisible ? 'opacity-100' : 'opacity-0'
-        } bg-black/20`}
-        onClick={handleClose}
-      >
-        <div
-          className={`absolute right-0 top-0 h-full w-2/3 rounded-l-xl bg-neutral-200 dark:bg-neutral-800 text-neutral-950 dark:text-white shadow-lg transform transition-transform duration-300 overflow-y-auto custom-scrollbar ${
-            isPanelOpen ? 'translate-x-0' : 'translate-x-full'
-          }`}
-          onClick={(e) => e.stopPropagation()}
-          id="settings-panel"
+    const handleFfmpegAction = async (type: "install" | "reinstall") => {
+      setFfmpegLoading(true);
+      setInstallStatus("");
+      setInstallProgressPercent(null);
+      try {
+        await ipcRenderer.invoke(
+          type === "install" ? "install-ffmpeg" : "reinstall-ffmpeg",
+        );
+      } catch (err) {
+        log.error(`Error ${type}ing ffmpeg:`, err);
+      } finally {
+        setFfmpegLoading(false);
+        checkFfmpeg();
+      }
+    };
+
+    const toggleTheme = () => {
+      setIsDarkMode(!isDarkMode);
+    };
+
+    const toggleBranch = () => {
+      const newBranchSetting = !isDevMode;
+      const switchToDev = !isDevMode;
+
+      if (switchToDev) {
+        showConfirmation({
+          title: "Switch to Development Branch",
+          message: "Switching to development branch will install pre-release versions which may contain bugs or incomplete features. Continue?",
+          confirmText: "Switch",
+          cancelText: "Cancel",
+          onConfirm: () => {
+            applyBranchChange(newBranchSetting);
+            getLatestVersion && getLatestVersion();
+            window.location.reload();
+
+            // Ask about restart
+            showConfirmation({
+              title: "Restart Required",
+              message: "The application needs to restart to switch branches. Restart now?",
+              confirmText: "Restart Now",
+              cancelText: "Later",
+              onConfirm: () => {
+                const { ipcRenderer } = window.require('electron');
+                ipcRenderer.invoke('restart-app');
+              }
+            });
+          }
+        });
+      } else {
+        // When switching FROM dev to stable, just ask for restart confirmation
+        showConfirmation({
+          title: "Switch to Stable Branch",
+          message: "Are you sure you want to switch to the stable branch? This will downgrade to the latest stable version.",
+          confirmText: "Switch",
+          cancelText: "Cancel",
+          onConfirm: () => {
+            // Apply the changes
+            applyBranchChange(newBranchSetting);
+            getLatestVersion && getLatestVersion();
+            window.location.reload();
+
+            // Ask about restart
+            showConfirmation({
+              title: "Restart Required",
+              message: "The application needs to restart to switch branches. Restart now?",
+              confirmText: "Restart Now",
+              cancelText: "Later",
+              onConfirm: () => {
+                const { ipcRenderer } = window.require('electron');
+                ipcRenderer.invoke('restart-app');
+              }
+            });
+          }
+        });
+      }
+    };
+
+    // Helper function to apply branch change settings
+    const applyBranchChange = (newBranchSetting: boolean) => {
+      setIsDevMode(newBranchSetting);
+      localStorage.setItem("useDevelopmentBranch", newBranchSetting ? "true" : "false");
+      localStorage.removeItem("skipUpdateCheck");
+      localStorage.setItem("forceVersionCheck", "true");
+    };
+
+    const resetLocalStorage = () => {
+      setConfirmResetAllOpen(true);
+    };
+
+    const handleConfirmResetAll = () => {
+      localStorage.clear();
+      window.location.reload();
+    };
+
+    const handleClose = () => {
+      setIsPanelOpen(false);
+      setIsOverlayVisible(false);
+      setTimeout(() => {
+        onClose();
+      }, 300);
+    };
+
+    useImperativeHandle(ref, () => ({
+      close: handleClose,
+    }));
+
+    const sectionVariants = {
+      hidden: { opacity: 0, y: 20 },
+      visible: (i: number) => ({
+        opacity: 1,
+        y: 0,
+        transition: {
+          delay: i * 0.1,
+          duration: 0.5,
+          ease: "easeOut",
+        },
+      }),
+    };
+
+    return (
+      <>
+        <motion.div
+          className={`fixed top-16 left-0 right-0 bottom-16 z-40 rounded-bl-3xl backdrop-blur-md flex justify-center items-center ${
+            isOverlayVisible ? "opacity-100" : "opacity-0"
+          } bg-black/20`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: isOverlayVisible ? 1 : 0 }}
+          onClick={handleClose}
         >
-          {/* Header */}
-          <div className="z-10 sticky top-0 backdrop-blur-md p-4 border-b border-neutral-200 dark:border-neutral-500 flex justify-between items-center">
-            <h2 className="text-xl bg-neutral-100 dark:bg-neutral-600 px-3 py-2 rounded-lg font-semibold">Settings</h2>
-            <button
-              className="text-red-500 bg-neutral-300 dark:bg-neutral-700 p-2 rounded-md hover:scale-105 hover:bg-neutral-400 dark:hover:bg-neutral-600 transition duration-200"
-              onClick={handleClose}
+          <motion.div
+            className={`absolute right-0 top-0 h-full w-2/3 rounded-l-xl bg-neutral-200 dark:bg-neutral-800 text-neutral-950 dark:text-white shadow-lg overflow-y-auto custom-scrollbar`}
+            initial={{ x: "100%" }}
+            animate={{ x: isPanelOpen ? "0%" : "100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            onClick={(e) => e.stopPropagation()}
+            id="settings-panel"
+          >
+            <motion.div
+              className="z-10 sticky top-0 backdrop-blur-md p-4 border-b border-neutral-200 dark:border-neutral-500 flex justify-between items-center"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1, type: "spring" }}
             >
-              <FaTimes />
-            </button>
-          </div>
+              <motion.h2
+                className="text-xl font-bold"
+                whileHover={{ scale: 1.05 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                Settings
+              </motion.h2>
+              <motion.button
+                onClick={handleClose}
+                className="p-2 rounded-lg hover:bg-neutral-300 dark:hover:bg-neutral-700"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <FaTimes className="text-neutral-700 dark:text-neutral-300" />
+              </motion.button>
+            </motion.div>
 
-          {/* Content Container */}
-          <div className="px-4 pb-4 space-y-4">
-            {/* Loaded Map Info */}
-            <div className="p-4 rounded-lg">
-              <p className="font-medium text-neutral-800 dark:text-neutral-100">
-                Currently Loaded Map:
-              </p>
-              <LoadedMapInfo
-                loadedMapInfo={loadedMapInfo}
-                setConfirmResetMapOpen={setConfirmResetMapOpen}
-              />
-            </div>
+            <div className="p-4">
+              <div className="space-y-6">
 
-            {/* Preferences */}
-            <div className="p-4 bg-neutral-100 dark:bg-neutral-700 rounded-lg">
-              <div className="flex justify-between items-center">
-                <h1 className="font-medium text-xl text-neutral-800 dark:text-neutral-100">
-                  Preferences
-                </h1>
-                <p className="text-neutral-800 dark:text-neutral-100 text-sm text-end">
-                  Change the theme, upload or remove card configuration...
-                </p>
-              </div>
-              <div className="mt-4 flex flex-col">
-                <div className="flex flex-col">
-                  <div className="flex items-center space-x-4">
-                    <span className="font-medium text-neutral-800 dark:text-neutral-100">Dark Mode</span>
-                    <Switch checked={isDarkMode} onChange={toggleTheme} color="primary" />
+                {/* Theme Settings */}
+                <motion.section
+                  className="bg-white dark:bg-neutral-700 rounded-xl shadow p-4"
+                  initial="hidden"
+                  animate="visible"
+                  variants={sectionVariants}
+                  custom={1}
+                >
+                  <h3 className="text-lg font-semibold border-b pb-2 mb-4 border-neutral-200 dark:border-neutral-600">Theme Settings</h3>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">Dark Mode</p>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">Toggle dark mode on/off</p>
+                    </div>
+                    <Switch checked={isDarkMode} onChange={toggleTheme} />
                   </div>
-                </div>
-                {/*
-                <div className="flex flex-col bg-neutral-200 dark:bg-neutral-800 p-2 rounded-lg mt-4">
-                  <div className="flex justify-between items-center">
-                    <p className="text-sm text-neutral-800 dark:text-neutral-100">
+                </motion.section>
+
+                {/* Data Management */}
+                <motion.section
+                  className="bg-white dark:bg-neutral-700 rounded-xl shadow p-4"
+                  initial="hidden"
+                  animate="visible"
+                  variants={sectionVariants}
+                  custom={2}
+                >
+                  <h3 className="text-lg font-semibold border-b pb-2 mb-4 border-neutral-200 dark:border-neutral-600">Data Management</h3>
+
+                  {/* Loaded Map Data */}
+                  <div className="mb-4">
+                    <h4 className="text-base font-medium mb-2">Currently Loaded Map:</h4>
+                    {loadedMapInfo ? (
+                      <LoadedMapInfo loadedMapInfo={loadedMapInfo} />
+                    ) : (
+                      <p className="text-sm text-neutral-500 dark:text-neutral-400">No map loaded</p>
+                    )}
+                  </div>
+
+                  {/* Card Configuration */}
+                  <div className="mb-4">
+                    <h4 className="text-base font-medium mb-2">Card Configuration:</h4>
+                    <div className="flex items-center">
                       {storedCardConfigName ? (
-                      <>
-                        Stored Card Config: <br />
-                        {storedCardConfigName}
-                      </>
-                      ) : "No Card Configuration Stored"}
-                    </p>
-                    <div className="flex space-x-4">
-                      <label className="flex items-center justify-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md cursor-pointer transition duration-200">
-                        <span>Select File</span>
+                        <p className="text-sm text-neutral-600 dark:text-neutral-400 flex-grow">
+                          Loaded: <span className="font-medium text-neutral-800 dark:text-neutral-200">{storedCardConfigName}</span>
+                        </p>
+                      ) : (
+                        <p className="text-sm text-neutral-500 dark:text-neutral-400 flex-grow">
+                          No card configuration loaded
+                        </p>
+                      )}
+                      <label className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg cursor-pointer">
+                        Upload Config
                         <input
                           type="file"
                           accept=".json"
-                          onChange={handleCardConfigUpload}
                           className="hidden"
+                          onChange={handleCardConfigUpload}
                         />
                       </label>
-                      {storedCardConfigName && (
-                        <button
-                          onClick={() => {
-                          localStorage.removeItem('cardConfig');
-                          setStoredCardConfigName(null);
-                          window.alert("Card configuration removed.");
-                          }}
-                          className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md transition duration-200"
+                    </div>
+                  </div>
+
+                  {/* Reset Options */}
+                  <div className="pt-2 border-t border-neutral-200 dark:border-neutral-600">
+                    <motion.button
+                      className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg mt-2"
+                      onClick={resetLocalStorage}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      Reset All Data
+                    </motion.button>
+                  </div>
+                </motion.section>
+
+                {/* FFmpeg Settings */}
+                <motion.section
+                  className="bg-white dark:bg-neutral-700 rounded-xl shadow p-4"
+                  initial="hidden"
+                  animate="visible"
+                  variants={sectionVariants}
+                  custom={3}
+                >
+                  <h3 className="text-lg font-semibold border-b pb-2 mb-4 border-neutral-200 dark:border-neutral-600">FFmpeg Settings</h3>
+                  <div className="space-y-3">
+                    <p className="text-sm">
+                      Status: {ffmpegInstalled === null ? "Checking..." : ffmpegInstalled ? "Installed" : "Not Installed"}
+                    </p>
+
+                    {ffmpegLoading && (
+                      <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded-md">
+                        <p className="text-sm text-blue-800 dark:text-blue-200">
+                          {installStatus || "Installing FFmpeg..."}
+                        </p>
+                        {installProgressPercent !== null && (
+                          <div className="w-full bg-blue-200 dark:bg-blue-800 h-2 rounded-full mt-1">
+                            <div
+                              className="bg-blue-600 h-full rounded-full"
+                              style={{ width: `${installProgressPercent}%` }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="flex space-x-2">
+                      {!ffmpegInstalled && !ffmpegLoading && (
+                        <motion.button
+                          className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg"
+                          onClick={() => handleFfmpegAction("install")}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
                         >
-                          Remove File
-                        </button>
+                          Install FFmpeg
+                        </motion.button>
+                      )}
+
+                      {ffmpegInstalled && !ffmpegLoading && (
+                        <motion.button
+                          className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg"
+                          onClick={() => handleFfmpegAction("reinstall")}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          Reinstall FFmpeg
+                        </motion.button>
                       )}
                     </div>
                   </div>
-                </div>
-                */}
-              </div>
-            </div>
+                </motion.section>
 
-            {/* Reset Local Storage */}
-            <div className="p-4 bg-neutral-100 dark:bg-neutral-600 rounded-lg">
-              <div className="flex justify-between items-center">
-                <h1 className="font-medium text-xl text-neutral-800 dark:text-neutral-100">
-                  Reset Local Storage
-                </h1>
-                <p className="text-neutral-800 dark:text-neutral-100 text-sm">
-                  Reset all local storage data.
-                </p>
-              </div>
-              <button
-                onClick={resetLocalStorage}
-                className="mt-2 w-full bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition duration-200"
-              >
-                Reset Local Storage
-              </button>
-            </div>
-
-            {/* ffmpeg Install Section */}
-            <div className="p-4 bg-neutral-100 dark:bg-neutral-600 rounded-lg text-center space-y-4">
-              <div className="flex justify-between items-center">
-                <h1 className="font-medium text-xl text-neutral-800 dark:text-neutral-100">
-                  ffmpeg
-                </h1>
-                <p className="text-neutral-800 dark:text-neutral-100 text-sm">
-                  ffmpeg is required for video thumbnail extractions.
-                </p>
-              </div>
-              {ffmpegLoading && (
-                <div>
-                  <LinearProgress
-                    variant={installProgressPercent !== null ? 'determinate' : 'indeterminate'}
-                    value={installProgressPercent || 0}
-                  />
-                  <p className="text-sm mt-1">{installStatus}</p>
-                </div>
-              )}
-              {!ffmpegLoading && ffmpegInstalled && (
-                <div>
-                  <button
-                    onClick={() => handleFfmpegAction('reinstall')}
-                    className="w-full bg-blue-500 hover:bg-blue-600 transition duratioin-200 text-white px-4 py-2 rounded mt-2"
-                  >
-                    Reinstall ffmpeg
-                  </button>
-                </div>
-              )}
-              {!ffmpegLoading && ffmpegInstalled === false && (
-                <div>
-                  <button
-                    onClick={() => handleFfmpegAction('install')}
-                    className="w-full bg-green-500 text-white px-4 py-2 rounded"
-                  >
-                    Install ffmpeg
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Credits */}
-            <div className="p-4 flex justify-between items-center bg-neutral-200 dark:bg-neutral-800 rounded-lg">
-              <p className="text-lg flex text-neutral-800 dark:text-neutral-100">
-                Made by <a className='ml-1 font-bold'>Spoekle :D</a>
-              </p>
-              <div className="flex flex-col mt-2 space-y-2 items-center">
-                <a
-                  href="https://github.com/Spoekle/SSRM-automation"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="hover:text-neutral-300 hover:scale-110"
+                {/* Update Section */}
+                <motion.section
+                  ref={updateSectionRef}
+                  className="bg-white dark:bg-neutral-700 rounded-xl shadow p-4"
+                  initial="hidden"
+                  animate="visible"
+                  variants={sectionVariants}
+                  custom={4}
+                  id="updates-section"
                 >
-                  <FaGithub size={32}/>
-                </a>
-                <p className="text-sm text-neutral-800 dark:text-neutral-100">
-                  (Version: {appVersion})
-                </p>
+                  <h3 className="text-lg font-semibold border-b pb-2 mb-4 border-neutral-200 dark:border-neutral-600">Updates</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="text-sm">Current Version: <span className="font-semibold">{appVersion}</span></p>
+                        <p className="text-sm">Latest Version: <span className="font-semibold">{isVersionLoading ? "Checking..." : latestVersion}</span></p>
+                        {isDevBranch && (
+                          <p className="text-xs mt-1 text-amber-500 dark:text-amber-400">
+                            Using development branch
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex flex-col space-y-2">
+                        {isUpdating ? (
+                          <div className="text-center">
+                            <motion.div
+                              className="inline-block w-6 h-6 border-2 border-t-blue-500 border-r-transparent border-b-transparent border-l-transparent rounded-full"
+                              animate={{ rotate: 360 }}
+                              transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                            />
+                            <p className="text-xs mt-1">{updateProgress}</p>
+                          </div>
+                        ) : (
+                          <>
+                            <motion.button
+                              onClick={updateApplication}
+                              className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg flex items-center justify-center space-x-1"
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              disabled={isVersionLoading || appVersion === latestVersion}
+                            >
+                              <FaDownload size={12} />
+                              <span>Update Now</span>
+                            </motion.button>
+                            <motion.button
+                              onClick={async () => {
+                                getLatestVersion && await getLatestVersion();
+                                localStorage.removeItem("skipUpdateCheck");
+                                window.location.reload();
+
+                              }}
+                              className="px-3 py-1.5 bg-neutral-300 hover:bg-neutral-400 dark:bg-neutral-600 dark:hover:bg-neutral-500 text-sm rounded-lg"
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                            >
+                              Check for Updates
+                            </motion.button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </motion.section>
+
+                {/* Branch Settings */}
+                <motion.section
+                  className="bg-white dark:bg-neutral-700 rounded-xl shadow p-4"
+                  initial="hidden"
+                  animate="visible"
+                  variants={sectionVariants}
+                  custom={5}
+                >
+                  <h3 className="text-lg font-semibold border-b pb-2 mb-4 border-neutral-200 dark:border-neutral-600">Branch Settings</h3>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">Use Development Branch</p>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">Receive pre-release updates with new features</p>
+                    </div>
+                    <Switch checked={isDevMode} onChange={toggleBranch} />
+                  </div>
+                </motion.section>
+
+                {/* Developer Tools section */}
+                <motion.section
+                  className="bg-white dark:bg-neutral-700 rounded-xl shadow p-4"
+                  initial="hidden"
+                  animate="visible"
+                  variants={sectionVariants}
+                  custom={6}
+                >
+                  <h3 className="text-lg font-semibold border-b pb-2 mb-4 border-neutral-200 dark:border-neutral-600">Developer Tools</h3>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400">Open DevTools</p>
+                    <motion.button
+                      className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => ipcRenderer.send('open-devtools')}
+                    >
+                      Open DevTools
+                    </motion.button>
+                  </div>
+                </motion.section>
+
+                {/* Credits section */}
+                <motion.section
+                  className="bg-white dark:bg-neutral-700 rounded-xl shadow p-4"
+                  initial="hidden"
+                  animate="visible"
+                  variants={sectionVariants}
+                  custom={7}
+                >
+                  <h3 className="text-lg font-semibold border-b pb-2 mb-4 border-neutral-200 dark:border-neutral-600">Credits & Links</h3>
+                  <div className="flex items-center justify-between">
+                    <motion.div
+                      className="flex items-center space-x-4"
+                    >
+                      <motion.button
+                        className="rounded-lg"
+                        whileHover={{ scale: 1.05, rotate: 5 }}
+                        whileTap={{ scale: 0.95, rotate: -10 }}
+                        onClick={() => window.open('https://github.com/Spoekle/SSRM-automation', '_blank')}
+                        title='View on GitHub'
+                      >
+                        <FaGithub size={32} />
+                      </motion.button>
+                      <motion.button
+                        className="rounded-lg"
+                        whileHover={{ scale: 1.05, rotate: 5 }}
+                        whileTap={{ scale: 0.95, rotate: -10 }}
+                        onClick={() => window.open('https://github.com/Spoekle/SSRM-automation', '_blank')}
+                        title='ScoreSaber Discord'
+                      >
+                        <FaDiscord size={32} />
+                      </motion.button>
+                    </motion.div>
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400 text-center mb-4 md:mb-0">
+                      © {new Date().getFullYear()} Spoekle. All rights reserved.
+                    </p>
+
+                  </div>
+                </motion.section>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
+          </motion.div>
+        </motion.div>
 
-      {/* Confirmation modals */}
-      <ConfirmationModal
-        open={confirmResetAllOpen}
-        title="Reset All Local Storage"
-        message="Are you sure you want to reset all local storage?"
-        onCancel={() => setConfirmResetAllOpen(false)}
-        onConfirm={() => {
-          setConfirmResetAllOpen(false);
-          handleConfirmResetAll();
-        }}
-      />
-
-      <ConfirmationModal
-        open={confirmResetMapOpen}
-        title="Reset Map Data"
-        message="Are you sure you want to reset only the map data?"
-        onCancel={() => setConfirmResetMapOpen(false)}
-        onConfirm={() => {
-          setConfirmResetMapOpen(false);
-          handleConfirmResetMap();
-        }}
-      />
-    </>
-  );
-});
+        {/* Confirmation modals */}
+        <ConfirmationModal
+          open={confirmResetAllOpen}
+          title="Reset All Local Storage"
+          message="Are you sure you want to reset all local storage?"
+          onCancel={() => setConfirmResetAllOpen(false)}
+          onConfirm={() => {
+            setConfirmResetAllOpen(false);
+            handleConfirmResetAll();
+          }}
+        />
+      </>
+    );
+  },
+);
 
 export default Settings;

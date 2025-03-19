@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import LinearProgress from '@mui/material/LinearProgress';
-import { FaDownload } from 'react-icons/fa';
+import { FaDownload, FaEdit, FaExchangeAlt, FaLayerGroup } from 'react-icons/fa';
 import CardForm from './components/CardForm';
 import StarRatingForm from './components/ReweightForm';
-import LoadedMap from '../components/LoadedMap';
+import { motion, AnimatePresence } from 'framer-motion';
+import AlertSystem from '../../components/AlertSystem';
+import ProgressBar from '../../components/ProgressBar';
+import { useAlerts } from '../../utils/alertSystem';
 
 interface MapInfo {
   metadata: {
@@ -19,13 +21,6 @@ interface MapInfo {
     coverURL: string;
     hash: string;
   }[];
-}
-
-interface Alert {
-  id: number;
-  message: string;
-  fadeOut: boolean;
-  type: 'success' | 'error' | 'alert';
 }
 
 interface StarRatings {
@@ -44,7 +39,6 @@ interface Progress {
 
 const MapCards: React.FC = () => {
   const [mapId, setMapId] = useState<string>('');
-  const [alerts, setAlerts] = useState<Alert[]>([]);
   const [progress, setProgress] = useState<Progress>({process: "", progress: 0, visible: false });
   const [mapInfo, setMapInfo] = useState<MapInfo | null>(null);
   const [chosenDiff, setChosenDiff] = useState('ES');
@@ -55,6 +49,7 @@ const MapCards: React.FC = () => {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [useBackground, setUseBackground] = useState(true);
   const cancelGenerationRef = useRef(false);
+  const { alerts, createAlert } = useAlerts();
 
   useEffect(() => {
     const storedMapId = localStorage.getItem('mapId');
@@ -79,113 +74,146 @@ const MapCards: React.FC = () => {
     }
   }, []);
 
+  const fadeIn = {
+    hidden: { opacity: 0, y: 20 },
+    visible: (i: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: i * 0.15,
+        duration: 0.5,
+        ease: "easeOut"
+      }
+    })
+  };
+
   const downloadCard = () => {
     const link = document.createElement('a');
     link.href = imageSrc || '';
     link.download = `${mapInfo?.metadata.songName} - ${mapInfo?.metadata.songAuthorName} - ${mapInfo?.metadata.levelAuthorName}.png`;
     document.body.appendChild(link);
     link.click();
-    createAlerts('Downloaded card!', 'success');
+    createAlert('Downloaded card!', 'success');
     document.body.removeChild(link);
 
   };
 
-  const createAlerts = (text: string, type: 'success' | 'error' | 'alert') => {
-    const id = new Date().getTime();
-    setAlerts([...alerts, { id, message: `${text}`, type, fadeOut: false }]);
+  const handleCancelGeneration = () => {
+    cancelGenerationRef.current = true;
+    setProgress({ process: "Cancelling...", progress: 100, visible: true });
     setTimeout(() => {
-      setAlerts(alerts => alerts.map(alert => alert.id === id ? { ...alert, fadeOut: true } : alert));
-      setTimeout(() => {
-        setAlerts(alerts => alerts.filter(alert => alert.id !== id));
-      }, 500);
-    }, 2000);
+      setProgress({ process: "", progress: 0, visible: false });
+      createAlert("Operation cancelled by user", "info");
+    }, 500);
   };
 
   const mapLink = `https://beatsaver.com/maps/${mapId}`;
 
   return (
-    <div className='max-h-96 h-96 relative grid no-move justify-items-center justify-center items-center dark:text-neutral-200 bg-neutral-200 dark:bg-neutral-900 p-4 pt-8 overflow-hidden'>
-      <div className='items-center justify-items-center'>
-        <div className='text-center'>
-          <h1 className='text-2xl font-bold'>Mapcard Generator</h1>
-          <p className='text-lg'>Generate a mapcard in a single click!</p>
-          <button
-            className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mt-4 mx-2 rounded-lg hover:scale-110 transition duration-200 drop-shadow-lg'
-            onClick={() => setCardFormModal(true)}
-          >
-            Open Map Form
-          </button>
-          <button
-            className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mt-4 mx-2 rounded-lg hover:scale-110 transition duration-200 drop-shadow-lg'
-            onClick={() => setStarRatingFormModal(true)}
-          >
-            Open Reweight Form
-          </button>
-          {imageSrc && (
-            <>
-              <button
-                className='bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg ml-4 hover:scale-110 transition duration-200 drop-shadow-lg'
-                onClick={() => downloadCard()}
-              >
-                <FaDownload className='inline' /> Download
-              </button>
-            </>
-          )}
-          {mapInfo && <LoadedMap mapInfo={mapInfo} />}
-        </div>
+    <div className='max-h-96 h-96 relative dark:text-neutral-200 bg-neutral-200 dark:bg-neutral-900 p-4 pt-6 overflow-auto custom-scrollbar'>
+      <ProgressBar
+        visible={progress.visible}
+        progress={progress.progress}
+        process={progress.process}
+        onCancel={handleCancelGeneration}
+      />
+
+      <motion.div
+        className='flex flex-col items-center max-w-3xl mx-auto'
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.div className='text-center mb-4' variants={fadeIn} custom={0}>
+          <div className="flex items-center justify-center gap-3 mb-1">
+            <FaLayerGroup className="text-blue-500 text-xl" />
+            <h1 className='text-2xl font-bold'>Mapcard Generator</h1>
+          </div>
+          <p className='text-sm mb-3 text-neutral-600 dark:text-neutral-400'>
+            Generate a mapcard in a single click!
+          </p>
+          <div className="flex justify-center space-x-3">
+            <motion.button
+              className='bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg flex items-center justify-center gap-2'
+              onClick={() => setCardFormModal(true)}
+              whileHover={{ scale: 1.05, boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.2)" }}
+              whileTap={{ scale: 0.95 }}
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5, type: "spring" }}
+            >
+              <FaLayerGroup size={16} />
+              <span>Map Card</span>
+            </motion.button>
+            <motion.button
+              className='bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg flex items-center justify-center gap-2'
+              onClick={() => setStarRatingFormModal(true)}
+              whileHover={{ scale: 1.05, boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.2)" }}
+              whileTap={{ scale: 0.95 }}
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.6, type: "spring" }}
+            >
+              <FaExchangeAlt size={16} />
+              <span>Reweight</span>
+            </motion.button>
+          </div>
+        </motion.div>
+
         {imageSrc && (
-          <div className='mt-4 flex justify-center'>
-            <div className='flex flex-col items-center text-center'>
-              <h1 className='text-xl font-bold'>Preview:</h1>
-              <div className='w-3/5 flex justify-center drop-shadow-lg'>
-                <img src={imageSrc} alt='Card Preview' className='block mt-2' />
+          <motion.div
+            className='w-full max-w-md'
+            variants={fadeIn}
+            custom={1}
+          >
+            <motion.div
+              className='relative flex flex-col w-full bg-white/40 dark:bg-neutral-800/40 backdrop-blur-sm rounded-xl p-4 shadow-md overflow-hidden group'
+              whileHover={{ y: -5, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)" }}
+              transition={{ type: "spring", stiffness: 400 }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 opacity-0 group-hover:opacity-10 dark:group-hover:opacity-20 rounded-xl transition-opacity duration-300" />
+
+              <div className="flex justify-between items-center mb-3 relative z-10">
+                <h2 className='text-lg font-bold flex items-center gap-2'>
+                  <FaLayerGroup className="text-blue-500" />
+                  Preview
+                </h2>
+                <motion.button
+                  className='bg-green-600 hover:bg-green-700 text-white font-bold py-1.5 px-3 text-sm rounded-lg flex items-center gap-1.5'
+                  onClick={() => downloadCard()}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <FaDownload size={14} />
+                  Download
+                </motion.button>
               </div>
-            </div>
-          </div>
+              <motion.div
+                className='flex justify-center bg-white dark:bg-neutral-700 p-3 rounded-lg shadow-inner overflow-hidden relative z-10'
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+                whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
+              >
+                <img src={imageSrc} alt='Card Preview' className='max-h-[180px] w-auto' />
+              </motion.div>
+            </motion.div>
+          </motion.div>
         )}
-      </div>
 
-      <div className='absolute top-0 right-0 mt-4 mr-4 flex flex-col items-end space-y-2 overflow-hidden z-60'>
-        {alerts.map(alert => (
-          <div key={alert.id} className={`flex items-center justify-center px-4 py-2 ${alert.type === 'success' ? 'bg-green-600' : alert.type === 'error' ? 'bg-red-600' : 'bg-blue-600'} rounded-md drop-shadow-lg animate-fade-left ${alert.fadeOut ? 'animate-fade-out' : ''}`}>
-            <p className='text-white'>{alert.message}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className='absolute bottom-0 w-[90vw] items-center justify-center mb-4 z-60'>
-        {progress.visible && (
-          <div className='flex flex-col w-full text-center items-center justify-center bg-neutral-300 dark:bg-neutral-800 p-4 rounded-md drop-shadow-lg animate-fade'>
-            <div className="w-full px-4 relative">
-        <p className='text-lg font-bold mb-2'>{progress.process}</p>
-        <div className='relative'>
-          <LinearProgress
-            sx={{
-              height: 30,
-              backgroundColor: "#171717",
-              "& .MuiLinearProgress-bar": { backgroundColor: "#2563eb" }
-            }}
-            variant="determinate"
-            value={progress.progress}
-            className='w-full rounded-full text-white'
-          />
-          <span className='absolute inset-0 flex items-center justify-center text-white font-bold'>
-            {progress.progress}%
-          </span>
-        </div>
-        <button
-          className='mt-4 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200'
-          onClick={() => {
-            cancelGenerationRef.current = true;
-            setProgress({ process: "", progress: 0, visible: false });
-          }}
-        >
-          Cancel
-        </button>
-            </div>
-          </div>
+        {!imageSrc && (
+          <motion.div
+            className="w-full max-w-md mx-auto bg-white/40 dark:bg-neutral-800/40 backdrop-blur-sm p-6 rounded-xl shadow-md mt-8 text-center"
+            variants={fadeIn}
+            custom={1}
+          >
+            <p className="text-neutral-600 dark:text-neutral-400">
+              No card generated yet. Click one of the buttons above to get started.
+            </p>
+          </motion.div>
         )}
-      </div>
+      </motion.div>
+
+      <AlertSystem alerts={alerts} position="top-right" />
 
       {cardFormModal && (
         <CardForm
@@ -198,7 +226,7 @@ const MapCards: React.FC = () => {
           setImageSrc={setImageSrc}
           useBackground={useBackground}
           setUseBackground={setUseBackground}
-          createAlerts={createAlerts}
+          createAlert={createAlert}
           progress={(process: string, progress: number, visible: boolean) => setProgress({ process, progress, visible })}
           cancelGenerationRef={cancelGenerationRef}
         />
@@ -216,7 +244,7 @@ const MapCards: React.FC = () => {
           setMapInfo={setMapInfo}
           setStarRatingFormModal={setStarRatingFormModal}
           setImageSrc={setImageSrc}
-          createAlerts={createAlerts}
+          createAlert={createAlert}
           progress={(process: string, progress: number, visible: boolean) => setProgress({ process, progress, visible })}
           cancelGenerationRef={cancelGenerationRef}
         />
