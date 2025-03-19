@@ -35,7 +35,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion, forceVersionChe
     beatsaver: false
   });
 
-  const [countdown, setCountdown] = useState(1200);
+  const [countdown, setCountdown] = useState(5);
   const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [isHovering, setIsHovering] = useState(false);
 
@@ -616,15 +616,12 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion, forceVersionChe
               animate={{ opacity: 1 }}
               transition={{ duration: 0.3 }}
             >
-              <motion.p
+              <p
                 className="text-sm text-white"
                 key={updateProgress}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.2 }}
               >
                 {updateProgress}
-              </motion.p>
+              </p>
             </motion.div>
           )}
         </AnimatePresence>
