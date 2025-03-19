@@ -44,7 +44,7 @@ const AlertSystem: React.FC<AlertSystemProps> = ({ alerts, position = 'top-right
 
   return (
     <AnimatePresence>
-      <div className={`absolute ${positionClasses[position]} flex flex-col space-y-2 overflow-hidden z-60`}>
+      <div className={`absolute ${positionClasses[position]} pl-4 flex flex-col space-y-2 overflow-hidden z-60`}>
         {alerts.map(alert => (
           <motion.div
             key={alert.id}
