@@ -4,7 +4,7 @@ import Switch from '@mui/material/Switch';
 import axios from 'axios';
 import log from 'electron-log';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaTimes } from 'react-icons/fa';
+import { FaTimes, FaMapMarkedAlt, FaGamepad, FaCheck } from 'react-icons/fa';
 import { notifyMapInfoUpdated } from '../../../utils/mapEvents';
 import '../../../pages/Settings/styles/CustomScrollbar.css';
 
@@ -69,12 +69,6 @@ const MapForm: React.FC<MapFormProps> = ({
     }, 300);
   };
 
-  const handleClickOutside = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-    if ((event.target as HTMLDivElement).classList.contains('modal-overlay')) {
-      setMapFormModal(false);
-    }
-  };
-
   const handleSwitch = (event: React.ChangeEvent<HTMLInputElement>) => {
     setUseSubname(event.target.checked);
     localStorage.setItem('useSubname', `${event.target.checked}`);
@@ -114,7 +108,7 @@ const MapForm: React.FC<MapFormProps> = ({
           onClick={handleClose}
         >
           <motion.div
-            className="absolute left-0 top-0 h-full w-2/3 md:w-1/2 rounded-r-xl bg-neutral-200 dark:bg-neutral-800 text-neutral-950 dark:text-white shadow-lg overflow-y-auto custom-scrollbar"
+            className="absolute left-0 top-0 h-full w-2/3 md:w-1/2 rounded-r-xl bg-neutral-200 dark:bg-neutral-800 text-neutral-950 dark:text-white shadow-lg overflow-hidden flex flex-col"
             initial={{ x: "-100%" }}
             animate={{ x: isPanelOpen ? "0%" : "-100%" }}
             exit={{ x: "-100%" }}
@@ -122,19 +116,16 @@ const MapForm: React.FC<MapFormProps> = ({
             onClick={(e) => e.stopPropagation()}
           >
             <motion.div
-              className="z-10 sticky top-0 backdrop-blur-md bg-neutral-200/80 dark:bg-neutral-800/80 p-4 border-b border-neutral-200 dark:border-neutral-500 flex justify-between items-center"
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1, type: "spring" }}
-            >
+              className="z-10 sticky top-0 backdrop-blur-md bg-gradient-to-r from-blue-500/10 to-cyan-500/10 dark:from-blue-800/20 dark:to-cyan-800/20 p-4 border-b border-neutral-300 dark:border-neutral-700 flex justify-between items-center">
               <motion.h2
-                className="text-xl bg-neutral-100 dark:bg-neutral-600 px-3 py-2 rounded-lg font-semibold"
+                className="text-xl bg-white/70 dark:bg-neutral-700/70 px-4 py-2 rounded-lg font-semibold flex items-center gap-2 shadow-sm"
                 whileHover={{ scale: 1.03 }}
               >
+                <FaMapMarkedAlt className="text-blue-500" />
                 Map Settings
               </motion.h2>
               <motion.button
-                className="text-red-500 bg-neutral-300 dark:bg-neutral-700 p-2 rounded-md hover:bg-neutral-400 dark:hover:bg-neutral-600 transition duration-200"
+                className="text-red-500 bg-white/70 dark:bg-neutral-700/70 p-2 rounded-md hover:bg-neutral-400 dark:hover:bg-neutral-600 transition duration-200 shadow-sm"
                 onClick={handleClose}
                 whileHover={{
                   scale: 1.1,
@@ -147,77 +138,92 @@ const MapForm: React.FC<MapFormProps> = ({
               </motion.button>
             </motion.div>
 
-            <div className="mt-4 px-4 pb-4 space-y-4">
-              <form onSubmit={getMapInfo} className='space-y-8'>
-                <div className='flex flex-col md:flex-row md:space-x-6 space-y-6 md:space-y-0'>
-                  <div className='flex-1 flex flex-col bg-white dark:bg-neutral-700 p-5 rounded-xl shadow-sm'>
-                    <h3 className="text-lg font-medium mb-3 border-b pb-2 border-neutral-200 dark:border-neutral-600">Map Details</h3>
-                    <div className='flex flex-col mb-4'>
-                      <label className="font-medium mb-1 text-neutral-700 dark:text-neutral-200">Map ID:</label>
+            <div className="flex-1 overflow-auto custom-scrollbar">
+              <form onSubmit={getMapInfo} className='px-4 py-3'>
+                <div className='space-y-4'>
+                  {/* Map Details Card */}
+                  <div className='bg-white dark:bg-neutral-700 p-4 rounded-xl shadow-sm'>
+                    <h3 className="text-base font-medium mb-2 border-b pb-2 border-neutral-200 dark:border-neutral-600 flex items-center gap-2">
+                      <FaMapMarkedAlt className="text-blue-500" /> Map Details
+                    </h3>
+
+                    <div className='mb-3'>
+                      <label className="text-sm font-medium mb-1 text-neutral-700 dark:text-neutral-200">Map ID:</label>
                       <input
                         type='text'
                         value={mapId}
                         onChange={(e) => setMapId(e.target.value)}
-                        className='w-full px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-800 dark:border-neutral-600 dark:text-white'
+                        className='w-full px-3 py-1.5 text-sm border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-800 dark:border-neutral-600 dark:text-white'
                         placeholder="Enter map ID..."
                       />
                     </div>
+
                     <div className='flex items-center mt-2'>
-                      <label className='mr-3 text-neutral-700 dark:text-neutral-200'>Use Subname:</label>
-                      <Switch checked={useSubname} onChange={handleSwitch} />
+                      <label className='text-sm mr-3 text-neutral-700 dark:text-neutral-200'>Use Subname:</label>
+                      <Switch checked={useSubname} onChange={handleSwitch} size="small" />
                     </div>
                   </div>
 
-                  <div className='flex-1 flex flex-col bg-white dark:bg-neutral-700 p-5 rounded-xl shadow-sm'>
-                    <h3 className="text-lg font-medium mb-3 border-b pb-2 border-neutral-200 dark:border-neutral-600">Content Settings</h3>
-                    <div className='flex flex-col mb-4'>
-                      <label className='block mb-1 text-neutral-700 dark:text-neutral-200 font-medium'>Difficulty:</label>
-                      <select
-                        className='w-full px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-800 dark:border-neutral-600 dark:text-white'
-                        value={chosenDiff}
-                        onChange={(e) => {
-                          const selectedDifficulty = e.target.value;
-                          setChosenDiff(selectedDifficulty);
-                          localStorage.setItem('chosenDiff', difficultyToAbbreviated(selectedDifficulty));
-                        }}
-                      >
-                        <option value="Easy">Easy (ES)</option>
-                        <option value="Normal">Normal (NOR)</option>
-                        <option value="Hard">Hard (HARD)</option>
-                        <option value="Expert">Expert (EX)</option>
-                        <option value="Expert+">Expert+ (EXP)</option>
-                      </select>
-                    </div>
-                    <div className='flex flex-col'>
-                      <label className='block mb-1 text-neutral-700 dark:text-neutral-200 font-medium'>Player:</label>
-                      <select
-                        className='w-full px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-800 dark:border-neutral-600 dark:text-white'
-                        onChange={(e) => setPlayer(e.target.value)}
-                        value={player}
-                      >
-                        <option value="praunt">praunt</option>
-                        <option value="olliemine">olliemine</option>
-                        <option value="voltage">voltage</option>
-                        <option value="RaccoonVR">RaccoonVR</option>
-                        <option value="BigOlDumplin">BigOlDumplin</option>
-                        <option value="yabje">yabje</option>
-                        <option value="Mr_bjo">Mr_bjo</option>
-                      </select>
+                  {/* Content Settings Card */}
+                  <div className='bg-white dark:bg-neutral-700 p-4 rounded-xl shadow-sm'>
+                    <h3 className="text-base font-medium mb-2 border-b pb-2 border-neutral-200 dark:border-neutral-600 flex items-center gap-2">
+                      <FaGamepad className="text-purple-500" /> Content Settings
+                    </h3>
+
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
+                      <div>
+                        <label className='block text-sm mb-1 text-neutral-700 dark:text-neutral-200 font-medium'>Difficulty:</label>
+                        <select
+                          className='w-full px-3 py-1.5 text-sm border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-800 dark:border-neutral-600 dark:text-white'
+                          value={chosenDiff}
+                          onChange={(e) => {
+                            const selectedDifficulty = e.target.value;
+                            setChosenDiff(selectedDifficulty);
+                            localStorage.setItem('chosenDiff', difficultyToAbbreviated(selectedDifficulty));
+                          }}
+                        >
+                          <option value="Easy">Easy (ES)</option>
+                          <option value="Normal">Normal (NOR)</option>
+                          <option value="Hard">Hard (HARD)</option>
+                          <option value="Expert">Expert (EX)</option>
+                          <option value="Expert+">Expert+ (EXP)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className='block text-sm mb-1 text-neutral-700 dark:text-neutral-200 font-medium'>Player:</label>
+                        <select
+                          className='w-full px-3 py-1.5 text-sm border rounded-md focus:outline-none focus:ring focus:border-blue-300 dark:bg-neutral-800 dark:border-neutral-600 dark:text-white'
+                          onChange={(e) => setPlayer(e.target.value)}
+                          value={player}
+                        >
+                          <option value="praunt">praunt</option>
+                          <option value="olliemine">olliemine</option>
+                          <option value="voltage">voltage</option>
+                          <option value="RaccoonVR">RaccoonVR</option>
+                          <option value="BigOlDumplin">BigOlDumplin</option>
+                          <option value="yabje">yabje</option>
+                          <option value="Mr_bjo">Mr_bjo</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
-                </div>
-
-                <div className='flex justify-end mt-6'>
-                  <motion.button
-                    type="submit"
-                    className='bg-blue-500 text-white px-6 py-2.5 rounded-lg shadow-sm hover:bg-blue-600 transition duration-200 font-medium'
-                    whileHover={{ scale: 1.03, boxShadow: "0px 4px 8px rgba(0,0,0,0.1)" }}
-                    whileTap={{ scale: 0.97 }}
-                  >
-                    Generate
-                  </motion.button>
                 </div>
               </form>
+            </div>
+
+            {/* Sticky footer with Generate button */}
+            <div className='sticky bottom-0 bg-white/80 dark:bg-neutral-800/80 backdrop-blur-sm p-3 border-t border-neutral-300 dark:border-neutral-700 flex justify-end items-center'>
+              <motion.button
+                type="button"
+                onClick={getMapInfo}
+                className='bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-5 py-2 rounded-lg shadow-sm hover:shadow-md font-medium flex items-center gap-2'
+                whileHover={{ scale: 1.03, boxShadow: "0px 4px 8px rgba(0,0,0,0.1)" }}
+                whileTap={{ scale: 0.97 }}
+              >
+                <FaCheck />
+                Generate
+              </motion.button>
             </div>
           </motion.div>
         </motion.div>
