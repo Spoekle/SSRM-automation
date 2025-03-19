@@ -238,25 +238,38 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion, forceVersionChe
   };
 
   const updateApplication = async () => {
-        try {
-          setIsUpdating(true);
-          setUpdateProgress("Starting update...");
+    try {
+      setIsUpdating(true);
+      setUpdateProgress("Starting update...");
 
-          ipcRenderer.on(
-            "update-progress",
-            (_event: any, progressMsg: string) => {
-              setUpdateProgress(progressMsg);
-            },
-          );
+      ipcRenderer.on(
+        "update-progress",
+        (_event: any, progressMsg: string) => {
+          setUpdateProgress(progressMsg);
+        },
+      );
 
-          await ipcRenderer.invoke("update-application");
-          localStorage.removeItem("skipUpdateCheck");
-        } catch (error) {
-          log.error("Error updating application:", error);
-          setIsUpdating(false);
-          alert("Failed to update the application.");
-        }
-      };
+      await ipcRenderer.invoke("update-application");
+      localStorage.removeItem("skipUpdateCheck");
+
+      // For non-Windows platforms, we need to indicate that the update won't auto-restart
+      if (navigator.platform && !navigator.platform.includes('Win')) {
+        setTimeout(() => {
+          setUpdateProgress("Please complete the installation manually. You can close this app after installation is complete.");
+        }, 5000);
+      }
+    } catch (error) {
+      log.error("Error updating application:", error);
+      setIsUpdating(false);
+      setUpdateProgress("Update failed. Please try again or download manually from GitHub.");
+
+      // Give user a chance to see error message before hiding it
+      setTimeout(() => {
+        setIsUpdating(false);
+        proceedToMainApp();
+      }, 5000);
+    }
+  };
 
   const handleSkipUpdate = () => {
     if (countdownTimerRef.current) {
@@ -363,7 +376,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion, forceVersionChe
       layout
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
     >
       <div className="drag absolute top-0 left-0 right-0 h-10"></div>
@@ -521,7 +533,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion, forceVersionChe
               onMouseLeave={() => setIsHovering(false)}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
               transition={{ type: "spring", stiffness: 300, damping: 25 }}
             >
               <motion.p
@@ -603,9 +614,8 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion, forceVersionChe
           {isUpdating && (
             <motion.div
               className="mt-4 p-4 bg-blue-500 text-white rounded-lg text-center w-full"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0, boxShadow: ["0px 0px 0px rgba(59, 130, 246, 0)", "0px 0px 15px rgba(59, 130, 246, 0.5)", "0px 0px 0px rgba(59, 130, 246, 0)"] }}
-              exit={{ opacity: 0, y: -20 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1, boxShadow: ["0px 0px 0px rgba(59, 130, 246, 0)", "0px 0px 15px rgba(59, 130, 246, 0.5)", "0px 0px 0px rgba(59, 130, 246, 0)"] }}
               transition={{
                 boxShadow: { duration: 2, repeat: Infinity },
                 opacity: { duration: 0.3 },
@@ -617,7 +627,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion, forceVersionChe
                 key={updateProgress}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
               >
                 {updateProgress}
