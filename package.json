@@ -261,8 +261,7 @@
       "artifactName": "SSRM-automation-${version}.${ext}"
     },
     "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
+      "oneClick": true,
       "deleteAppDataOnUninstall": true
     },
     "directories": {
