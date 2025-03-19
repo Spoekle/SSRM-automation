@@ -204,6 +204,7 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
           onConfirm: () => {
             applyBranchChange(newBranchSetting);
             getLatestVersion && getLatestVersion();
+            window.location.reload();
 
             // Ask about restart
             showConfirmation({
@@ -229,6 +230,7 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
             // Apply the changes
             applyBranchChange(newBranchSetting);
             getLatestVersion && getLatestVersion();
+            window.location.reload();
 
             // Ask about restart
             showConfirmation({
@@ -513,6 +515,7 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
                               onClick={async () => {
                                 getLatestVersion && await getLatestVersion();
                                 localStorage.removeItem("skipUpdateCheck");
+                                window.location.reload();
 
                               }}
                               className="px-3 py-1.5 bg-neutral-300 hover:bg-neutral-400 dark:bg-neutral-600 dark:hover:bg-neutral-500 text-sm rounded-lg"
@@ -552,11 +555,11 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
                   initial="hidden"
                   animate="visible"
                   variants={sectionVariants}
-                  custom={5} // Set the custom value higher than existing sections
+                  custom={5}
                 >
                   <h3 className="text-lg font-semibold border-b pb-2 mb-4 border-neutral-200 dark:border-neutral-600">Developer Tools</h3>
                   <div className="flex items-center justify-between">
-                    <p className="text-sm text-neutral-600 dark:text-neutral-400">Open Chromium DevTools</p>
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400">Open DevTools</p>
                     <motion.button
                       className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg"
                       whileHover={{ scale: 1.05 }}
