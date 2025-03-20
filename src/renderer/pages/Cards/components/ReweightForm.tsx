@@ -137,19 +137,7 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
       localStorage.setItem('mapInfo', JSON.stringify(data));
       notifyMapInfoUpdated();
 
-      // Fetch the latest star ratings
-      let currentNewRatings = newStarRatings;
-      try {
-        const fetchedStarRatings = await getStarRating(data.versions[0].hash);
-        setNewStarRatings(fetchedStarRatings);
-        currentNewRatings = fetchedStarRatings; // Use these for current generation
-        localStorage.setItem('starRatings', JSON.stringify(fetchedStarRatings));
-      } catch (starError) {
-        log.error('Error fetching star ratings:', starError);
-        // Continue with generation even if star ratings fetch fails
-      }
-
-      const image = await generateReweightCard(data, oldStarRatings, currentNewRatings, chosenDiff as keyof OldStarRatings);
+      const image = await generateReweightCard(data, oldStarRatings, newStarRatings, chosenDiff as keyof OldStarRatings);
       setImageSrc(image);
       if (createAlert) createAlert("Star change image generated successfully.", "success");
       setStarRatingFormModal(false);

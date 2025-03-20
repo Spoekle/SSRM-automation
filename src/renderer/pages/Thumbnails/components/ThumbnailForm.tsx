@@ -101,16 +101,6 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
         localStorage.setItem('mapInfo', JSON.stringify(mapData));
         notifyMapInfoUpdated();
 
-        // Fetch latest star ratings at generation time
-        try {
-          const latestStarRatings = await getStarRating(mapData.versions[0].hash);
-          setStarRatings(latestStarRatings);
-          currentStarRatings = latestStarRatings; // Use the latest ratings
-          localStorage.setItem('starRatings', JSON.stringify(latestStarRatings));
-        } catch (starError) {
-          log.error('Error fetching star ratings:', starError);
-          // Continue with generation even if star ratings fetch fails
-        }
       } catch (error) {
         log.error('Error fetching map data:', error);
         createAlert('Error fetching map info', 'error');

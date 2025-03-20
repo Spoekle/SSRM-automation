@@ -128,20 +128,8 @@ const CardForm: React.FC<CardFormProps> = ({
       localStorage.setItem('mapInfo', JSON.stringify(data));
       notifyMapInfoUpdated();
 
-      // Fetch star ratings again to ensure we have the latest values
-      let ratingToUse = starRatings;
-      try {
-        const latestStarRatings = await getStarRating(data.versions[0].hash);
-        setStarRatings(latestStarRatings); // Update the state for next use
-        ratingToUse = latestStarRatings; // Use these for the current generation
-        localStorage.setItem('starRatings', JSON.stringify(latestStarRatings));
-      } catch (starError) {
-        log.error('Error fetching star ratings:', starError);
-        // Continue with existing ratings if fetch fails
-      }
-
       // Use the most recent ratings (either fetched or existing)
-      const image = await generateCard(data, ratingToUse, useBackground);
+      const image = await generateCard(data, starRatings, useBackground);
       setImageSrc(image);
 
       log.info(data);
