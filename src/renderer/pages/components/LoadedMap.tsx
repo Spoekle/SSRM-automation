@@ -28,7 +28,6 @@ const LoadedMap: React.FC<LoadedMapProps> = ({ mapInfo }) => {
   const songSubName = mapInfo.metadata.songSubName ? ` ${mapInfo.metadata.songSubName}` : '';
   const { showConfirmation } = useConfirmationModal();
 
-  // Format duration to minutes:seconds
   const formatDuration = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = Math.floor(seconds % 60);

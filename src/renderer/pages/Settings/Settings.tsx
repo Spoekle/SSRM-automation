@@ -6,6 +6,8 @@ import log from 'electron-log';
 import { useConfirmationModal } from '../../contexts/ConfirmationModalContext';
 import ConfirmationModal from './components/ConfirmationModal';
 import LoadedMapInfo from './components/LoadedMapInfo';
+import { isUpdateNeeded } from '../../utils/versionUtils';
+import { determineBestUpdateVersion } from '../../helpers/versionHelpers';
 
 export interface SettingsHandles {
   close: () => void;
@@ -49,6 +51,14 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
     const [isUpdating, setIsUpdating] = useState(false);
     const [updateProgress, setUpdateProgress] = useState("");
 
+    // Get the latest stable version from localStorage (set in App.tsx)
+    const [latestStableVersion, setLatestStableVersion] = useState<string | null>(
+      localStorage.getItem("latestStableVersion")
+    );
+
+    // Calculate if an update to stable is available and should be shown
+    const [shouldUpdateToStable, setShouldUpdateToStable] = useState<boolean>(false);
+
     const [storedCardConfigName, setStoredCardConfigName] = useState<
       string | null
     >(() => {
@@ -66,6 +76,29 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
 
     const updateSectionRef = React.useRef<HTMLDivElement>(null);
     const { showConfirmation } = useConfirmationModal();
+
+    // Check if update is available
+    useEffect(() => {
+      if (appVersion && latestVersion) {
+        // Get latest beta version
+        const latestBetaVersion = latestVersion.includes('-') ? latestVersion : null;
+
+        // Check if there's an update available
+        const updateInfo = determineBestUpdateVersion(
+          appVersion,
+          latestStableVersion || null,
+          latestBetaVersion,
+          isDevBranch
+        );
+
+        setShouldUpdateToStable(updateInfo.useStable);
+
+        if (updateInfo.shouldUpdate) {
+          log.info(`Settings: Update available - ${updateInfo.updateToVersion} (${updateInfo.useStable ? 'stable' : 'beta'})`);
+          log.info(`Settings: Update reason - ${updateInfo.reason}`);
+        }
+      }
+    }, [appVersion, latestVersion, latestStableVersion, isDevBranch]);
 
     useEffect(() => {
       setIsOverlayVisible(true);
@@ -118,7 +151,26 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
           },
         );
 
-        await ipcRenderer.invoke("update-application");
+        // Get the appropriate versions
+        const latestBetaVersion = latestVersion.includes('-') ? latestVersion : null;
+        const updateInfo = determineBestUpdateVersion(
+          appVersion,
+          latestStableVersion || null,
+          latestBetaVersion,
+          isDevBranch
+        );
+
+        if (updateInfo.shouldUpdate) {
+          log.info(`Settings: Starting update to ${updateInfo.updateToVersion} (${updateInfo.useStable ? 'stable' : 'beta'})`);
+          await ipcRenderer.invoke("update-application", {
+            useStable: updateInfo.useStable,
+            targetVersion: updateInfo.updateToVersion
+          });
+        } else {
+          log.info('Settings: No update available, using default update behavior');
+          await ipcRenderer.invoke("update-application");
+        }
+
         localStorage.removeItem("skipUpdateCheck");
       } catch (error) {
         log.error("Error updating application:", error);
@@ -135,14 +187,12 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
       try {
         const text = await file.text();
         const cardConfig = JSON.parse(text);
-        // Validate basic structure
         if (
           !cardConfig.width || !cardConfig.height || !cardConfig.background ||
           !cardConfig.components
         ) {
           throw new Error("Invalid card configuration format.");
         }
-        // Add the file name to the configuration
         cardConfig.configName = file.name;
         localStorage.setItem("cardConfig", JSON.stringify(cardConfig));
         setStoredCardConfigName(file.name);
@@ -205,50 +255,23 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
             applyBranchChange(newBranchSetting);
             getLatestVersion && getLatestVersion();
             window.location.reload();
-
-            // Ask about restart
-            showConfirmation({
-              title: "Restart Required",
-              message: "The application needs to restart to switch branches. Restart now?",
-              confirmText: "Restart Now",
-              cancelText: "Later",
-              onConfirm: () => {
-                const { ipcRenderer } = window.require('electron');
-                ipcRenderer.invoke('restart-app');
-              }
-            });
           }
         });
       } else {
-        // When switching FROM dev to stable, just ask for restart confirmation
         showConfirmation({
           title: "Switch to Stable Branch",
           message: "Are you sure you want to switch to the stable branch? This will downgrade to the latest stable version.",
           confirmText: "Switch",
           cancelText: "Cancel",
           onConfirm: () => {
-            // Apply the changes
             applyBranchChange(newBranchSetting);
             getLatestVersion && getLatestVersion();
             window.location.reload();
-
-            // Ask about restart
-            showConfirmation({
-              title: "Restart Required",
-              message: "The application needs to restart to switch branches. Restart now?",
-              confirmText: "Restart Now",
-              cancelText: "Later",
-              onConfirm: () => {
-                const { ipcRenderer } = window.require('electron');
-                ipcRenderer.invoke('restart-app');
-              }
-            });
           }
         });
       }
     };
 
-    // Helper function to apply branch change settings
     const applyBranchChange = (newBranchSetting: boolean) => {
       setIsDevMode(newBranchSetting);
       localStorage.setItem("useDevelopmentBranch", newBranchSetting ? "true" : "false");
@@ -481,11 +504,27 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
                     <div className="flex justify-between items-center">
                       <div>
                         <p className="text-sm">Current Version: <span className="font-semibold">{appVersion}</span></p>
-                        <p className="text-sm">Latest Version: <span className="font-semibold">{isVersionLoading ? "Checking..." : latestVersion}</span></p>
-                        {isDevBranch && (
-                          <p className="text-xs mt-1 text-amber-500 dark:text-amber-400">
-                            Using development branch
-                          </p>
+
+                        {/* Display appropriate version info based on branch */}
+                        {isDevBranch ? (
+                          <>
+                            <p className="text-sm">Latest Dev: <span className="font-semibold">{isVersionLoading ? "Checking..." : latestVersion}</span></p>
+                            {latestStableVersion && (
+                              <p className="text-sm">Latest Stable: <span className="font-semibold text-green-600">{latestStableVersion}</span></p>
+                            )}
+                            <p className="text-xs mt-1 text-amber-500 dark:text-amber-400">
+                              Using development branch
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-sm">Latest Version: <span className="font-semibold">{isVersionLoading ? "Checking..." : latestVersion}</span></p>
+                            {appVersion.includes('-') && (
+                              <p className="text-xs mt-1 text-amber-500 dark:text-amber-400">
+                                Currently on beta version
+                              </p>
+                            )}
+                          </>
                         )}
                       </div>
                       <div className="flex flex-col space-y-2">
@@ -505,17 +544,25 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
                               className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg flex items-center justify-center space-x-1"
                               whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 0.95 }}
-                              disabled={isVersionLoading || appVersion === latestVersion}
+                              disabled={isVersionLoading || (!shouldUpdateToStable && appVersion === latestVersion)}
                             >
                               <FaDownload size={12} />
-                              <span>Update Now</span>
+                              <span>
+                                {shouldUpdateToStable
+                                  ? `Update to Stable ${latestStableVersion}`
+                                  : latestVersion.includes('-') && !appVersion.includes('-')
+                                      ? "Update to Beta"
+                                      : "Update Now"
+                                }
+                              </span>
                             </motion.button>
                             <motion.button
                               onClick={async () => {
                                 getLatestVersion && await getLatestVersion();
+                                // Refresh the stable version after checking
+                                setLatestStableVersion(localStorage.getItem("latestStableVersion"));
                                 localStorage.removeItem("skipUpdateCheck");
                                 window.location.reload();
-
                               }}
                               className="px-3 py-1.5 bg-neutral-300 hover:bg-neutral-400 dark:bg-neutral-600 dark:hover:bg-neutral-500 text-sm rounded-lg"
                               whileHover={{ scale: 1.05 }}

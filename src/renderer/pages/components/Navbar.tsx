@@ -47,7 +47,6 @@ const Navbar: React.FC = () => {
     setEasterEggCounter(prevCounter => prevCounter + 1);
   };
 
-  // Initialize on component mount
   useEffect(() => {
     getOS();
   }, []);

@@ -107,12 +107,10 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
 
     setIsFetching(true);
     try {
-      // First fetch the map data to get the hash
       const response = await axios.get(`https://api.beatsaver.com/maps/id/${mapId}`);
       const data = response.data;
       setSongName(data.metadata.songName);
 
-      // Then get the star ratings
       const fetchedRatings = await getStarRating(data.versions[0].hash);
       setNewStarRatings(fetchedRatings);
 

@@ -12,9 +12,10 @@ import GlobalLoadedMap from './components/GlobalLoadedMap';
 import SplashScreen from './pages/SplashScreen/SplashScreen';
 import './App.css';
 import { ConfirmationModalProvider } from './contexts/ConfirmationModalContext';
+import { isUpdateNeeded } from './utils/versionUtils';
 
 export default function App() {
-  const appVersion = '2.0.0';
+  const appVersion = '1.9.10';
   const [isSplashScreen, setIsSplashScreen] = useState(false);
   const [latestVersion, setLatestVersion] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -31,33 +32,35 @@ export default function App() {
       setIsLoading(true);
       log.info(`Fetching latest version from GitHub for ${isDevBranch ? 'development' : 'stable'} branch...`);
 
-      // Get all releases including pre-releases
       const response = await axios.get(
         'https://api.github.com/repos/Spoekle/SSRM-automation/releases',
         { timeout: 10000 }
       );
 
+      // Store which branch we last used
+      localStorage.setItem('lastUsedBranch', isDevBranch ? 'dev' : 'stable');
+
+      // Find the latest stable release
+      const stableRelease = response.data.find((release: any) => !release.prerelease);
+      const latestStableVersion = stableRelease ? stableRelease.tag_name.replace(/^v/, '') : '';
+      localStorage.setItem('latestStableVersion', latestStableVersion);
+
       let versionToUse;
 
       if (isDevBranch) {
-        // For dev branch - find the latest pre-release
         const preRelease = response.data.find((release: any) => release.prerelease);
         versionToUse = preRelease?.tag_name || '';
 
-        // If no pre-release found, fall back to latest stable
         if (!versionToUse) {
-          const stableRelease = response.data.find((release: any) => !release.prerelease);
           versionToUse = stableRelease?.tag_name || '';
         }
       } else {
-        // For stable branch - find the latest stable release
-        const stableRelease = response.data.find((release: any) => !release.prerelease);
         versionToUse = stableRelease?.tag_name || '';
       }
 
       const latest = versionToUse.replace(/^v/, '');
       setLatestVersion(latest);
-      log.info(`Latest ${isDevBranch ? 'development' : 'stable'} version fetched successfully: ${latest}`);
+      log.info(`Latest ${isDevBranch ? 'development' : 'stable'} version fetched successfully: ${latest}, Latest stable: ${latestStableVersion}`);
       return latest;
     } catch (error) {
       log.error('Error fetching latest version:', error);
@@ -73,22 +76,18 @@ export default function App() {
     setIsSplashScreen(isSplash);
 
     if (!isSplash) {
-      // Check for branch changes and forceVersionCheck flag
       const checkDevBranch = localStorage.getItem('useDevelopmentBranch') === 'true';
       const forceVersionCheck = localStorage.getItem('forceVersionCheck') === 'true';
 
       if (checkDevBranch !== isDevBranch || forceVersionCheck) {
-        // Branch has changed or force check is requested
         setIsDevBranch(checkDevBranch);
         localStorage.removeItem('forceVersionCheck');
         getLatestVersion();
       } else {
-        // Normal startup
         getLatestVersion();
       }
     }
 
-    // Check if branch setting has changed
     const branchChangeHandler = () => {
       const newDevBranchSetting = localStorage.getItem('useDevelopmentBranch') === 'true';
       if (newDevBranchSetting !== isDevBranch) {

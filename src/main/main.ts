@@ -4,7 +4,7 @@ import * as os from 'os';
 import axios from 'axios';
 import { spawn, exec } from 'child_process';
 import { installFfmpeg } from './ffmpeg-installer';
-import { app, BrowserWindow, shell, ipcMain } from 'electron';
+import { app, BrowserWindow, shell, ipcMain, WebContents } from 'electron';
 import log from 'electron-log';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
@@ -115,50 +115,129 @@ ipcMain.handle('restart-app', () => {
   app.exit(0);
 });
 
-ipcMain.handle('update-application', async (event) => {
+interface GitHubRelease {
+  tag_name: string;
+  prerelease: boolean;
+  assets: {
+    name: string;
+    browser_download_url: string;
+  }[];
+}
+
+ipcMain.handle('update-application', async (event, options: { useStable?: boolean; targetVersion?: string } = {}) => {
+  const { useStable = false, targetVersion = null } = options;
+
   try {
-    log.info('Update application handler triggered');
+    log.info('=== UPDATE APPLICATION HANDLER TRIGGERED ===');
+    log.info(`Options: useStable=${useStable}, targetVersion=${targetVersion || 'not specified'}`);
+
     let useDevelopmentBranch = false;
-    try {
-      const result = await event.sender.executeJavaScript(
-        'localStorage.getItem("useDevelopmentBranch")'
-      );
-      useDevelopmentBranch = result === 'true';
-    } catch (e) {
-      log.error('Error reading branch preference:', e);
-    }
 
-    const response = await axios.get('https://api.github.com/repos/Spoekle/SSRM-automation/releases');
-
-    let targetRelease;
-    if (useDevelopmentBranch) {
-      targetRelease = response.data.find((release: any) => release.prerelease);
-      if (!targetRelease) {
-        targetRelease = response.data.find((release: any) => !release.prerelease);
+    // Read the branch preference from localStorage if not explicitly specified
+    if (!useStable && !targetVersion) {
+      try {
+        // Fix typing for executeJavaScript
+        const result = await (event.sender as WebContents).executeJavaScript(
+          'localStorage.getItem("useDevelopmentBranch")'
+        );
+        useDevelopmentBranch = result === 'true';
+        log.info(`Branch preference from localStorage: ${useDevelopmentBranch ? 'development' : 'stable'}`);
+      } catch (e) {
+        log.error('Error reading branch preference:', e);
       }
     } else {
-      targetRelease = response.data.find((release: any) => !release.prerelease);
+      log.info(`Using explicit update options, ignoring localStorage branch preference`);
+    }
+
+    // Properly type the response data
+    const response = await axios.get<GitHubRelease[]>('https://api.github.com/repos/Spoekle/SSRM-automation/releases');
+
+    // Log available releases for debugging
+    log.info(`Found ${response.data.length} releases. First few releases:`);
+    response.data.slice(0, 3).forEach((release, i) => {
+      log.info(`[${i}] ${release.tag_name} (${release.prerelease ? 'beta' : 'stable'})`);
+    });
+
+    // Group releases by type
+    const stableReleases = response.data.filter((release) => !release.prerelease);
+    const betaReleases = response.data.filter((release) => release.prerelease);
+
+    log.info(`Found ${stableReleases.length} stable and ${betaReleases.length} beta releases`);
+
+    // DECISION TREE: Determine which release to use
+    let targetRelease: GitHubRelease | null = null;
+
+    // CASE 1: Specific version requested
+    if (targetVersion) {
+      log.info(`Looking for specific version: ${targetVersion}`);
+      const versionPatterns = [targetVersion, `v${targetVersion}`];
+
+      for (const pattern of versionPatterns) {
+        const found = response.data.find((release) =>
+          release.tag_name.toLowerCase() === pattern.toLowerCase());
+
+        if (found) {
+          targetRelease = found;
+          log.info(`Found exact requested version: ${targetRelease.tag_name}`);
+          break;
+        }
+      }
+
+      if (!targetRelease) {
+        log.warn(`Requested version "${targetVersion}" not found!`);
+      }
+    }
+
+    // CASE 2: Stable explicitly requested
+    if (!targetRelease && useStable) {
+      log.info(`Stable version explicitly requested`);
+      targetRelease = stableReleases[0] || null;
+      if (targetRelease) {
+        log.info(`Using latest stable release: ${targetRelease.tag_name}`);
+      } else {
+        log.warn(`No stable releases found!`);
+      }
+    }
+
+    // CASE 3: Branch-based selection
+    if (!targetRelease) {
+      if (useDevelopmentBranch) {
+        log.info(`Using development branch selection logic`);
+        targetRelease = betaReleases[0] || stableReleases[0] || null;
+        log.info(`Selected release based on dev branch: ${targetRelease?.tag_name}`);
+      } else {
+        log.info(`Using stable branch selection logic`);
+        targetRelease = stableReleases[0] || null;
+        log.info(`Selected release based on stable branch: ${targetRelease?.tag_name}`);
+      }
     }
 
     if (!targetRelease) {
       throw new Error('No release found.');
     }
 
-    let asset;
+    log.info(`FINAL SELECTION: ${targetRelease.tag_name} (${targetRelease.prerelease ? 'beta' : 'stable'})`);
+
+    let asset = null;
     if (process.platform === 'win32') {
-      asset = targetRelease.assets.find((a: any) => a.name.endsWith('.exe'));
+      asset = targetRelease.assets.find((a) => a.name.endsWith('.exe')) || null;
     } else if (process.platform === 'darwin') {
-      asset = targetRelease.assets.find((a: any) => a.name.endsWith('.dmg'));
+      asset = targetRelease.assets.find((a) => a.name.endsWith('.dmg')) || null;
     } else if (process.platform === 'linux') {
-      asset = targetRelease.assets.find((a: any) => a.name.endsWith('.AppImage'));
+      asset = targetRelease.assets.find((a) => a.name.endsWith('.AppImage')) || null;
     }
 
     if (!asset) {
       throw new Error(`No suitable executable found for ${process.platform} platform.`);
     }
 
-    const downloadPath = path.join(os.tmpdir(), asset.name);
+    // Extract the version from the selected release (without 'v' prefix)
+    const versionToDownload = targetRelease.tag_name.replace(/^v/, '');
+    const downloadPath = path.join(os.tmpdir(), `SSRM-automation-${versionToDownload}${path.extname(asset.name)}`);
+
+    log.info(`Selected asset: ${asset.name}`);
     log.info(`Downloading update to: ${downloadPath}`);
+
     const writer = fs.createWriteStream(downloadPath);
 
     const downloadResponse = await axios({
@@ -180,12 +259,13 @@ ipcMain.handle('update-application', async (event) => {
 
     downloadResponse.data.pipe(writer);
 
-    return new Promise((resolve, reject) => {
+    return new Promise<string>((resolve, reject) => {
       writer.on('finish', async () => {
         BrowserWindow.getAllWindows().forEach(win => {
           win.webContents.send('update-progress', 'Download complete. Installing update...');
         });
         try {
+          log.info(`Download completed for version ${versionToDownload}`);
           if (process.platform === 'win32') {
             const child = spawn(downloadPath, {
               detached: true,

@@ -83,15 +83,13 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
   const getMapInfo = async (event: FormEvent) => {
     event.preventDefault();
     try {
-      // Start the process.
       setImageSrc("");
       setThumbnailFormModal(false);
       createAlert('Generation Started...', 'info');
       setProgress('Fetching map info...', 10, true);
 
-      // Fetch map data
       let mapData;
-      let currentStarRatings = starRatings; // Default to current ratings
+      let currentStarRatings = starRatings;
 
       try {
         const { data } = await axios.get(`https://api.beatsaver.com/maps/id/${mapId}`);
@@ -120,7 +118,6 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
         }
 
         try {
-          // Create FormData and append the file
           const formData = new FormData();
           formData.append('file', file);
           formData.append('fileType', fileType);
@@ -164,7 +161,7 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
         image = await generateThumbnail(
           mapData,
           chosenDiff as keyof StarRatings,
-          currentStarRatings, // Use the latest fetched ratings
+          currentStarRatings,
           backgroundImage,
         );
       } catch (error) {

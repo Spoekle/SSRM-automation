@@ -53,7 +53,6 @@ const Titles: React.FC = () => {
   const [mapFormModal, setMapFormModal] = useState<boolean>(false);
   const [useSubname, setUseSubname] = useState<boolean>(false);
 
-  // Replace the old alerts with the new system
   const { alerts, createAlert } = useAlerts();
 
   useEffect(() => {

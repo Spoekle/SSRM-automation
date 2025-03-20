@@ -81,7 +81,6 @@ function Home() {
                   }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  {/* Background gradient that animates on hover */}
                   <motion.div
                     className={`absolute inset-0 bg-gradient-to-r ${item.color} opacity-0 group-hover:opacity-10 dark:group-hover:opacity-20 rounded-xl transition-opacity duration-300`}
                   />

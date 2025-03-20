@@ -32,12 +32,10 @@ const MapInfoSection: React.FC<MapInfoSectionProps> = ({
   const [songName, setSongName] = useState('');
   const [isFetching, setIsFetching] = useState(false);
 
-  // Remove the automatic fetching function and replace with simple mapId setter
   const handleMapIdChange = (id: string) => {
     setMapId(id);
   };
 
-  // Keep the getStarRating function for use during form submission
   async function getStarRating(hash: string): Promise<StarRatings> {
     const diffs = ['1', '3', '5', '7', '9'];
     const ratings: StarRatings = { ES: '', NOR: '', HARD: '', EX: '', EXP: '' };
@@ -62,11 +60,9 @@ const MapInfoSection: React.FC<MapInfoSectionProps> = ({
 
     setIsFetching(true);
     try {
-      // First get the map info to get the hash
       const { data } = await axios.get(`https://api.beatsaver.com/maps/id/${mapId}`);
       setSongName(data.metadata.songName);
 
-      // Then fetch the star ratings
       const ratings = await getStarRating(data.versions[0].hash);
       setStarRatings(ratings);
       localStorage.setItem('starRatings', JSON.stringify(ratings));

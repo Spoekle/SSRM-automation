@@ -217,13 +217,20 @@
     "appId": "com.spoekle.ssrm-automation",
     "asar": true,
     "asarUnpack": "**\\ffmpeg\\**",
-    "files": ["dist", "node_modules", "assets", "package.json"],
+    "files": [
+      "dist",
+      "node_modules",
+      "assets",
+      "package.json"
+    ],
     "afterSign": ".erb/scripts/notarize.js",
     "mac": {
       "target": [
         {
           "target": "dmg",
-          "arch": ["universal"]
+          "arch": [
+            "universal"
+          ]
         }
       ],
       "artifactName": "SSRM-automation-${version}.${ext}",
@@ -252,11 +259,15 @@
       }
     },
     "win": {
-      "target": ["nsis"],
+      "target": [
+        "nsis"
+      ],
       "artifactName": "SSRM-automation-${version}.${ext}"
     },
     "linux": {
-      "target": ["AppImage"],
+      "target": [
+        "AppImage"
+      ],
       "category": "Utility",
       "artifactName": "SSRM-automation-${version}.${ext}"
     },
@@ -269,7 +280,9 @@
       "buildResources": "assets",
       "output": "release/build"
     },
-    "extraResources": ["./assets/**"],
+    "extraResources": [
+      "./assets/**"
+    ],
     "publish": {
       "provider": "github",
       "owner": "Spoekle",

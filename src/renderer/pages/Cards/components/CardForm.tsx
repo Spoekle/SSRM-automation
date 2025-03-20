@@ -100,12 +100,10 @@ const CardForm: React.FC<CardFormProps> = ({
 
     setIsFetching(true);
     try {
-      // First fetch the map data to get the hash
       const response = await axios.get(`https://api.beatsaver.com/maps/id/${mapId}`);
       const data = response.data;
       setSongName(data.metadata.songName);
 
-      // Then get the star ratings
       const latestStarRatings = await getStarRating(data.versions[0].hash);
       setStarRatings(latestStarRatings);
 
@@ -128,7 +126,6 @@ const CardForm: React.FC<CardFormProps> = ({
       localStorage.setItem('mapInfo', JSON.stringify(data));
       notifyMapInfoUpdated();
 
-      // Use the most recent ratings (either fetched or existing)
       const image = await generateCard(data, starRatings, useBackground);
       setImageSrc(image);
 
@@ -205,7 +202,6 @@ const CardForm: React.FC<CardFormProps> = ({
     }[];
   }
 
-  // New: Generate card using the stored card configuration from localStorage.
   const handleStoredConfigGeneration = async () => {
     const configStr = localStorage.getItem('cardConfig');
     setCardFormModal(false);
@@ -216,18 +212,15 @@ const CardForm: React.FC<CardFormProps> = ({
     try {
       const cardConfig = JSON.parse(configStr);
 
-      // Optional: Validate cardConfig structure.
       if (!cardConfig.width || !cardConfig.height || !cardConfig.background || !cardConfig.components) {
         throw new Error("Invalid card configuration");
       }
-      // Fetch map info similar to getMapInfo
       const response = await axios.get(`https://api.beatsaver.com/maps/id/${mapId}`);
       const data = response.data;
       setMapInfo(data);
       localStorage.setItem('mapId', `${mapId}`);
       localStorage.setItem('mapInfo', JSON.stringify(data));
 
-      // Pass cardConfig along with the fetched data, starRatings, and useBackground
       const imageDataUrl = await generateCardFromConfig(cardConfig, data, starRatings, useBackground);
       setImageSrc(imageDataUrl);
       if (createAlert) createAlert("Card generated from stored configuration!", "success");
@@ -237,7 +230,6 @@ const CardForm: React.FC<CardFormProps> = ({
     }
   };
 
-  // Existing file upload handler for processing JSON files of maps.
   const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     cancelGenerationRef.current = false;
     const file = event.target.files?.[0];
@@ -252,7 +244,6 @@ const CardForm: React.FC<CardFormProps> = ({
       setProgress("Parsing JSON...", 20, true);
 
       const uploadedMaps: UploadedMap[] = JSON.parse(text);
-      // Group by songHash
       const groupedMaps: { [key: string]: UploadedMap[] } = uploadedMaps.reduce(
         (acc, map) => {
           if (!acc[map.songHash]) {
@@ -278,7 +269,6 @@ const CardForm: React.FC<CardFormProps> = ({
           return;
         }
 
-        // Combine star ratings for all maps with the same songHash
         const combinedStarRatings: StarRatings = {
           ES: '',
           NOR: '',
@@ -423,7 +413,7 @@ const CardForm: React.FC<CardFormProps> = ({
 
             <div className="flex-1 overflow-auto custom-scrollbar">
               <form onSubmit={getMapInfo} className='p-3 space-y-3'>
-                {/* Automatic Inputs moved to top */}
+                {/* Automatic Inputs */}
                 <div className='bg-white dark:bg-neutral-700 p-3 rounded-xl shadow-sm'>
                   <h2 className='text-base font-medium mb-2 border-b pb-1 border-neutral-200 dark:border-neutral-600 flex items-center gap-1.5'>
                     <FaCloudUploadAlt className="text-purple-500" /> Automatic Input
@@ -483,7 +473,7 @@ const CardForm: React.FC<CardFormProps> = ({
                   </div>
                 </div>
 
-                {/* Background Options - Compact */}
+                {/* Background Options */}
                 <div className='bg-white dark:bg-neutral-700 p-3 rounded-xl shadow-sm'>
                   <div className='flex items-center justify-between'>
                     <h2 className='text-base font-medium flex items-center gap-1.5'>
@@ -496,7 +486,7 @@ const CardForm: React.FC<CardFormProps> = ({
                   </div>
                 </div>
 
-                {/* Star Ratings - More compact layout */}
+                {/* Star Ratings */}
                 <div className='bg-white dark:bg-neutral-700 p-3 rounded-xl shadow-sm'>
                   <h2 className='text-base font-medium mb-2 border-b pb-1 border-neutral-200 dark:border-neutral-600 flex items-center gap-1.5'>
                     <FaStar className="text-yellow-500" /> Star Ratings
@@ -520,7 +510,7 @@ const CardForm: React.FC<CardFormProps> = ({
               </form>
             </div>
 
-            {/* Sticky footer with Generate button */}
+            {/* Sticky footer */}
             <div className='sticky bottom-0 bg-white/80 dark:bg-neutral-800/80 backdrop-blur-sm p-2 border-t border-neutral-300 dark:border-neutral-700 flex justify-end items-center'>
               <motion.button
                 type="button"

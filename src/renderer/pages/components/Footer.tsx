@@ -3,6 +3,7 @@ import { FaCog } from 'react-icons/fa';
 import Settings, { SettingsHandles } from '../Settings/Settings';
 import { motion, AnimatePresence } from 'framer-motion';
 import log from 'electron-log';
+import { determineBestUpdateVersion } from '../../helpers/versionHelpers';
 
 interface FooterProps {
   appVersion: string;
@@ -28,7 +29,6 @@ const Footer: React.FC<FooterProps> = ({
   useEffect(() => {
     if (!isVersionLoading && latestVersion) {
       try {
-        // Extract version components
         const current = appVersion;
         const latest = latestVersion;
 
@@ -45,111 +45,35 @@ const Footer: React.FC<FooterProps> = ({
           return;
         }
 
-        // Use the same corrected version comparison logic
-        const isUpdateNeeded = (): boolean => {
-          if (!appVersion || !latestVersion) {
-            return false;
-          }
+        // Get latest stable version
+        const latestStableVersion = localStorage.getItem('latestStableVersion');
 
-          try {
-            // Clean version strings
-            const currentVersion = appVersion.replace(/^v/, '');
-            const latestVer = latestVersion.replace(/^v/, '');
+        // Get latest beta version
+        const latestBetaVersion = latest.includes('-') ? latest : null;
+        const stableVersion = latestStableVersion || (!latest.includes('-') ? latest : null);
 
-            // Check for branch switching scenarios
-            const isCurrentBeta = currentVersion.includes('-beta') ||
-                                 currentVersion.includes('-alpha') ||
-                                 currentVersion.includes('-rc');
-            const isLatestBeta = latestVer.includes('-beta') ||
-                                latestVer.includes('-alpha') ||
-                                latestVer.includes('-rc');
+        // Use the helper function to determine if update is needed
+        const updateInfo = determineBestUpdateVersion(
+          current,
+          stableVersion,
+          latestBetaVersion,
+          isDevBranch
+        );
 
-            // Parse versions to extract components
-            const parseVersion = (version: string) => {
-              const [basePart, prereleasePart] = version.split('-');
-              const versionParts = basePart.split('.').map(Number);
-              return {
-                major: versionParts[0] || 0,
-                minor: versionParts[1] || 0,
-                patch: versionParts[2] || 0,
-                prerelease: prereleasePart || null
-              };
-            };
+        setHasUpdate(updateInfo.shouldUpdate);
 
-            const current = parseVersion(currentVersion);
-            const latest = parseVersion(latestVer);
-
-            // First, compare major.minor.patch of the base versions
-            if (latest.major > current.major) return true;
-            if (latest.major < current.major) return false;
-
-            if (latest.minor > current.minor) return true;
-            if (latest.minor < current.minor) return false;
-
-            if (latest.patch > current.patch) return true;
-            if (latest.patch < current.patch) return false;
-
-            // If base versions are identical, check prerelease status
-            // Case 1: Current is stable, latest is prerelease - NO update needed
-            if (!isCurrentBeta && isLatestBeta) {
-              log.info("Footer: No update needed - stable version is newer than prerelease");
-              return false;
-            }
-
-            // Case 2: Current is prerelease, latest is stable - update needed
-            if (isCurrentBeta && !isLatestBeta) {
-              log.info("Footer: Update needed - upgrade from prerelease to stable");
-              return true;
-            }
-
-            // Case 3: Both are prereleases - compare prerelease versions
-            if (latest.prerelease && current.prerelease) {
-              // Compare prerelease types (rc > beta > alpha)
-              const latestType = latest.prerelease.split('.')[0];
-              const currentType = current.prerelease.split('.')[0];
-
-              if (latestType !== currentType) {
-                if (latestType === 'rc' && (currentType === 'beta' || currentType === 'alpha')) return true;
-                if (latestType === 'beta' && currentType === 'alpha') return true;
-                return false;
-              }
-
-              // Same prerelease type, compare numbers
-              const latestNum = parseInt(latest.prerelease.split('.')[1]) || 0;
-              const currentNum = parseInt(current.prerelease.split('.')[1]) || 0;
-              return latestNum > currentNum;
-            }
-
-            return false;
-          } catch (error) {
-            console.error("Error comparing versions:", error);
-            return false;
-          }
-        };
-
-        setHasUpdate(isUpdateNeeded());
-        log.info(`Footer: Update status - ${isUpdateNeeded() ? 'Update available' : 'No update needed'}`);
+        // Log decision with clear formatting
+        const statusEmoji = updateInfo.shouldUpdate ? '🔄' : '✓';
+        log.info(`Footer: ${statusEmoji} Update status - ${updateInfo.shouldUpdate ? 'Update available' : 'No update needed'}`);
+        if (updateInfo.shouldUpdate) {
+          log.info(`Footer: Update recommendation - ${updateInfo.updateToVersion} (${updateInfo.useStable ? 'stable' : 'beta'})`);
+          log.info(`Footer: Reason - ${updateInfo.reason}`);
+        }
       } catch (error) {
         log.error('Error comparing versions:', error);
       }
     }
   }, [appVersion, latestVersion, isVersionLoading, isDevBranch]);
-
-  // Add this helper function to compare version numbers
-  const compareVersions = (v1: string, v2: string) => {
-    const v1Parts = v1.split('.').map(Number);
-    const v2Parts = v2.split('.').map(Number);
-
-    for (let i = 0; i < Math.max(v1Parts.length, v2Parts.length); i++) {
-      const v1Part = v1Parts[i] || 0;
-      const v2Part = v2Parts[i] || 0;
-
-      if (v1Part > v2Part) return 1;
-      if (v1Part < v2Part) return -1;
-    }
-
-    return 0;
-  };
 
   const handleCogClick = () => {
     if (settingsOpen) {
@@ -190,16 +114,16 @@ const Footer: React.FC<FooterProps> = ({
                       className="flex items-center bg-blue-500 dark:bg-blue-600 text-xs font-semibold text-white px-2 py-1 rounded-full hover:underline transition"
                     >
                       {isDevBranch
-                        ? appVersion.includes('-beta') || appVersion.includes('-alpha') || appVersion.includes('-rc')
-                          ? "Update Available"
-                          : "Update to Dev"
-                        : appVersion.includes('-beta') || appVersion.includes('-alpha') || appVersion.includes('-rc')
-                          ? "Downgrade to Stable"
-                          : "Update Available"
+                        ? (appVersion.includes('-')
+                            ? "Update Available"
+                            : latestVersion.includes('-')
+                                ? "Update to Beta"
+                                : "Update Available")
+                        : (appVersion.includes('-')
+                            ? "Downgrade to Stable"
+                            : "Update Available")
                       }
                     </button>
-
-
                   </motion.div>
                 </div>
               </motion.div>

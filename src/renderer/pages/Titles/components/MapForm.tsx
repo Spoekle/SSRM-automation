@@ -8,7 +8,6 @@ import { FaTimes, FaMapMarkedAlt, FaGamepad, FaCheck, FaStar, FaSync } from 'rea
 import { notifyMapInfoUpdated } from '../../../utils/mapEvents';
 import '../../../pages/Settings/styles/CustomScrollbar.css';
 
-// Utility functions for difficulty conversion
 const difficultyToAbbreviated = (difficulty: string): string => {
   switch (difficulty) {
     case 'Easy':

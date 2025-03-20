@@ -52,7 +52,6 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({ file, setFile }) 
         onDragOver={(e) => e.preventDefault()}
         onDrop={handleFileDrop}
         onClick={(e) => {
-          // Prevent click if the clear button was clicked
           if ((e.target as HTMLElement).closest('button')) return;
           fileInputRef.current?.click();
         }}
