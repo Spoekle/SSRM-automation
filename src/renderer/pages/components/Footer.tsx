@@ -64,22 +64,6 @@ const Footer: React.FC<FooterProps> = ({
                                 latestVer.includes('-alpha') ||
                                 latestVer.includes('-rc');
 
-            // Check if we're in a branch switching scenario
-            // If current is beta but latest is stable - suggest update (downgrade to stable)
-            if (isCurrentBeta && !isLatestBeta) {
-              console.log("Footer: Update needed - downgrade from dev to stable");
-              return true;
-            }
-
-            // If current is stable but latest is beta - suggest update (upgrade to beta)
-            if (!isCurrentBeta && isLatestBeta) {
-              console.log("Footer: Update needed - upgrade from stable to dev");
-              return true;
-            }
-
-            // If both are from same branch type (both beta or both stable)
-            // then do regular version comparison
-
             // Parse versions to extract components
             const parseVersion = (version: string) => {
               const [basePart, prereleasePart] = version.split('-');
@@ -95,7 +79,7 @@ const Footer: React.FC<FooterProps> = ({
             const current = parseVersion(currentVersion);
             const latest = parseVersion(latestVer);
 
-            // Compare major.minor.patch
+            // First, compare major.minor.patch of the base versions
             if (latest.major > current.major) return true;
             if (latest.major < current.major) return false;
 
@@ -105,18 +89,20 @@ const Footer: React.FC<FooterProps> = ({
             if (latest.patch > current.patch) return true;
             if (latest.patch < current.patch) return false;
 
-            // Base versions are identical - check prerelease tags
-            // If latest has no prerelease tag but current does, update (stable is newer than prerelease)
-            if (!latest.prerelease && current.prerelease) {
-              return true;
-            }
-
-            // If current has no prerelease but latest does, don't update (don't downgrade stable to prerelease)
-            if (latest.prerelease && !current.prerelease) {
+            // If base versions are identical, check prerelease status
+            // Case 1: Current is stable, latest is prerelease - NO update needed
+            if (!isCurrentBeta && isLatestBeta) {
+              log.info("Footer: No update needed - stable version is newer than prerelease");
               return false;
             }
 
-            // Both have prerelease tags - compare them
+            // Case 2: Current is prerelease, latest is stable - update needed
+            if (isCurrentBeta && !isLatestBeta) {
+              log.info("Footer: Update needed - upgrade from prerelease to stable");
+              return true;
+            }
+
+            // Case 3: Both are prereleases - compare prerelease versions
             if (latest.prerelease && current.prerelease) {
               // Compare prerelease types (rc > beta > alpha)
               const latestType = latest.prerelease.split('.')[0];
