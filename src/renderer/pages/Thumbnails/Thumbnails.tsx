@@ -148,49 +148,49 @@ const Thumbnails: React.FC = () => {
             custom={1}
           >
             <motion.div
-              className='relative flex flex-col w-full bg-white/40 dark:bg-neutral-800/40 backdrop-blur-sm rounded-xl p-4 shadow-md overflow-hidden group'
+              className='relative flex w-full bg-white/40 dark:bg-neutral-800/40 backdrop-blur-sm rounded-xl p-4 shadow-md overflow-hidden group'
               whileHover={{ y: -5, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)" }}
               transition={{ type: "spring", stiffness: 400 }}
             >
               <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 opacity-0 group-hover:opacity-10 dark:group-hover:opacity-20 rounded-xl transition-opacity duration-300" />
-
-              <div className="flex justify-between items-center mb-3 relative z-10">
-                <h2 className='text-lg font-bold flex items-center gap-2'>
-                  <FaImage className="text-purple-500" />
-                  Preview
-                </h2>
-                <div className="flex space-x-2">
-                  <motion.button
-                    onClick={() => openThumbnailPreview()}
-                    className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1.5 px-3 text-sm rounded-lg flex items-center gap-1.5"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <FaSearch size={14} />
-                    Full View
-                  </motion.button>
-                  <motion.button
-                    onClick={() => downloadCard()}
-                    className="bg-green-600 hover:bg-green-700 text-white font-bold py-1.5 px-3 text-sm rounded-lg flex items-center gap-1.5"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <FaDownload size={14} />
-                    Download
-                  </motion.button>
-                </div>
-              </div>
               <motion.div
-                className='flex justify-center bg-white dark:bg-neutral-700 p-3 rounded-lg shadow-inner overflow-hidden relative z-10'
+                className='flex justify-center rounded-lg shadow-inner overflow-hidden relative z-10'
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
                 whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
               >
+                <div className="flex flex-col justify-between items-center relative z-10">
+                  <h2 className='text-lg font-bold flex items-center gap-2'>
+                    <FaImage className="text-purple-500" />
+                    Preview
+                  </h2>
+                  <div className="flex flex-col space-y-2 mx-2">
+                    <motion.button
+                      onClick={() => openThumbnailPreview()}
+                      className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1.5 px-3 text-sm rounded-lg flex items-center gap-1.5"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <FaSearch size={14} />
+                      Full View
+                    </motion.button>
+                    <motion.button
+                      onClick={() => downloadCard()}
+                      className="bg-green-600 hover:bg-green-700 text-white font-bold py-1.5 px-3 text-sm rounded-lg flex items-center gap-1.5"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <FaDownload size={14} />
+                      Download
+                    </motion.button>
+                  </div>
+                </div>
+
                 <motion.img
                   src={imageSrc}
                   alt='Thumbnail Preview'
-                  className='max-h-[180px] w-auto rounded'
+                  className='max-h-[160px] w-auto rounded'
                   onClick={() => openThumbnailPreview()}
                   whileHover={{
                     cursor: 'pointer'

@@ -188,7 +188,7 @@ const MapCards: React.FC = () => {
                 </motion.button>
               </div>
               <motion.div
-                className='flex justify-center bg-white dark:bg-neutral-700 p-3 rounded-lg shadow-inner overflow-hidden relative z-10'
+                className='flex justify-center rounded-lg shadow-inner overflow-hidden relative z-10'
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
