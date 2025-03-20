@@ -131,7 +131,7 @@ const Navbar: React.FC = () => {
             </motion.button>
           </div>
         ) : (
-          <div className='no-drag text-center items-center text-lg'>
+          <div className='no-drag mx-10 text-center items-center text-lg'>
           </div>
         )}
       </div>
