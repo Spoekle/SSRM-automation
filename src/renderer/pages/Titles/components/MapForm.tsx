@@ -84,9 +84,6 @@ const MapForm: React.FC<MapFormProps> = ({
     try {
       const response = await axios.get(`https://api.beatsaver.com/maps/id/${mapId}`);
       const data = response.data;
-      if (!useSubname) {
-        data.metadata.songSubName = '';
-      }
       setMapInfo(data);
       localStorage.setItem('mapId', `${mapId}`);
       localStorage.setItem('mapInfo', JSON.stringify(data));

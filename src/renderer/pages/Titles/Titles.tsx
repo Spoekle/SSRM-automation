@@ -149,7 +149,7 @@ const Titles: React.FC = () => {
                 </motion.button>
               </div>
               <div className='bg-white dark:bg-neutral-700 p-3 rounded-lg shadow-inner h-20 overflow-auto text-left relative z-10'>
-                <p className='text-sm text-neutral-800 dark:text-neutral-100'>{mapInfo.metadata.songName}{mapInfo.metadata.songSubName ? ` ${mapInfo.metadata.songSubName} | ` : ' | '}{mapInfo.metadata.songAuthorName} | {mapInfo.metadata.levelAuthorName} | {chosenDiff}</p>
+                <p className='text-sm text-neutral-800 dark:text-neutral-100'>{mapInfo.metadata.songName}{useSubname ? ` ${mapInfo.metadata.songSubName} | ` : ' | '}{mapInfo.metadata.songAuthorName} | {mapInfo.metadata.levelAuthorName} | {chosenDiff}</p>
               </div>
             </motion.div>
 
@@ -167,7 +167,7 @@ const Titles: React.FC = () => {
                 </h1>
                 <motion.button
                   className='bg-purple-500 hover:bg-purple-600 text-white font-bold py-1.5 px-3 text-sm rounded-lg flex items-center gap-1.5'
-                  onClick={() => copyToClipboard(`${mapInfo.metadata.songName} by ${mapInfo.metadata.songAuthorName}\nMapped by ${mapInfo.metadata.levelAuthorName}\nMap Link: ${mapLink}\nGameplay by ${player}`, 'description')}
+                  onClick={() => copyToClipboard(`${mapInfo.metadata.songName} by ${mapInfo.metadata.songAuthorName} ${mapInfo.metadata.songSubName ? `${mapInfo.metadata.songSubName}` : ''} \nMapped by ${mapInfo.metadata.levelAuthorName}\nMap Link: ${mapLink}\nGameplay by ${player}`, 'description')}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -177,7 +177,7 @@ const Titles: React.FC = () => {
               </div>
               <div className='bg-white dark:bg-neutral-700 p-3 rounded-lg shadow-inner h-32 overflow-auto text-left relative z-10'>
                 <p className='text-sm whitespace-pre-line text-neutral-800 dark:text-neutral-100'>
-                  {mapInfo.metadata.songName} by {mapInfo.metadata.songAuthorName}
+                  {mapInfo.metadata.songName} by {mapInfo.metadata.songAuthorName} {mapInfo.metadata.songSubName ? `${mapInfo.metadata.songSubName}` : ''}
                   {"\n"}Mapped by {mapInfo.metadata.levelAuthorName}
                   {"\n"}Map Link: {mapLink}
                   {"\n"}Gameplay by {player}
