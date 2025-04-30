@@ -12,10 +12,9 @@ import GlobalLoadedMap from './components/GlobalLoadedMap';
 import SplashScreen from './pages/SplashScreen/SplashScreen';
 import './App.css';
 import { ConfirmationModalProvider } from './contexts/ConfirmationModalContext';
-import { isUpdateNeeded } from './utils/versionUtils';
 
 export default function App() {
-  const appVersion = '1.9.10';
+  const appVersion = '2.0.1-beta.2';
   const [isSplashScreen, setIsSplashScreen] = useState(false);
   const [latestVersion, setLatestVersion] = useState('');
   const [isLoading, setIsLoading] = useState(true);
