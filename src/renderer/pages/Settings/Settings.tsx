@@ -6,7 +6,6 @@ import log from 'electron-log';
 import { useConfirmationModal } from '../../contexts/ConfirmationModalContext';
 import ConfirmationModal from './components/ConfirmationModal';
 import LoadedMapInfo from './components/LoadedMapInfo';
-import { isUpdateNeeded } from '../../utils/versionUtils';
 import { determineBestUpdateVersion } from '../../helpers/versionHelpers';
 
 export interface SettingsHandles {
