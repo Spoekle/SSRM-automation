@@ -6,6 +6,7 @@ import Home from './pages/Home';
 import Titles from './pages/Titles/Titles';
 import MapCards from './pages/Cards/MapCards';
 import Thumbnails from './pages/Thumbnails/Thumbnails';
+import Playlists from './pages/Playlists/Playlists';
 import Navbar from './pages/components/Navbar';
 import Footer from './pages/components/Footer';
 import GlobalLoadedMap from './components/GlobalLoadedMap';
@@ -14,7 +15,7 @@ import './App.css';
 import { ConfirmationModalProvider } from './contexts/ConfirmationModalContext';
 
 export default function App() {
-  const appVersion = '2.0.1';
+  const appVersion = '2.1.0-beta.1';
   const [isSplashScreen, setIsSplashScreen] = useState(false);
   const [latestVersion, setLatestVersion] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -129,6 +130,7 @@ export default function App() {
             <Route path="/titles" element={<Titles />} />
             <Route path="/mapcards" element={<MapCards />} />
             <Route path="/thumbnails" element={<Thumbnails />} />
+            <Route path="/playlists" element={<Playlists />} />
           </Routes>
         </div>
         <Footer

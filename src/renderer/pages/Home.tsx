@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { FaFileAlt, FaLayerGroup, FaImage, FaArrowRight } from 'react-icons/fa';
+import { FaFileAlt, FaLayerGroup, FaImage, FaArrowRight, FaList } from 'react-icons/fa';
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -37,7 +37,14 @@ function Home() {
       desc: "Design video thumbnails",
       icon: <FaImage className="text-green-500 text-3xl mb-2" />,
       color: "from-green-500 to-emerald-500"
-    }
+    },
+    {
+      name: "Playlists",
+      path: "/playlists",
+      desc: "Create playlists for BeatSaver",
+      icon: <FaList className="text-orange-500 text-3xl mb-2" />,
+      color: "from-green-500 to-emerald-500"
+    },
   ];
 
   return (
@@ -67,14 +74,14 @@ function Home() {
           </motion.p>
 
           <motion.div
-            className="mt-10 grid grid-cols-3 gap-4"
+            className="mt-10 grid grid-cols-2 gap-4"
             variants={fadeIn}
             custom={2}
           >
             {features.map((item, i) => (
               <Link to={item.path} key={item.name}>
                 <motion.div
-                  className="relative p-6 bg-white/40 dark:bg-neutral-800/40 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group"
+                  className="relative p-2 bg-white/40 dark:bg-neutral-800/40 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group"
                   whileHover={{
                     y: -5,
                     transition: { duration: 0.2 }
@@ -85,15 +92,15 @@ function Home() {
                     className={`absolute inset-0 bg-gradient-to-r ${item.color} opacity-0 group-hover:opacity-10 dark:group-hover:opacity-20 rounded-xl transition-opacity duration-300`}
                   />
 
-                  <div className="flex flex-col items-center text-center relative z-10">
-                    {item.icon}
+                  <div className="flex flex-col items-center text-center justify-center relative z-10">
+                    <div className='absolute -top-0 -left-0'>{item.icon}</div>
                     <h3 className="font-bold text-lg mb-2 text-neutral-900 dark:text-neutral-100">{item.name}</h3>
-                    <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-2">{item.desc}</p>
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-1">{item.desc}</p>
 
                     <motion.div
-                      className="mt-2 flex items-center text-blue-600 dark:text-blue-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity"
-                      initial={{ x: -10 }}
-                      whileHover={{ x: 0 }}
+                      className="mt-1 flex items-center text-blue-600 dark:text-blue-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity"
+                      initial={{ x: 0 }}
+                      whileHover={{ x: 10 }}
                     >
                       <span className="mr-1">Get started</span>
                       <FaArrowRight size={14} />

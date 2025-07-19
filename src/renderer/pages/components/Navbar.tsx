@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaTimes, FaMinus, FaHome, FaFileAlt, FaLayerGroup, FaImage } from 'react-icons/fa';
+import { FaTimes, FaMinus, FaHome, FaFileAlt, FaLayerGroup, FaImage, FaList } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import logo from '../../../../assets/icons/logo.svg';
 import image1 from '../../../../assets/images/1.png';
@@ -102,10 +102,10 @@ const Navbar: React.FC = () => {
   }, []);
 
   const navItems = [
-    { path: '/', label: 'Home', icon: <FaHome className="mr-1" /> },
     { path: '/titles', label: 'Titles', icon: <FaFileAlt className="mr-1" /> },
     { path: '/mapcards', label: 'Mapcards', icon: <FaLayerGroup className="mr-1" /> },
-    { path: '/thumbnails', label: 'Thumbnails', icon: <FaImage className="mr-1" /> }
+    { path: '/thumbnails', label: 'Thumbnails', icon: <FaImage className="mr-1" /> },
+    { path: '/playlists', label: 'Playlists', icon: <FaList className="mr-1" /> }
   ];
 
   return (
@@ -114,7 +114,7 @@ const Navbar: React.FC = () => {
         <div className='flex text-center items-center text-lg'>
           <motion.img
             src={logo}
-            className='no-drag h-8 mr-2'
+            className='no-drag h-8 mr-2 hover:cursor-pointer'
             onClick={toggleEasterEgg}
             whileHover={{ rotate: 10, scale: 1.1 }}
             whileTap={{ rotate: -10, scale: 0.9 }}
@@ -283,9 +283,20 @@ const Navbar: React.FC = () => {
               </motion.div>
             )}
           </AnimatePresence>
-          <h1 className='ml-1 text-xl text-left font-bold items-center'>
-            SSRM Automation
-          </h1>
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className='no-drag flex items-center cursor-pointer'
+            >
+              <Link to="/">
+                <h1 className='ml-1 text-xl text-left font-bold items-center'>
+                  SSRM
+                </h1>
+                <p className='ml-1 -mt-3 text-md font-semibold text-neutral-600 dark:text-neutral-400'>
+                  Automation
+                </p>
+              </Link>
+          </motion.div>
         </div>
         <div className='mx-2 my-2 no-drag flex text-center items-center'>
           <div className='no-drag text-center items-center text-md relative' ref={navRef}>
