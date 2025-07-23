@@ -289,11 +289,14 @@ const Navbar: React.FC = () => {
             className='no-drag flex items-center cursor-pointer'
             >
               <Link to="/">
-                <h1 className='ml-1 text-xl text-left font-bold items-center'>
+                <h1 className='ml-1 text-lg text-left font-bold items-center'>
                   SSRM
                 </h1>
-                <p className='ml-1 -mt-3 text-md font-semibold text-neutral-600 dark:text-neutral-400'>
+                <p className='ml-1 -mt-3 text-sm font-semibold text-neutral-600 dark:text-neutral-400'>
                   Automation
+                </p>
+                <p className='ml-1 -mt-3 text-xs font-semibold text-neutral-600 dark:text-neutral-400'>
+                  by Spoekle
                 </p>
               </Link>
           </motion.div>
