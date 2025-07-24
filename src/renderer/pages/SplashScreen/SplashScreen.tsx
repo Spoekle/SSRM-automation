@@ -4,7 +4,6 @@ import axios from 'axios';
 import log from 'electron-log';
 import LinearProgress from '@mui/material/LinearProgress';
 import logo from '../../../../assets/icons/logo.svg';
-import { isUpdateNeeded } from '../../utils/versionUtils';
 import { determineBestUpdateVersion } from '../../helpers/versionHelpers';
 
 interface SplashScreenProps {

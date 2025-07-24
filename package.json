@@ -99,8 +99,6 @@
     }
   },
   "dependencies": {
-    "@emotion/react": "^11.13.3",
-    "@emotion/styled": "^11.13.0",
     "@mui/material": "^6.1.6",
     "axios": "^1.7.7",
     "cors": "^2.8.5",
@@ -119,11 +117,7 @@
     "react-dom": "18.2.0",
     "react-icons": "^5.2.1",
     "react-router-dom": "^6.16.0",
-    "react-spinners": "^0.14.1",
-    "react-top-loading-bar": "^3.0.2",
     "skia-canvas": "^1.0.2",
-    "tailwindcss-animated": "^1.1.2",
-    "three": "^0.174.0",
     "uuid": "^11.0.5"
   },
   "devDependencies": {
