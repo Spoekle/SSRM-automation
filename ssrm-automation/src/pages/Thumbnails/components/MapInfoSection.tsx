@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import log from 'electron-log';
 import { FaStar, FaSync } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 
@@ -47,7 +46,7 @@ const MapInfoSection: React.FC<MapInfoSectionProps> = ({
         ratings[key] = data.stars === 0 ? (data.qualified ? 'Qualified' : 'Unranked') : `${data.stars}`;
         localStorage.setItem('starRatings', JSON.stringify(ratings));
       } catch (error) {
-        log.error(error);
+        console.error(error);
       }
     }
     return ratings;
@@ -67,7 +66,7 @@ const MapInfoSection: React.FC<MapInfoSectionProps> = ({
       setStarRatings(ratings);
       localStorage.setItem('starRatings', JSON.stringify(ratings));
     } catch (error) {
-      log.error('Error fetching map info or star ratings:', error);
+      console.error('Error fetching map info or star ratings:', error);
     } finally {
       setIsFetching(false);
     }
