@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FaDownload, FaEdit, FaExchangeAlt, FaLayerGroup } from 'react-icons/fa';
+import { FaDownload, FaExchangeAlt, FaLayerGroup } from 'react-icons/fa';
 import CardForm from './components/CardForm';
 import StarRatingForm from './components/ReweightForm';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import AlertSystem from '../../components/AlertSystem';
 import ProgressBar from '../../components/ProgressBar';
 import { useAlerts } from '../../utils/alertSystem';
@@ -76,15 +76,10 @@ const MapCards: React.FC = () => {
 
   const fadeIn = {
     hidden: { opacity: 0, y: 20 },
-    visible: (i: number) => ({
+    visible: {
       opacity: 1,
-      y: 0,
-      transition: {
-        delay: i * 0.15,
-        duration: 0.5,
-        ease: "easeOut"
-      }
-    })
+      y: 0
+    }
   };
 
   const downloadCard = () => {
@@ -106,8 +101,6 @@ const MapCards: React.FC = () => {
       createAlert("Operation cancelled by user", "info");
     }, 500);
   };
-
-  const mapLink = `https://beatsaver.com/maps/${mapId}`;
 
   return (
     <div className='max-h-96 h-96 relative dark:text-neutral-200 bg-neutral-200 dark:bg-neutral-900 p-4 pt-6 overflow-auto custom-scrollbar'>

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
+import { checkScoreSaber, checkBeatSaver } from '../../utils/tauriApi';
 
 import LinearProgress from '@mui/material/LinearProgress';
 import logo from '../../assets/icons/logo.svg';
@@ -9,6 +10,7 @@ import { determineBestUpdateVersion } from '../../helpers/versionHelpers';
 interface SplashScreenProps {
   appVersion: string;
   forceVersionCheck?: boolean;
+  onSplashComplete: () => void;
 }
 
 const LOCAL_STORAGE_KEYS = {
@@ -21,11 +23,9 @@ const LOCAL_STORAGE_KEYS = {
   CARD_CONFIG: 'cardConfig'
 };
 
-const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion, forceVersionCheck = false }) => {
-  const { ipcRenderer } = window.require('electron');
+const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion, forceVersionCheck = false, onSplashComplete }) => {
   const [loadingStage, setLoadingStage] = useState('Initializing...');
   const [loadingProgress, setLoadingProgress] = useState(0);
-  const [updateAvailable, setUpdateAvailable] = useState(false);
   const [latestVersion, setLatestVersion] = useState('');
   const [showUpdatePrompt, setShowUpdatePrompt] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -36,7 +36,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion, forceVersionChe
   });
 
   const [countdown, setCountdown] = useState(5);
-  const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const countdownTimerRef = useRef<number | null>(null);
   const [isHovering, setIsHovering] = useState(false);
 
   const [localStorageData, setLocalStorageData] = useState<{
@@ -56,7 +56,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion, forceVersionChe
   const startTimeRef = useRef<number>(Date.now());
   const MIN_SPLASH_TIME = 2000;
 
-  const [isDevBranch, setIsDevBranch] = useState(() => {
+  const [isDevBranch] = useState(() => {
     return localStorage.getItem('useDevelopmentBranch') === 'true';
   });
 
@@ -144,7 +144,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion, forceVersionChe
     const remainingTime = Math.max(0, MIN_SPLASH_TIME - elapsedTime);
 
     setTimeout(() => {
-      ipcRenderer.invoke('splash-complete');
+      onSplashComplete();
     }, remainingTime);
   };
 
@@ -209,7 +209,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion, forceVersionChe
         console.log(`SplashScreen: 🔄 Update available!`);
         console.log(`SplashScreen: Target version=${updateResult.updateToVersion}, UseStable=${updateResult.useStable}`);
         console.log(`SplashScreen: Reason - ${updateResult.reason}`);
-        setUpdateAvailable(true);
         return true;
       } else {
         console.log(`SplashScreen: ✓ No update required - ${updateResult.reason}`);
@@ -226,30 +225,28 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion, forceVersionChe
       setIsUpdating(true);
       setUpdateProgress("Starting update...");
 
-      ipcRenderer.on(
-        "update-progress",
-        (_event: any, progressMsg: string) => {
-          setUpdateProgress(progressMsg);
-        },
-      );
-
-      // Pass the correct update info to the main process
+      // For Tauri, we'll use the updater plugin eventually
+      // This is a placeholder implementation
+      console.log("Update functionality not yet implemented for Tauri");
+      
       if (updateInfo && updateInfo.shouldUpdate) {
-        await ipcRenderer.invoke("update-application", {
-          useStable: updateInfo.useStable,
-          targetVersion: updateInfo.updateToVersion
-        });
+        setUpdateProgress(`Update to ${updateInfo.updateToVersion} not yet implemented`);
+        console.log(`Would update to ${updateInfo.updateToVersion} (${updateInfo.useStable ? 'stable' : 'beta'})`);
       } else {
-        await ipcRenderer.invoke("update-application");
+        setUpdateProgress("Update not yet implemented");
       }
 
       localStorage.removeItem("skipUpdateCheck");
 
-      if (navigator.platform && !navigator.platform.includes('Win')) {
+      // Simulate update process
+      setTimeout(() => {
+        setUpdateProgress("Update functionality will be implemented with Tauri updater plugin");
         setTimeout(() => {
-          setUpdateProgress("Please complete the installation manually. You can close this app after installation is complete.");
-        }, 5000);
-      }
+          setIsUpdating(false);
+          proceedToMainApp();
+        }, 3000);
+      }, 2000);
+
     } catch (error) {
       console.error("Error updating application:", error);
       setIsUpdating(false);
@@ -279,13 +276,13 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion, forceVersionChe
       await wait(500);
       try {
         setLoadingStage('Checking ScoreSaber API...');
-        const ssStatus = await ipcRenderer.invoke('check-scoresaber');
+        const ssStatus = await checkScoreSaber();
         setApiStatus(prev => ({ ...prev, scoresaber: ssStatus }));
         setLoadingProgress(25);
         await wait(500);
 
         setLoadingStage('Checking BeatSaver API...');
-        const bsStatus = await ipcRenderer.invoke('check-beatsaver');
+        const bsStatus = await checkBeatSaver();
         setApiStatus(prev => ({ ...prev, beatsaver: bsStatus }));
         setLoadingProgress(50);
         await wait(500);
@@ -357,7 +354,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion, forceVersionChe
 
   return (
     <motion.div
-      className="flex flex-col items-center justify-center h-full bg-neutral-200 dark:bg-neutral-900 rounded-3xl overflow-hidden p-4"
+      className="fixed flex flex-col items-center justify-center w-full h-full bg-neutral-200 dark:bg-neutral-900 overflow-hidden p-4"
       layout
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}

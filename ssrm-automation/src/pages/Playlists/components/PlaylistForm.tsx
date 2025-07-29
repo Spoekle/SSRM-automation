@@ -1,6 +1,6 @@
 import React, { ChangeEvent, useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
-import { FaTimes, FaCloudUploadAlt, FaList, FaCheck } from 'react-icons/fa';
+import { FaTimes, FaCloudUploadAlt, FaList } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import '../../../pages/Settings/styles/CustomScrollbar.css';

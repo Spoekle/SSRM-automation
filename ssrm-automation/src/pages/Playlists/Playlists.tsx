@@ -1,8 +1,8 @@
-import React, { useState, useRef } from 'react';
-import { FaList, FaCloudUploadAlt, FaDownload, FaCopy } from 'react-icons/fa';
+import React, { useState } from 'react';
+import { FaList, FaCloudUploadAlt, FaCopy } from 'react-icons/fa';
 
 import PlaylistForm from './components/PlaylistForm';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import AlertSystem from '../../components/AlertSystem';
 import ProgressBar from '../../components/ProgressBar';
 import { useAlerts } from '../../utils/alertSystem';
@@ -23,15 +23,10 @@ const Playlists: React.FC = () => {
 
   const fadeIn = {
     hidden: { opacity: 0, y: 20 },
-    visible: (i: number) => ({
+    visible: {
       opacity: 1,
-      y: 0,
-      transition: {
-        delay: i * 0.15,
-        duration: 0.5,
-        ease: "easeOut"
-      }
-    })
+      y: 0
+    }
   };
 
   const handleCancelOperation = () => {

@@ -24,14 +24,13 @@ interface GitHubRelease {
 
 export default function App() {
   const appVersion = '2.3.0-beta.1';
-  const [isSplashScreen, setIsSplashScreen] = useState(false);
+  const [isSplashVisible, setIsSplashVisible] = useState(true);
   const [latestVersion, setLatestVersion] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isDevBranch, setIsDevBranch] = useState(() => {
     return localStorage.getItem('useDevelopmentBranch') === 'true';
   });
 
-  const [showSplash, setShowSplash] = useState(false);
   const [forceVersionCheck, setForceVersionCheck] = useState(false);
 
   const getLatestVersion = async () => {
@@ -76,12 +75,23 @@ export default function App() {
     }
   };
 
+  const handleSplashComplete = () => {
+    setIsSplashVisible(false);
+  };
+
   useEffect(() => {
     const queryParams = new URLSearchParams(window.location.search);
-    const isSplash = queryParams.get('splash') === 'true';
-    setIsSplashScreen(isSplash);
+    const forceCheck = queryParams.get('forceCheck') === 'true';
+    
+    setForceVersionCheck(forceCheck);
 
-    if (!isSplash) {
+    // Always start with splash screen in Tauri
+    setIsSplashVisible(true);
+  }, []);
+
+  useEffect(() => {
+    // Only start fetching version data after splash is hidden
+    if (!isSplashVisible) {
       const checkDevBranch = localStorage.getItem('useDevelopmentBranch') === 'true';
       const forceVersionCheck = localStorage.getItem('forceVersionCheck') === 'true';
 
@@ -92,61 +102,57 @@ export default function App() {
       } else {
         getLatestVersion();
       }
+
+      const branchChangeHandler = () => {
+        const newDevBranchSetting = localStorage.getItem('useDevelopmentBranch') === 'true';
+        if (newDevBranchSetting !== isDevBranch) {
+          setIsDevBranch(newDevBranchSetting);
+          getLatestVersion();
+        }
+      };
+
+      window.addEventListener('storage', branchChangeHandler);
+      return () => {
+        window.removeEventListener('storage', branchChangeHandler);
+      };
     }
+  }, [isSplashVisible, isDevBranch]);
 
-    const branchChangeHandler = () => {
-      const newDevBranchSetting = localStorage.getItem('useDevelopmentBranch') === 'true';
-      if (newDevBranchSetting !== isDevBranch) {
-        setIsDevBranch(newDevBranchSetting);
-        getLatestVersion();
-      }
-    };
-
-    window.addEventListener('storage', branchChangeHandler);
-    return () => {
-      window.removeEventListener('storage', branchChangeHandler);
-    };
-  }, [isDevBranch]);
-
-  useEffect(() => {
-    const queryParams = new URLSearchParams(window.location.search);
-    const splash = queryParams.get('splash');
-    const forceCheck = queryParams.get('forceCheck') === 'true';
-
-    setShowSplash(splash === 'true');
-    setForceVersionCheck(forceCheck);
-  }, []);
-
-  if (showSplash) {
-    return <SplashScreen appVersion={appVersion} forceVersionCheck={forceVersionCheck} />;
-  }
-
-  if (isSplashScreen) {
-    return <SplashScreen appVersion={appVersion} />;
+  // Show splash screen on app startup
+  if (isSplashVisible) {
+    return (
+      <SplashScreen 
+        appVersion={appVersion} 
+        forceVersionCheck={forceVersionCheck}
+        onSplashComplete={handleSplashComplete}
+      />
+    );
   }
 
   return (
-    <Router>
-      <ConfirmationModalProvider>
-        <Navbar />
-        <GlobalLoadedMap />
-        <div className="content">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/titles" element={<Titles />} />
-            <Route path="/mapcards" element={<MapCards />} />
-            <Route path="/thumbnails" element={<Thumbnails />} />
-            <Route path="/playlists" element={<Playlists />} />
-          </Routes>
-        </div>
-        <Footer
-          appVersion={appVersion}
-          latestVersion={latestVersion}
-          isVersionLoading={isLoading}
-          isDevBranch={isDevBranch}
-          getLatestVersion={getLatestVersion}
-        />
-      </ConfirmationModalProvider>
-    </Router>
+    <div className="app-container">
+      <Router>
+        <ConfirmationModalProvider>
+          <Navbar />
+          <GlobalLoadedMap />
+          <div className="content">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/titles" element={<Titles />} />
+              <Route path="/mapcards" element={<MapCards />} />
+              <Route path="/thumbnails" element={<Thumbnails />} />
+              <Route path="/playlists" element={<Playlists />} />
+            </Routes>
+          </div>
+          <Footer
+            appVersion={appVersion}
+            latestVersion={latestVersion}
+            isVersionLoading={isLoading}
+            isDevBranch={isDevBranch}
+            getLatestVersion={getLatestVersion}
+          />
+        </ConfirmationModalProvider>
+      </Router>
+    </div>
   );
 }

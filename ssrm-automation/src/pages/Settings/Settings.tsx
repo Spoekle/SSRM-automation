@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, ChangeEvent } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle, ChangeEvent } from 'react';
 import { motion } from 'framer-motion';
 import { FaTimes, FaDownload, FaGithub, FaDiscord } from 'react-icons/fa';
 import Switch from '@mui/material/Switch';
+import { open } from '@tauri-apps/plugin-shell';
+import { checkFfmpeg } from '../../utils/tauriApi';
 
 import { useConfirmationModal } from '../../contexts/ConfirmationModalContext';
 import ConfirmationModal from './components/ConfirmationModal';
@@ -24,7 +26,6 @@ interface SettingsProps {
 
 const Settings = forwardRef<SettingsHandles, SettingsProps>(
   ({ onClose, getLatestVersion, appVersion, latestVersion, showUpdateTab = false, isVersionLoading = false, isDevBranch = false }, ref) => {
-    const { ipcRenderer } = window.require("electron");
     const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [isOverlayVisible, setIsOverlayVisible] = useState(false);
     const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -124,18 +125,11 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
     }, [isDevMode]);
 
     useEffect(() => {
-      checkFfmpeg();
-      ipcRenderer.on("ffmpeg-install-progress", updateInstallStatus);
+      checkFfmpegStatus();
       const storedMap = localStorage.getItem("mapInfo");
       if (storedMap) {
         setLoadedMapInfo(storedMap);
       }
-      return () => {
-        ipcRenderer.removeListener(
-          "ffmpeg-install-progress",
-          updateInstallStatus,
-        );
-      };
     }, []);
 
     const updateApplication = async () => {
@@ -143,14 +137,8 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
         setIsUpdating(true);
         setUpdateProgress("Starting update...");
 
-        ipcRenderer.on(
-          "update-progress",
-          (_event: any, progressMsg: string) => {
-            setUpdateProgress(progressMsg);
-          },
-        );
-
-        // Get the appropriate versions
+        // For Tauri, we'll use the updater plugin
+        // This is a placeholder - the actual implementation would depend on your update mechanism
         const latestBetaVersion = latestVersion.includes('-') ? latestVersion : null;
         const updateInfo = determineBestUpdateVersion(
           appVersion,
@@ -161,13 +149,15 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
 
         if (updateInfo.shouldUpdate) {
           console.log(`Settings: Starting update to ${updateInfo.updateToVersion} (${updateInfo.useStable ? 'stable' : 'beta'})`);
-          await ipcRenderer.invoke("update-application", {
-            useStable: updateInfo.useStable,
-            targetVersion: updateInfo.updateToVersion
-          });
+          // In Tauri, you would typically use the updater plugin
+          // await invoke("update_application", {
+          //   useStable: updateInfo.useStable,
+          //   targetVersion: updateInfo.updateToVersion
+          // });
+          setUpdateProgress("Update functionality not yet implemented for Tauri");
         } else {
-          console.log('Settings: No update available, using default update behavior');
-          await ipcRenderer.invoke("update-application");
+          console.log('Settings: No update available');
+          setUpdateProgress("No update available");
         }
 
         localStorage.removeItem("skipUpdateCheck");
@@ -204,15 +194,9 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
       }
     };
 
-    const updateInstallStatus = (_event: any, progressMessage: string) => {
-      setInstallStatus(progressMessage);
-      const match = progressMessage.match(/(\d+)%/);
-      setInstallProgressPercent(match ? parseInt(match[1], 10) : null);
-    };
-
-    const checkFfmpeg = async () => {
+    const checkFfmpegStatus = async () => {
       try {
-        const installed = await ipcRenderer.invoke("check-ffmpeg");
+        const installed = await checkFfmpeg();
         setFfmpegInstalled(installed);
       } catch (error) {
         console.error("Error checking ffmpeg:", error);
@@ -222,17 +206,17 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
 
     const handleFfmpegAction = async (type: "install" | "reinstall") => {
       setFfmpegLoading(true);
-      setInstallStatus("");
+      setInstallStatus("FFmpeg installation not yet implemented for Tauri");
       setInstallProgressPercent(null);
       try {
-        await ipcRenderer.invoke(
-          type === "install" ? "install-ffmpeg" : "reinstall-ffmpeg",
-        );
+        // In Tauri, you would implement FFmpeg installation through Rust backend
+        // await invoke(type === "install" ? "install_ffmpeg" : "reinstall_ffmpeg");
+        console.log(`${type} FFmpeg - not yet implemented in Tauri version`);
       } catch (err) {
         console.error(`Error ${type}ing ffmpeg:`, err);
       } finally {
         setFfmpegLoading(false);
-        checkFfmpeg();
+        checkFfmpegStatus();
       }
     };
 
@@ -301,15 +285,10 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
 
     const sectionVariants = {
       hidden: { opacity: 0, y: 20 },
-      visible: (i: number) => ({
+      visible: {
         opacity: 1,
         y: 0,
-        transition: {
-          delay: i * 0.1,
-          duration: 0.5,
-          ease: "easeOut",
-        },
-      }),
+      },
     };
 
     return (
@@ -362,7 +341,7 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
                   initial="hidden"
                   animate="visible"
                   variants={sectionVariants}
-                  custom={1}
+                  transition={{ delay: 0.1, duration: 0.5 }}
                 >
                   <h3 className="text-lg font-semibold border-b pb-2 mb-4 border-neutral-200 dark:border-neutral-600">Theme Settings</h3>
                   <div className="flex items-center justify-between">
@@ -609,7 +588,12 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
                       className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg"
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      onClick={() => ipcRenderer.send('open-devtools')}
+                      onClick={() => {
+                        // In Tauri, DevTools are not available the same way as in Electron
+                        // You would typically use the browser's DevTools during development
+                        console.log('DevTools functionality not available in Tauri');
+                        alert('DevTools are not available in Tauri. Use your browser\'s DevTools during development.');
+                      }}
                     >
                       Open DevTools
                     </motion.button>
@@ -633,7 +617,7 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
                         className="rounded-lg"
                         whileHover={{ scale: 1.05, rotate: 5 }}
                         whileTap={{ scale: 0.95, rotate: -10 }}
-                        onClick={() => window.open('https://github.com/Spoekle/SSRM-automation', '_blank')}
+                        onClick={() => open('https://github.com/Spoekle/SSRM-automation')}
                         title='View on GitHub'
                       >
                         <FaGithub size={32} />
@@ -642,7 +626,7 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
                         className="rounded-lg"
                         whileHover={{ scale: 1.05, rotate: 5 }}
                         whileTap={{ scale: 0.95, rotate: -10 }}
-                        onClick={() => window.open('https://github.com/Spoekle/SSRM-automation', '_blank')}
+                        onClick={() => open('https://discord.gg/scoresaber')}
                         title='ScoreSaber Discord'
                       >
                         <FaDiscord size={32} />

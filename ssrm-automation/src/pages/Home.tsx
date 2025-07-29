@@ -4,15 +4,10 @@ import { FaFileAlt, FaLayerGroup, FaImage, FaArrowRight, FaList } from 'react-ic
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
-  visible: (i: number) => ({
+  visible: {
     opacity: 1,
-    y: 0,
-    transition: {
-      delay: i * 0.3,
-      duration: 0.5,
-      ease: "easeOut"
-    }
-  })
+    y: 0
+  }
 };
 
 function Home() {
@@ -78,7 +73,7 @@ function Home() {
             variants={fadeIn}
             custom={2}
           >
-            {features.map((item, i) => (
+            {features.map((item) => (
               <Link to={item.path} key={item.name}>
                 <motion.div
                   className="relative p-2 bg-white/40 dark:bg-neutral-800/40 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group"

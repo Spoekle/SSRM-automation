@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaTimes, FaMinus, FaHome, FaFileAlt, FaLayerGroup, FaImage, FaList } from 'react-icons/fa';
+import { FaTimes, FaMinus, FaFileAlt, FaLayerGroup, FaImage, FaList } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import logo from '../../assets/icons/logo.svg';
 import image1 from '../../assets/images/1.png';
 import image2 from '../../assets/images/2.png';
@@ -17,8 +18,7 @@ import image11 from '../../assets/images/11.png';
 import image12 from '../../assets/images/12.png';
 import image13 from '../../assets/images/13.webp';
 import image14 from '../../assets/images/14.png';
-import image15 from '../../assets/images/15.webp';
-import image16 from '../../assets/images/16.png';
+import image15 from '../../assets/images/16.png';
 
 
 const easterEggImages = [
@@ -36,8 +36,7 @@ const easterEggImages = [
   { src: image12, alt: 'Fumo Friend 12' },
   { src: image13, alt: 'Fumo Friend 13' },
   { src: image14, alt: 'Fumo Friend 14' },
-  { src: image15, alt: 'Fumo Friend 15' },
-  { src: image16, alt: 'Fumo Friend 16' }
+  { src: image15, alt: 'Fumo Friend 15' }
 ];
 
 const Navbar: React.FC = () => {
@@ -45,7 +44,7 @@ const Navbar: React.FC = () => {
   const navRef = useRef<HTMLDivElement>(null);
   const [isEasterEggVisible, setIsEasterEggVisible] = useState(false);
   const [easterEggStage, setEasterEggStage] = useState<'hidden' | 'showing' | 'hiding'>('hidden');
-  const [os, setOS] = useState('');
+  const [isMacOS, setIsMacOS] = useState(false);
   const isDarkMode = localStorage.getItem('theme') === 'dark';
 
   useEffect(() => {
@@ -58,17 +57,30 @@ const Navbar: React.FC = () => {
     }
   }, [isDarkMode]);
 
-  const minimizeWindow = () => {
+  const minimizeWindow = async () => {
+    try {
+      const appWindow = getCurrentWindow();
+      await appWindow.minimize();
+    } catch (error) {
+      console.error('Failed to minimize window:', error);
+    }
   };
 
-  const clearAndCloseWindow = () => {
+  const clearAndCloseWindow = async () => {
     localStorage.removeItem('mapId');
     localStorage.removeItem('mapInfo');
+    try {
+      const appWindow = getCurrentWindow();
+      await appWindow.close();
+    } catch (error) {
+      console.error('Failed to close window:', error);
+    }
   };
 
-  const getOS = () => {
-    const os = window.require('os');
-    setOS(os.platform());
+  const detectMacOS = () => {
+    // Simple detection using user agent for macOS
+    const isMac = navigator.userAgent.includes('Mac');
+    setIsMacOS(isMac);
   };
 
   const toggleEasterEgg = () => {
@@ -95,7 +107,7 @@ const Navbar: React.FC = () => {
   };
 
   useEffect(() => {
-    getOS();
+    detectMacOS();
   }, []);
 
   const navItems = [
@@ -106,12 +118,12 @@ const Navbar: React.FC = () => {
   ];
 
   return (
-    <div className='drag items-center justify-center bg-neutral-300 dark:bg-neutral-950 text-neutral-950 dark:text-neutral-200 rounded-t-3xl shadow-md border-b border-neutral-200/30 dark:border-neutral-800/30'>
+    <div className='drag items-center justify-center bg-neutral-300 dark:bg-neutral-950 text-neutral-950 dark:text-neutral-200 shadow-md border-b border-neutral-200/30 dark:border-neutral-800/30'>
       <div className='mx-4 flex text-center justify-between'>
         <div className='flex text-center items-center text-lg'>
           <motion.img
             src={logo}
-            className='no-drag h-8 mr-2 hover:cursor-pointer'
+            className='no-drag h-10 mr-2 hover:cursor-pointer'
             onClick={toggleEasterEgg}
             whileHover={{ rotate: 10, scale: 1.1 }}
             whileTap={{ rotate: -10, scale: 0.9 }}
@@ -155,8 +167,7 @@ const Navbar: React.FC = () => {
                     { bottom: '5%', left: '5%', rotate: 20 },
                     { bottom: '8%', left: '25%', rotate: -25 },
                     { bottom: '5%', left: '45%', rotate: 15 },
-                    { bottom: '8%', left: '65%', rotate: -10 },
-                    { bottom: '5%', right: '5%', rotate: 25 }
+                    { bottom: '8%', left: '65%', rotate: -10 }
                   ];
                   
                   const position = positions[index] || { 
@@ -285,14 +296,17 @@ const Navbar: React.FC = () => {
             whileTap={{ scale: 0.95 }}
             className='no-drag flex items-center cursor-pointer'
             >
-              <Link to="/">
-                <h1 className='ml-1 text-lg text-left font-bold items-center'>
+              <Link 
+                to="/"
+                className='flex flex-col items-start no-drag'
+                >
+                <h1 className='ml-1 text-lg font-bold items-center'>
                   SSRM
                 </h1>
-                <p className='ml-1 -mt-3 text-sm font-semibold text-neutral-600 dark:text-neutral-400'>
+                <p className='ml-1 -mt-2 text-sm font-semibold text-neutral-600 dark:text-neutral-400'>
                   Automation
                 </p>
-                <p className='ml-1 -mt-3 text-xs font-semibold text-neutral-600 dark:text-neutral-400'>
+                <p className='ml-1 -mt-1 text-xs text-neutral-600 dark:text-neutral-400'>
                   by Spoekle
                 </p>
               </Link>
@@ -323,12 +337,12 @@ const Navbar: React.FC = () => {
             </div>
           </div>
         </div>
-        {os !== 'darwin' ? (
+        {!isMacOS ? (
           <div className='no-drag text-center items-center text-lg flex space-x-2'>
             <motion.button
               className='hover:bg-orange-500 hover:text-white rounded-full p-2 transition duration-200 bg-neutral-200 dark:bg-neutral-800 shadow-md'
               onClick={minimizeWindow}
-              whileHover={{ scale: 1.1, backgroundColor: "#f97316" }}
+              whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
             >
               <FaMinus/>
@@ -336,7 +350,7 @@ const Navbar: React.FC = () => {
             <motion.button
               className='hover:bg-red-500 hover:text-white rounded-full p-2 transition duration-200 bg-neutral-200 dark:bg-neutral-800 shadow-md'
               onClick={clearAndCloseWindow}
-              whileHover={{ scale: 1.1}}
+              whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
             >
               <FaTimes/>

@@ -6,7 +6,7 @@ import { saveAs } from 'file-saver';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes, FaCloudUploadAlt, FaExchangeAlt, FaMapMarkedAlt, FaCheck, FaStar, FaSync } from "react-icons/fa";
 
-import { generateReweightCard } from '../../../utils/tauriApi';
+import { generateReweightCard, getStarRatings } from '../../../utils/tauriApi';
 import { notifyMapInfoUpdated } from '../../../utils/mapEvents';
 import '../../../pages/Settings/styles/CustomScrollbar.css';
 
@@ -89,12 +89,6 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
     }, 300);
   };
 
-  const handleClickOutside = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-    if ((event.target as HTMLDivElement).classList.contains('modal-overlay')) {
-      setStarRatingFormModal(false);
-    }
-  };
-
   const handleMapIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setMapId(e.target.value);
   };
@@ -146,48 +140,24 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
   };
 
   async function getStarRating(hash: string): Promise<NewStarRatings> {
-    let diffs = ['1', '3', '5', '7', '9'];
-    let fetchedStarRatings: NewStarRatings = {
-      ES: '',
-      NOR: '',
-      HARD: '',
-      EX: '',
-      EXP: ''
-    };
-
-    for (let i = 0; i < diffs.length; i++) {
-      try {
-        const response = await axios.get(`http://localhost:3000/api/scoresaber/${hash}/${diffs[i]}`);
-        const data = response.data;
-        const key = Object.keys(fetchedStarRatings)[i] as keyof NewStarRatings;
-        fetchedStarRatings[key] = data.stars === 0 ? 'Unranked' : data.stars.toString();
-        localStorage.setItem('starRatings', JSON.stringify(fetchedStarRatings));
-        console.log(fetchedStarRatings);
-      } catch (error) {
-        console.error("Error fetching star rating, diff " + diffs[i] + " probably doesnt exist :)");
-      }
-    }
-    return fetchedStarRatings;
-  }
-
-  const fetchName = async (mapId: string) => {
-    if (mapId === '') {
-      setSongName('');
-      return;
-    }
-    setMapId(mapId);
     try {
-      const response = await axios.get(`https://api.beatsaver.com/maps/id/${mapId}`);
-      const data = response.data;
-      setSongName(data.metadata.songName);
-      getStarRating(data.versions[0].hash).then((fetchedStarRatings) => {
-        setNewStarRatings(fetchedStarRatings);
-      });
-      return data.metadata.songName;
+      const starRatings = await getStarRatings(hash);
+      localStorage.setItem('starRatings', JSON.stringify(starRatings));
+      console.log(starRatings);
+      return starRatings;
     } catch (error) {
-      console.error('Error fetching map info:', error);
+      console.error("Error fetching star ratings:", error);
+      // Return empty ratings on error
+      const emptyRatings: NewStarRatings = {
+        ES: 'Unranked',
+        NOR: 'Unranked',
+        HARD: 'Unranked',
+        EX: 'Unranked',
+        EXP: 'Unranked'
+      };
+      return emptyRatings;
     }
-  };
+  }
 
   const handleJsonUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     cancelGenerationRef.current = false;

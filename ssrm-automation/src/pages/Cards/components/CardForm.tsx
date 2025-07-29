@@ -5,7 +5,7 @@ import Switch from '@mui/material/Switch';
 import { FaTimes, FaCloudUploadAlt, FaLayerGroup, FaStar, FaToggleOn, FaCheck, FaSync } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 
-import { generateCard, generateCardFromConfig } from '../../../utils/tauriApi';
+import { generateCard, generateCardFromConfig, getStarRatings } from '../../../utils/tauriApi';
 import { notifyMapInfoUpdated } from '../../../utils/mapEvents';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
@@ -76,12 +76,6 @@ const CardForm: React.FC<CardFormProps> = ({
     }, 300);
   };
 
-  const handleClickOutside = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-    if ((event.target as HTMLDivElement).classList.contains('modal-overlay')) {
-      setCardFormModal(false);
-    }
-  };
-
   const handleSwitch = (event: React.ChangeEvent<HTMLInputElement>) => {
     setUseBackground(event.target.checked);
     localStorage.setItem('useBackground', `${event.target.checked}`);
@@ -138,52 +132,24 @@ const CardForm: React.FC<CardFormProps> = ({
   };
 
   async function getStarRating(hash: string): Promise<StarRatings> {
-    let diffs = ['1', '3', '5', '7', '9'];
-    let starRatings: StarRatings = {
-      ES: '',
-      NOR: '',
-      HARD: '',
-      EX: '',
-      EXP: ''
-    };
-
-    for (let i = 0; i < diffs.length; i++) {
-      try {
-        const response = await axios.get(`http://localhost:3000/api/scoresaber/${hash}/${diffs[i]}`);
-        const data = response.data;
-        const key = Object.keys(starRatings)[i] as keyof StarRatings;
-        if (data.stars === 0) {
-          starRatings[key] = 'Unranked';
-        } else {
-          starRatings[key] = data.stars.toString();
-        }
-        localStorage.setItem('starRatings', JSON.stringify(starRatings));
-        console.log(starRatings);
-      } catch (error) {
-        console.error("Error fetching star rating, diff " + diffs[i] + " probably doesnt exist :)");
-      }
-    }
-    return starRatings;
-  }
-
-  const fetchName = async (mapId: string) => {
-    if (mapId === '') {
-      setSongName('');
-      return;
-    }
-    setMapId(mapId);
     try {
-      const response = await axios.get(`https://api.beatsaver.com/maps/id/${mapId}`);
-      const data = response.data;
-      setSongName(data.metadata.songName);
-      getStarRating(data.versions[0].hash).then((starRatings) => {
-        setStarRatings(starRatings);
-      });
-      return data.metadata.songName;
+      const starRatings = await getStarRatings(hash);
+      localStorage.setItem('starRatings', JSON.stringify(starRatings));
+      console.log(starRatings);
+      return starRatings;
     } catch (error) {
-      console.error('Error fetching map info:', error);
+      console.error("Error fetching star ratings:", error);
+      // Return empty ratings on error
+      const emptyRatings: StarRatings = {
+        ES: 'Unranked',
+        NOR: 'Unranked',
+        HARD: 'Unranked',
+        EX: 'Unranked',
+        EXP: 'Unranked'
+      };
+      return emptyRatings;
     }
-  };
+  }
 
   interface MapInfo {
     metadata: {
@@ -201,6 +167,7 @@ const CardForm: React.FC<CardFormProps> = ({
     }[];
   }
 
+  /*
   const handleStoredConfigGeneration = async () => {
     const configStr = localStorage.getItem('cardConfig');
     setCardFormModal(false);
@@ -228,6 +195,7 @@ const CardForm: React.FC<CardFormProps> = ({
       if (createAlert) createAlert("Failed to generate card from stored configuration.", "error");
     }
   };
+  */
 
   const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     cancelGenerationRef.current = false;

@@ -4,9 +4,15 @@ use serde::{Deserialize, Serialize};
 use tempfile::NamedTempFile;
 use base64::{Engine as _, engine::general_purpose};
 
-mod card_generator;
+mod img_gen {
+    pub mod card_generation;
+    pub mod thumbnail_generation;
+}
 
-use card_generator::{MapInfo, StarRating, generate_card, generate_reweight_card, generate_thumbnail};
+use img_gen::card_generation::types::{MapInfo, StarRating};
+use img_gen::card_generation::map_card::generate_map_card as generate_map_card_impl;
+use img_gen::card_generation::reweight_card::generate_reweight_card as generate_reweight_card_impl;
+use img_gen::thumbnail_generation::thumbnail::generate_thumbnail as generate_thumbnail_impl;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct ScoreSaberResponse {
@@ -36,12 +42,6 @@ struct GitHubRelease {
 struct GitHubAsset {
     name: String,
     browser_download_url: String,
-}
-
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
 #[tauri::command]
@@ -233,7 +233,7 @@ async fn generate_map_card(
     star_ratings: StarRating,
     use_background: bool,
 ) -> Result<String, String> {
-    match generate_card(data, star_ratings, use_background).await {
+    match generate_map_card_impl(data, star_ratings, use_background).await {
         Ok(result) => Ok(result),
         Err(e) => Err(format!("Failed to generate card: {}", e)),
     }
@@ -246,7 +246,7 @@ async fn generate_map_reweight_card(
     new_star_ratings: StarRating,
     chosen_diff: String,
 ) -> Result<String, String> {
-    match generate_reweight_card(data, old_star_ratings, new_star_ratings, chosen_diff).await {
+    match generate_reweight_card_impl(data, old_star_ratings, new_star_ratings, chosen_diff).await {
         Ok(result) => Ok(result),
         Err(e) => Err(format!("Failed to generate reweight card: {}", e)),
     }
@@ -259,7 +259,7 @@ async fn generate_map_thumbnail(
     star_ratings: StarRating,
     background_url: String,
 ) -> Result<String, String> {
-    match generate_thumbnail(data, chosen_diff, star_ratings, background_url).await {
+    match generate_thumbnail_impl(data, chosen_diff, star_ratings, background_url).await {
         Ok(result) => Ok(result),
         Err(e) => Err(format!("Failed to generate thumbnail: {}", e)),
     }
@@ -284,7 +284,6 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
-            greet,
             check_scoresaber,
             check_beatsaver,
             check_ffmpeg,

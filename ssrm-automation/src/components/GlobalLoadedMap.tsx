@@ -21,7 +21,7 @@ interface MapInfo {
 
 const GlobalLoadedMap: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isVisible, setIsVisible] = useState(true);
+  const [isVisible] = useState(true);
   const [mapInfo, setMapInfo] = useState<MapInfo | null>(null);
   const { showConfirmation } = useConfirmationModal();
 

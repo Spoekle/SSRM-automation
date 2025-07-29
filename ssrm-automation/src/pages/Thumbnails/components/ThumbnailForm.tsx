@@ -45,7 +45,6 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
   setChosenDiff,
   createAlert,
   progress: setProgress,
-  cancelGenerationRef,
 }) => {
   const [file, setFile] = useState<File | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -63,22 +62,6 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
       setThumbnailFormModal(false);
     }, 300);
   };
-
-  async function getStarRating(hash: string): Promise<StarRatings> {
-    const diffs = ['1', '3', '5', '7', '9'];
-    const ratings: StarRatings = { ES: '', NOR: '', HARD: '', EX: '', EXP: '' };
-
-    for (let i = 0; i < diffs.length; i++) {
-      try {
-        const { data } = await axios.get(`http://localhost:3000/api/scoresaber/${hash}/${diffs[i]}`);
-        const key = Object.keys(ratings)[i] as keyof StarRatings;
-        ratings[key] = data.stars === 0 ? (data.qualified ? 'Qualified' : 'Unranked') : `${data.stars}`;
-      } catch (error) {
-        console.error(`Error fetching star rating for difficulty ${diffs[i]}:`, error);
-      }
-    }
-    return ratings;
-  }
 
   const getMapInfo = async (event: FormEvent) => {
     event.preventDefault();

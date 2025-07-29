@@ -138,7 +138,7 @@ export const generateReweightCard = async (
   chosenDiff: string
 ): Promise<string> => {
   try {
-    return await invoke<string>('generate_map_reweight_card', { 
+    return await invoke<string>('generate_reweight_card', { 
       data, 
       oldStarRatings, 
       newStarRatings, 
@@ -158,6 +158,25 @@ export const generateThumbnail = async (
 ): Promise<string> => {
   try {
     return await invoke<string>('generate_map_thumbnail', { 
+      data, 
+      chosenDiff, 
+      starRatings, 
+      backgroundUrl 
+    });
+  } catch (error) {
+    console.error('Failed to generate thumbnail:', error);
+    throw error;
+  }
+};
+
+export const generateBatchThumbnail = async (
+  data: MapInfo,
+  chosenDiff: string,
+  starRatings: StarRating,
+  backgroundUrl: string
+): Promise<string> => {
+  try {
+    return await invoke<string>('generate_batch_thumbnail', { 
       data, 
       chosenDiff, 
       starRatings, 
@@ -195,4 +214,40 @@ export const proxyScoreSaber = async (hash: string, difficulty: string): Promise
 
 export const proxyBeatSaver = async (hash: string): Promise<any> => {
   return getBeatSaverData(hash);
+};
+
+// Helper function to fetch star ratings for all difficulties
+export const getStarRatings = async (hash: string): Promise<StarRating> => {
+  const difficulties = ['1', '3', '5', '7', '9']; // ES, NOR, HARD, EX, EXP
+  const difficultyKeys: (keyof StarRating)[] = ['ES', 'NOR', 'HARD', 'EX', 'EXP'];
+  const ratings: StarRating = { ES: '', NOR: '', HARD: '', EX: '', EXP: '' };
+
+  for (let i = 0; i < difficulties.length; i++) {
+    try {
+      const data = await getScoreSaberData(hash, difficulties[i]);
+      const key = difficultyKeys[i];
+      
+      if (data && typeof data === 'object') {
+        // Check if stars property exists and is valid
+        if ('stars' in data) {
+          const stars = data.stars;
+          if (stars === 0) {
+            // Check if it's qualified
+            ratings[key] = ('qualified' in data && data.qualified) ? 'Qualified' : 'Unranked';
+          } else {
+            ratings[key] = `${stars}`;
+          }
+        } else {
+          ratings[key] = 'Unranked';
+        }
+      } else {
+        ratings[key] = 'Unranked';
+      }
+    } catch (error) {
+      console.error(`Error fetching star rating for difficulty ${difficulties[i]}:`, error);
+      ratings[difficultyKeys[i]] = 'Unranked';
+    }
+  }
+
+  return ratings;
 };

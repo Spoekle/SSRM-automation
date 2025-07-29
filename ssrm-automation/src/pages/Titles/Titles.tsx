@@ -22,12 +22,6 @@ interface MapInfo {
   }[];
 }
 
-interface Alert {
-  id: number;
-  message: string;
-  fadeOut: boolean;
-  type: 'success' | 'error' | 'alert';
-}
 const abbreviatedToDifficulty = (abbreviated: string): string => {
   switch (abbreviated) {
     case 'ES':
@@ -72,15 +66,10 @@ const Titles: React.FC = () => {
 
   const fadeIn = {
     hidden: { opacity: 0, y: 20 },
-    visible: (i: number) => ({
+    visible: {
       opacity: 1,
-      y: 0,
-      transition: {
-        delay: i * 0.15,
-        duration: 0.5,
-        ease: "easeOut"
-      }
-    })
+      y: 0
+    }
   };
 
   const copyToClipboard = (text: string, type: 'title' | 'description') => {

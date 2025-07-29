@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { FaCog } from 'react-icons/fa';
 import Settings, { SettingsHandles } from '../Settings/Settings';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { determineBestUpdateVersion } from '../../helpers/versionHelpers';
 
 interface FooterProps {
@@ -90,7 +90,7 @@ const Footer: React.FC<FooterProps> = ({
 
   return (
     <>
-      <div className="no-move h-[69px] items-center justify-center bg-neutral-200 dark:bg-neutral-900 text-neutral-950 dark:text-neutral-200 rounded-b-3xl">
+      <div className="no-move h-[69px] items-center justify-center bg-neutral-200 dark:bg-neutral-900 text-neutral-950 dark:text-neutral-200">
         <div className="flex justify-between items-center p-4">
           <div className="flex-1">
           </div>
