@@ -4,7 +4,7 @@ import * as os from 'os';
 import axios from 'axios';
 import { spawn, exec } from 'child_process';
 import { installFfmpeg } from './ffmpeg-installer';
-import { app, BrowserWindow, shell, ipcMain, WebContents } from 'electron';
+import { app, BrowserWindow, shell, ipcMain } from 'electron';
 import log from 'electron-log';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
@@ -341,6 +341,7 @@ const createSplashWindow = async (forceCheck = false) => {
     show: false,
     icon: getAssetPath('favicon-32x32.png'),
     webPreferences: {
+      nodeIntegrationInWorker: true,
       nodeIntegration: true,
       contextIsolation: false,
       preload: app.isPackaged

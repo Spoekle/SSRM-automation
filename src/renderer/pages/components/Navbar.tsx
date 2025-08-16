@@ -17,7 +17,6 @@ import image11 from '../../../../assets/images/11.png';
 import image12 from '../../../../assets/images/12.png';
 import image13 from '../../../../assets/images/13.webp';
 import image14 from '../../../../assets/images/14.png';
-import image15 from '../../../../assets/images/15.webp';
 import image16 from '../../../../assets/images/16.png';
 
 const { ipcRenderer } = window.require('electron');
@@ -37,7 +36,6 @@ const easterEggImages = [
   { src: image12, alt: 'Fumo Friend 12' },
   { src: image13, alt: 'Fumo Friend 13' },
   { src: image14, alt: 'Fumo Friend 14' },
-  { src: image15, alt: 'Fumo Friend 15' },
   { src: image16, alt: 'Fumo Friend 16' }
 ];
 
@@ -292,10 +290,10 @@ const Navbar: React.FC = () => {
                 <h1 className='ml-1 text-lg text-left font-bold items-center'>
                   SSRM
                 </h1>
-                <p className='ml-1 -mt-3 text-sm font-semibold text-neutral-600 dark:text-neutral-400'>
+                <p className='ml-1 -mt-2 text-sm text-left font-semibold text-neutral-600 dark:text-neutral-400'>
                   Automation
                 </p>
-                <p className='ml-1 -mt-3 text-xs font-semibold text-neutral-600 dark:text-neutral-400'>
+                <p className='ml-1 -mt-1 text-xs text-left font-semibold text-neutral-600 dark:text-neutral-400'>
                   by Spoekle
                 </p>
               </Link>
