@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FaDownload, FaImage, FaSearch } from 'react-icons/fa';
-import ThumbnailForm from './components/ThumbnailForm';
+import BatchThumbnailForm from './components/batch/BatchThumbnailForm';
+import SSRMThumbnailForm from './components/ssrm/SSRMThumbnailForm';
 import ThumbnailPreview from './components/ThumbnailPreview';
 import { motion, AnimatePresence } from 'framer-motion';
 import AlertSystem from '../../components/AlertSystem';
@@ -44,7 +45,7 @@ const Thumbnails: React.FC = () => {
   const [starRatings, setStarRatings] = useState<StarRatings>({ ES: "", NOR: "", HARD: "", EX: "", EXP: "" });
   const [chosenDiff, setChosenDiff] = React.useState('ES');
   const [imageSrc, setImageSrc] = useState<string | null>(null);
-  const [thumbnailFormModal, setThumbnailFormModal] = useState<boolean>(false);
+  const [thumbnailFormModal, setThumbnailFormModal] = useState<string>("none");
   const [thumbnailPreviewModal, setThumbnailPreviewModal] = useState<boolean>(false);
   const cancelGenerationRef = useRef(false);
   const { alerts, createAlert } = useAlerts();
@@ -127,18 +128,33 @@ const Thumbnails: React.FC = () => {
           <p className='text-sm mb-3 text-neutral-600 dark:text-neutral-400'>
             Generate a thumbnail in a single click!
           </p>
-          <motion.button
-            className='bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg flex items-center justify-center gap-2 mx-auto'
-            onClick={() => setThumbnailFormModal(true)}
-            whileHover={{ scale: 1.05, boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.2)" }}
-            whileTap={{ scale: 0.95 }}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, type: "spring" }}
-          >
-            <FaImage size={16} />
-            <span>Create Thumbnail</span>
-          </motion.button>
+            <div className="flex justify-center space-x-3">
+            <motion.button
+              className='bg-gradient-to-r from-yellow-500 to-yellow-400 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg flex items-center justify-center gap-2 mx-auto'
+              onClick={() => setThumbnailFormModal("batch")}
+              whileHover={{ scale: 1.05, boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.2)" }}
+              whileTap={{ scale: 0.95 }}
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ type: "spring" }}
+            >
+              <FaImage size={16} />
+              <span>Batch Thumbnail</span>
+            </motion.button>
+            <motion.button
+              className='bg-gradient-to-r from-orange-500 to-orange-400 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg flex items-center justify-center gap-2 mx-auto'
+              onClick={() => setThumbnailFormModal("ssrm")}
+              whileHover={{ scale: 1.05, boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.2)" }}
+              whileTap={{ scale: 0.95 }}
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ type: "spring" }}
+
+            >
+              <FaImage size={16} />
+              <span>SSRM Thumbnail</span>
+            </motion.button>
+            </div>
         </motion.div>
 
         {imageSrc && (
@@ -216,8 +232,24 @@ const Thumbnails: React.FC = () => {
 
       <AlertSystem alerts={alerts} position="top-right" />
 
-      {thumbnailFormModal && (
-        <ThumbnailForm
+      {thumbnailFormModal === "batch" && (
+        <BatchThumbnailForm
+          mapId={mapId}
+          setMapId={setMapId}
+          setMapInfo={setMapInfo}
+          setThumbnailFormModal={setThumbnailFormModal}
+          setImageSrc={setImageSrc}
+          starRatings={starRatings}
+          setStarRatings={setStarRatings}
+          chosenDiff={chosenDiff}
+          setChosenDiff={setChosenDiff}
+          createAlert={createAlert}
+          progress={(process: string, progress: number, visible: boolean) => setProgress({ process, progress, visible })}
+          cancelGenerationRef={cancelGenerationRef}
+        />
+      )}
+      {thumbnailFormModal === "ssrm" && (
+        <SSRMThumbnailForm
           mapId={mapId}
           setMapId={setMapId}
           setMapInfo={setMapInfo}

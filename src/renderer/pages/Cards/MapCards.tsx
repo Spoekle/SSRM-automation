@@ -139,7 +139,7 @@ const MapCards: React.FC = () => {
               whileTap={{ scale: 0.95 }}
               initial={{ opacity: 0, x: -30 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5, type: "spring" }}
+              transition={{ type: "spring" }}
             >
               <FaLayerGroup size={16} />
               <span>Map Card</span>
@@ -151,7 +151,7 @@ const MapCards: React.FC = () => {
               whileTap={{ scale: 0.95 }}
               initial={{ opacity: 0, x: 30 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.6, type: "spring" }}
+              transition={{ type: "spring" }}
             >
               <FaExchangeAlt size={16} />
               <span>Reweight</span>

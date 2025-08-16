@@ -4,16 +4,16 @@ import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes, FaImage, FaCloudUploadAlt, FaMapMarkedAlt, FaCheck } from 'react-icons/fa';
 import log from 'electron-log';
-import MapInfoSection from './MapInfoSection';
-import FileUploadSection from './FileUploadSection';
-import { generateThumbnail } from '../../../../main/helper';
-import { notifyMapInfoUpdated } from '../../../utils/mapEvents';
-import '../../../pages/Settings/styles/CustomScrollbar.css';
+import BatchInfoSection from '../batch/BatchInfoSection';
+import BatchFileUploadSection from '../batch/BatchFileUploadSection';
+import { generateBatchThumbnail } from '../../../../../main/generation/thumbnails';
+import { notifyMapInfoUpdated } from '../../../../utils/mapEvents';
+import '../../../../pages/Settings/styles/CustomScrollbar.css';
 
 interface ThumbnailFormProps {
   mapId: string;
   setMapId: (id: string) => void;
-  setThumbnailFormModal: (show: boolean) => void;
+  setThumbnailFormModal: (show: string) => void;
   setMapInfo: (info: any) => void;
   setImageSrc: (src: string) => void;
   starRatings: StarRatings;
@@ -33,7 +33,7 @@ interface StarRatings {
   EXP: string;
 }
 
-const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
+const BatchThumbnailForm: React.FC<ThumbnailFormProps> = ({
   mapId,
   setMapId,
   setThumbnailFormModal,
@@ -50,6 +50,7 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
   const [file, setFile] = useState<File | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [isOverlayVisible, setIsOverlayVisible] = useState(false);
+  const [month, setMonth] = useState<string>('');
 
   useEffect(() => {
     setIsOverlayVisible(true);
@@ -60,51 +61,25 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
     setIsPanelOpen(false);
     setIsOverlayVisible(false);
     setTimeout(() => {
-      setThumbnailFormModal(false);
+      setThumbnailFormModal("none");
     }, 300);
   };
 
-  async function getStarRating(hash: string): Promise<StarRatings> {
-    const diffs = ['1', '3', '5', '7', '9'];
-    const ratings: StarRatings = { ES: '', NOR: '', HARD: '', EX: '', EXP: '' };
-
-    for (let i = 0; i < diffs.length; i++) {
-      try {
-        const { data } = await axios.get(`http://localhost:3000/api/scoresaber/${hash}/${diffs[i]}`);
-        const key = Object.keys(ratings)[i] as keyof StarRatings;
-        ratings[key] = data.stars === 0 ? (data.qualified ? 'Qualified' : 'Unranked') : `${data.stars}`;
-      } catch (error) {
-        log.error(`Error fetching star rating for difficulty ${diffs[i]}:`, error);
-      }
-    }
-    return ratings;
-  }
 
   const getMapInfo = async (event: FormEvent) => {
     event.preventDefault();
+    
+    // Validate that month is selected
+    if (!month) {
+      createAlert('Please select a month', 'error');
+      return;
+    }
+    
     try {
       setImageSrc("");
-      setThumbnailFormModal(false);
+      setThumbnailFormModal("none");
       createAlert('Generation Started...', 'info');
-      setProgress('Fetching map info...', 10, true);
-
-      let mapData;
-      let currentStarRatings = starRatings;
-
-      try {
-        const { data } = await axios.get(`https://api.beatsaver.com/maps/id/${mapId}`);
-        mapData = data;
-        setMapInfo(mapData);
-        localStorage.setItem('mapId', mapId);
-        localStorage.setItem('mapInfo', JSON.stringify(mapData));
-        notifyMapInfoUpdated();
-
-      } catch (error) {
-        log.error('Error fetching map data:', error);
-        createAlert('Error fetching map info', 'error');
-        setProgress("", 0, false);
-        return;
-      }
+      setProgress('Putting info together...', 10, true);
 
       let backgroundImage = '';
 
@@ -146,23 +121,18 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
           }
         } catch (error) {
           log.error('Error processing file:', error);
-          createAlert('Error processing file, falling back to map cover', 'error');
-          backgroundImage = mapData.versions[0].coverURL;
+          createAlert('Error processing file', 'error');
         }
       } else {
-        createAlert('No file provided, using map cover as background', 'info');
-        setProgress('Generating thumbnail with cover image', 50, true);
-        backgroundImage = mapData.versions[0].coverURL;
+        createAlert('No file provided', 'info');
       }
 
       setProgress('Generating thumbnail...', 70, true);
       let image;
       try {
-        image = await generateThumbnail(
-          mapData,
-          chosenDiff as keyof StarRatings,
-          currentStarRatings,
+        image = await generateBatchThumbnail(
           backgroundImage,
+          month,
         );
       } catch (error) {
         log.error('Error generating thumbnail:', error);
@@ -204,7 +174,7 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
             onClick={(e) => e.stopPropagation()}
           >
             <motion.div
-              className="z-10 sticky top-0 backdrop-blur-md bg-gradient-to-r from-purple-500/10 to-pink-500/10 dark:from-purple-800/20 dark:to-pink-800/20 p-3 border-b border-neutral-300 dark:border-neutral-700 flex justify-between items-center"
+              className="z-10 sticky top-0 backdrop-blur-md bg-gradient-to-r from-yellow-500/10 to-yellow-400/10 dark:from-yellow-800/20 dark:to-yellow-700/20 p-3 border-b border-neutral-300 dark:border-neutral-700 flex justify-between items-center"
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1, type: "spring" }}
@@ -214,18 +184,14 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
                   className="text-lg bg-white/70 dark:bg-neutral-700/70 px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 shadow-sm"
                   whileHover={{ scale: 1.03 }}
                 >
-                  <FaImage className="text-purple-500" />
+                  <FaImage className="text-yellow-500" />
                   Thumbnail Settings
                 </motion.h2>
               </div>
               <motion.button
-                className="text-red-500 bg-white/70 dark:bg-neutral-700/70 p-1.5 rounded-md hover:bg-neutral-400 dark:hover:bg-neutral-600 transition duration-200 shadow-sm"
+                className="text-red-500 bg-white/70 dark:bg-neutral-700/70 p-1.5 rounded-md hover:bg-red-500 hover:text-white transition duration-200 shadow-sm"
                 onClick={handleClose}
-                whileHover={{
-                  scale: 1.1,
-                  backgroundColor: "#ef4444",
-                  color: "#ffffff",
-                }}
+                whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
               >
                 <FaTimes />
@@ -237,9 +203,9 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
                 {/* Background Image - File upload comes first */}
                 <div className='bg-white dark:bg-neutral-700 p-3 rounded-xl shadow-sm'>
                   <h2 className='text-base font-medium mb-2 border-b pb-1 border-neutral-200 dark:border-neutral-600 flex items-center gap-1.5'>
-                    <FaCloudUploadAlt className="text-purple-500" /> Background Image
+                    <FaCloudUploadAlt className="text-yellow-500" /> Background Image
                   </h2>
-                  <FileUploadSection
+                  <BatchFileUploadSection
                     file={file}
                     setFile={setFile}
                   />
@@ -248,15 +214,11 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
                 {/* Map Details */}
                 <div className='bg-white dark:bg-neutral-700 p-3 rounded-xl shadow-sm'>
                   <h2 className='text-base font-medium mb-2 border-b pb-1 border-neutral-200 dark:border-neutral-600 flex items-center gap-1.5'>
-                    <FaMapMarkedAlt className="text-purple-500" /> Map Details
+                    <FaMapMarkedAlt className="text-yellow-500" /> Batch Details
                   </h2>
-                  <MapInfoSection
-                    mapId={mapId}
-                    setMapId={setMapId}
-                    starRatings={starRatings}
-                    setStarRatings={setStarRatings}
-                    chosenDiff={chosenDiff}
-                    setChosenDiff={setChosenDiff}
+                  <BatchInfoSection
+                    month={month}
+                    setMonth={setMonth}
                   />
                 </div>
               </form>
@@ -268,7 +230,7 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
                 type="button"
                 onClick={getMapInfo}
                 className='bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-1.5 text-sm rounded-lg shadow-sm hover:shadow-md font-medium flex items-center gap-1.5'
-                whileHover={{ scale: 1.03, boxShadow: "0px 4px 8px rgba(0,0,0,0.1)" }}
+                whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
               >
                 <FaCheck size={12} />
@@ -283,4 +245,4 @@ const ThumbnailForm: React.FC<ThumbnailFormProps> = ({
   );
 };
 
-export default ThumbnailForm;
+export default BatchThumbnailForm;
