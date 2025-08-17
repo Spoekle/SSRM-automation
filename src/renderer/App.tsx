@@ -124,7 +124,7 @@ export default function App() {
       <ConfirmationModalProvider>
         <Navbar />
         <GlobalLoadedMap />
-        <div className="content">
+        <div>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/titles" element={<Titles />} />
