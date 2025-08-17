@@ -36,6 +36,12 @@ const configuration: webpack.Configuration = {
     },
   },
 
+  // Add externals to exclude native modules from webpack processing
+  externals: {
+    'skia-canvas': 'commonjs2 skia-canvas',
+    'fluent-ffmpeg': 'commonjs2 fluent-ffmpeg',
+  },
+
   plugins: [
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore

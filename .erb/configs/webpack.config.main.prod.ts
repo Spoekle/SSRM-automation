@@ -43,6 +43,12 @@ const configuration: webpack.Configuration = {
     ],
   },
 
+  // Add externals to exclude native modules from webpack processing
+  externals: {
+    'skia-canvas': 'commonjs2 skia-canvas',
+    'fluent-ffmpeg': 'commonjs2 fluent-ffmpeg',
+  },
+
   plugins: [
     new BundleAnalyzerPlugin({
       analyzerMode: process.env.ANALYZE === 'true' ? 'server' : 'disabled',

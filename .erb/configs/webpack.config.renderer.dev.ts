@@ -95,7 +95,15 @@ const configuration: webpack.Configuration = {
               importLoaders: 1,
             },
           },
-          'sass-loader',
+          {
+            loader: 'sass-loader',
+            options: {
+              api: 'modern',
+              sassOptions: {
+                // Any Sass options you want to configure
+              },
+            },
+          },
         ],
         include: /\.module\.s?(c|a)ss$/,
       },
@@ -104,7 +112,15 @@ const configuration: webpack.Configuration = {
         use: [
           'style-loader',
           'css-loader',
-          'sass-loader',
+          {
+            loader: 'sass-loader',
+            options: {
+              api: 'modern',
+              sassOptions: {
+                // Any Sass options you want to configure
+              },
+            },
+          },
           {
             loader: 'postcss-loader',
             options: {
