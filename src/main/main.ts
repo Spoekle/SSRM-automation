@@ -362,14 +362,13 @@ const createSplashWindow = async (forceCheck = false) => {
   };
 
   splashWindow = new BrowserWindow({
+    show: false,
     width: 300,
     height: 420,
-    transparent: true,
-    frame: false,
     resizable: false,
+    transparent: false,
+    titleBarStyle: 'hidden',
     alwaysOnTop: true,
-    center: true,
-    show: false,
     icon: getAssetPath('favicon-32x32.png'),
     webPreferences: {
       nodeIntegrationInWorker: true,

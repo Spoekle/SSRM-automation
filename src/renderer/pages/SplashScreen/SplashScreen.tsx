@@ -362,7 +362,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion, forceVersionChe
 
   return (
     <motion.div
-      className="flex flex-col items-center justify-center h-full bg-neutral-200 dark:bg-neutral-900 rounded-3xl overflow-hidden p-4"
+      className="flex flex-col items-center justify-center h-full min-h-[420px] bg-neutral-200 dark:bg-neutral-900 overflow-hidden p-4"
       layout
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
