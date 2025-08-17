@@ -4,8 +4,9 @@ import * as os from 'os';
 import axios from 'axios';
 import { spawn, exec } from 'child_process';
 import { installFfmpeg } from './ffmpeg-installer';
-import { app, BrowserWindow, shell, ipcMain } from 'electron';
+import { app, BrowserWindow, shell, ipcMain, WebContents } from 'electron';
 import log from 'electron-log';
+import { FontLibrary } from 'skia-canvas';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 
@@ -40,6 +41,36 @@ const installExtensions = async () => {
   }
   return null;
 };
+
+ipcMain.handle('load-fonts', async () => {
+  try {
+    const fonts = FontLibrary.use('Aller', ["../../../assets/fonts/Aller_It.ttf"]);
+    return fonts.length;
+  } catch (error) {
+    log.error('Error loading fonts:', error);
+    return [];
+  }
+});
+
+ipcMain.handle('generate-batch-thumbnail', async (event, backgroundUrl: string, month: string, backgroundTransform?: { scale: number; x: number; y: number }) => {
+  try {
+    const { generateBatchThumbnail } = await import('./generation/thumbnails/batchThumbnailGenerator');
+    return await generateBatchThumbnail(backgroundUrl, month, backgroundTransform);
+  } catch (error) {
+    log.error('Error generating batch thumbnail:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('generate-ssrm-thumbnail', async (event, mapData: any, chosenDiff: string, starRatings: any, backgroundImage: string) => {
+  try {
+    const { generateSsrmThumbnail } = await import('./generation/thumbnails/ssrmThumbnailGenerator');
+    return await generateSsrmThumbnail(mapData, chosenDiff as any, starRatings, backgroundImage);
+  } catch (error) {
+    log.error('Error generating SSRM thumbnail:', error);
+    throw error;
+  }
+});
 
 ipcMain.handle('check-scoresaber', async () => {
   try {
@@ -378,11 +409,12 @@ const createMainWindow = async () => {
     minWidth: 800,
     height: 518,
     resizable: false,
-    transparent: true,
+    transparent: false,
     titleBarStyle: 'hidden',
     trafficLightPosition: { x: 720, y: 25 },
     icon: getAssetPath('favicon-32x32.png'),
     webPreferences: {
+      nodeIntegrationInWorker: true,
       nodeIntegration: true,
       contextIsolation: false,
       devTools: true,

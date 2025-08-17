@@ -4,9 +4,9 @@ import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes, FaImage, FaCloudUploadAlt, FaMapMarkedAlt, FaCheck } from 'react-icons/fa';
 import log from 'electron-log';
+import { ipcRenderer } from 'electron';
 import MapInfoSection from './MapInfoSection';
 import FileUploadSection from './FileUploadSection';
-import { generateSsrmThumbnail } from '../../../../../main/generation/thumbnails';
 import { notifyMapInfoUpdated } from '../../../../utils/mapEvents';
 import '../../../../pages/Settings/styles/CustomScrollbar.css';
 
@@ -158,12 +158,7 @@ const SSRMThumbnailForm: React.FC<ThumbnailFormProps> = ({
       setProgress('Generating thumbnail...', 70, true);
       let image;
       try {
-        image = await generateSsrmThumbnail(
-          mapData,
-          chosenDiff as keyof StarRatings,
-          currentStarRatings,
-          backgroundImage,
-        );
+        image = await ipcRenderer.invoke('generate-ssrm-thumbnail', mapData, chosenDiff, currentStarRatings, backgroundImage);
       } catch (error) {
         log.error('Error generating thumbnail:', error);
         createAlert('Error generating thumbnail', 'error');

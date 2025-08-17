@@ -281,17 +281,22 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ appVersion, forceVersionChe
         setLoadingStage('Checking ScoreSaber API...');
         const ssStatus = await ipcRenderer.invoke('check-scoresaber');
         setApiStatus(prev => ({ ...prev, scoresaber: ssStatus }));
-        setLoadingProgress(25);
+        setLoadingProgress(20);
         await wait(500);
+
+        setLoadingStage('Loading fonts...');
+        const fontStatus = await ipcRenderer.invoke('load-fonts');
+        setApiStatus(prev => ({ ...prev, fonts: fontStatus }));
+        setLoadingProgress(40);
 
         setLoadingStage('Checking BeatSaver API...');
         const bsStatus = await ipcRenderer.invoke('check-beatsaver');
         setApiStatus(prev => ({ ...prev, beatsaver: bsStatus }));
-        setLoadingProgress(50);
+        setLoadingProgress(60);
         await wait(500);
 
         setLoadingStage('Loading configuration...');
-        setLoadingProgress(75);
+        setLoadingProgress(80);
         await wait(500);
 
         setLoadingStage('Checking for updates...');

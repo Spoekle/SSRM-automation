@@ -2,11 +2,12 @@ import React, { FormEvent, useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaTimes, FaImage, FaCloudUploadAlt, FaMapMarkedAlt, FaCheck } from 'react-icons/fa';
+import { FaTimes, FaImage, FaCloudUploadAlt, FaMapMarkedAlt, FaCheck, FaCog } from 'react-icons/fa';
 import log from 'electron-log';
+import { ipcRenderer } from 'electron';
 import BatchInfoSection from '../batch/BatchInfoSection';
 import BatchFileUploadSection from '../batch/BatchFileUploadSection';
-import { generateBatchThumbnail } from '../../../../../main/generation/thumbnails';
+import BackgroundCustomizer from '../batch/BackgroundCustomizer';
 import { notifyMapInfoUpdated } from '../../../../utils/mapEvents';
 import '../../../../pages/Settings/styles/CustomScrollbar.css';
 
@@ -51,11 +52,23 @@ const BatchThumbnailForm: React.FC<ThumbnailFormProps> = ({
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [isOverlayVisible, setIsOverlayVisible] = useState(false);
   const [month, setMonth] = useState<string>('');
+  const [backgroundScale, setBackgroundScale] = useState<number>(1);
+  const [backgroundX, setBackgroundX] = useState<number>(0);
+  const [backgroundY, setBackgroundY] = useState<number>(0);
 
   useEffect(() => {
     setIsOverlayVisible(true);
     setIsPanelOpen(true);
   }, []);
+
+  // Reset customizer values when file changes
+  useEffect(() => {
+    if (!file) {
+      setBackgroundScale(1);
+      setBackgroundX(0);
+      setBackgroundY(0);
+    }
+  }, [file]);
 
   const handleClose = () => {
     setIsPanelOpen(false);
@@ -130,10 +143,11 @@ const BatchThumbnailForm: React.FC<ThumbnailFormProps> = ({
       setProgress('Generating thumbnail...', 70, true);
       let image;
       try {
-        image = await generateBatchThumbnail(
-          backgroundImage,
-          month,
-        );
+        image = await ipcRenderer.invoke('generate-batch-thumbnail', backgroundImage, month, {
+          scale: backgroundScale,
+          x: backgroundX,
+          y: backgroundY
+        });
       } catch (error) {
         log.error('Error generating thumbnail:', error);
         createAlert('Error generating thumbnail', 'error');
@@ -221,6 +235,25 @@ const BatchThumbnailForm: React.FC<ThumbnailFormProps> = ({
                     setMonth={setMonth}
                   />
                 </div>
+
+                {/* Background Customizer */}
+                {file && (
+                  <div className='bg-white dark:bg-neutral-700 p-3 rounded-xl shadow-sm'>
+                    <h2 className='text-base font-medium mb-2 border-b pb-1 border-neutral-200 dark:border-neutral-600 flex items-center gap-1.5'>
+                      <FaCog className="text-yellow-500" /> Background Customizer
+                    </h2>
+                    <BackgroundCustomizer
+                      file={file}
+                      month={month}
+                      backgroundScale={backgroundScale}
+                      setBackgroundScale={setBackgroundScale}
+                      backgroundX={backgroundX}
+                      setBackgroundX={setBackgroundX}
+                      backgroundY={backgroundY}
+                      setBackgroundY={setBackgroundY}
+                    />
+                  </div>
+                )}
               </form>
             </div>
 
