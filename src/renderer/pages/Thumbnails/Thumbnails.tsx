@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { FaDownload, FaImage, FaSearch } from 'react-icons/fa';
 import BatchThumbnailForm from './components/batch/BatchThumbnailForm';
 import SSRMThumbnailForm from './components/ssrm/SSRMThumbnailForm';
-import ThumbnailPreview from './components/ThumbnailPreview';
+import ThumbnailPreview from './components/batch/ThumbnailPreview';
 import { motion, AnimatePresence } from 'framer-motion';
 import AlertSystem from '../../components/AlertSystem';
 import ProgressBar from '../../components/ProgressBar';
