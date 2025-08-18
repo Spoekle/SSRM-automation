@@ -285,6 +285,9 @@
       "publishAutoUpdate": true
     }
   },
+  "optionalDependencies": {
+    "dmg-license": "^1.0.11"
+  },
   "collective": {
     "url": "https://opencollective.com/electron-react-boilerplate-594"
   },

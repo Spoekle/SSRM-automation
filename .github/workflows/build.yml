@@ -34,6 +34,11 @@ jobs:
           cd release/app
           npm ci
 
+      # Install macOS-specific dependencies
+      - name: Install macOS-specific dependencies
+        if: matrix.os == 'macos-latest'
+        run: npm install --save-optional dmg-license
+
       - name: Generate GitHub Token
         id: generate_token
         uses: actions/create-github-app-token@v1
