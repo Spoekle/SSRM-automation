@@ -1,4 +1,4 @@
-import { Canvas, ExportFormat } from 'skia-canvas';
+import { Canvas, ExportFormat, Path2D } from 'skia-canvas';
 import { loadImage, truncateText } from '../utils/imageUtils';
 import { MapInfo, StarRating } from '../types/interfaces';
 import log from 'electron-log';

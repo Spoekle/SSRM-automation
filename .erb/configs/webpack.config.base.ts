@@ -14,6 +14,11 @@ const configuration: webpack.Configuration = {
 
   module: {
     rules: [
+      // Handle .node files (native binaries)
+      {
+        test: /\.node$/,
+        use: 'node-loader',
+      },
       {
         test: /\.[jt]sx?$/,
         exclude: /node_modules/,

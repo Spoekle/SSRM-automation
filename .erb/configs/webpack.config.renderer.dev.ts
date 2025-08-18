@@ -83,6 +83,11 @@ const configuration: webpack.Configuration = {
 
   module: {
     rules: [
+      // Handle .node files (native binaries)
+      {
+        test: /\.node$/,
+        use: 'node-loader',
+      },
       {
         test: /\.s?(c|a)ss$/,
         use: [
