@@ -6,7 +6,7 @@ import { saveAs } from 'file-saver';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes, FaCloudUploadAlt, FaExchangeAlt, FaMapMarkedAlt, FaCheck, FaStar, FaSync } from "react-icons/fa";
 import log from 'electron-log';
-import { generateReweightCard } from '../../../../main/helper';
+import { generateReweightCard } from '../../../../main/generation/cards/reweightCardGenerator';
 import { notifyMapInfoUpdated } from '../../../utils/mapEvents';
 import '../../../pages/Settings/styles/CustomScrollbar.css';
 
