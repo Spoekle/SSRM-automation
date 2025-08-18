@@ -1,6 +1,6 @@
 {
   "name": "ssrm-automation",
-  "version": "2.2.0-beta.1",
+  "version": "2.2.0-beta.2",
   "description": "Generate everything that you need!",
   "license": "MIT",
   "author": {
@@ -14,5 +14,8 @@
     "postinstall": "npm run rebuild && npm run link-modules",
     "link-modules": "node -r ts-node/register ../../.erb/scripts/link-modules.ts"
   },
-  "dependencies": {}
+  "dependencies": {
+    "skia-canvas": "^3.0.2",
+    "fluent-ffmpeg": "^2.1.3"
+  }
 }
