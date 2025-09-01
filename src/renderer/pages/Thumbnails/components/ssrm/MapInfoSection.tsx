@@ -89,13 +89,13 @@ const MapInfoSection: React.FC<MapInfoSectionProps> = ({
             value={mapId}
             onChange={(e) => handleMapIdChange(e.target.value)}
             placeholder="Enter map ID..."
-            className="flex-1 px-3 py-1.5 text-sm border rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-300 dark:bg-neutral-800 dark:border-neutral-600 dark:text-white"
+            className="flex-1 px-3 py-1.5 text-sm border rounded-lg focus:outline-none focus:ring-1 focus:ring-orange-300 dark:bg-neutral-800 dark:border-neutral-600 dark:text-white"
           />
           <motion.button
             type="button"
             onClick={fetchStarRatings}
             disabled={isFetching}
-            className="absolute right-0 bg-purple-500 text-white px-3 py-1.5 text-sm rounded-lg flex items-center gap-1"
+            className="absolute right-0 bg-orange-500 text-white px-3 py-1.5 text-sm rounded-lg flex items-center gap-1"
             whileHover={!isFetching ? { scale: 1.05 } : {}}
             whileTap={!isFetching ? { scale: 0.95 } : {}}
           >
@@ -114,7 +114,7 @@ const MapInfoSection: React.FC<MapInfoSectionProps> = ({
         <div>
           <label className='block mb-1 text-sm text-neutral-700 dark:text-neutral-200 font-medium'>Difficulty:</label>
           <select
-            className="w-full px-3 py-1.5 text-sm border rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-300 dark:bg-neutral-800 dark:border-neutral-600 dark:text-white"
+            className="w-full px-3 py-1.5 text-sm border rounded-lg focus:outline-none focus:ring-1 focus:ring-orange-300 dark:bg-neutral-800 dark:border-neutral-600 dark:text-white"
             onChange={(e) => {
               setChosenDiff(e.target.value);
               localStorage.setItem('chosenDiff', e.target.value)
@@ -138,7 +138,7 @@ const MapInfoSection: React.FC<MapInfoSectionProps> = ({
             type="text"
             value={starRatings[chosenDiff as keyof StarRatings]}
             onChange={(e) => updateStarRating(chosenDiff as keyof StarRatings, e.target.value)}
-            className="w-full px-3 py-1.5 text-sm border rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-300 dark:bg-neutral-800 dark:border-neutral-600 dark:text-white mt-1"
+            className="w-full px-3 py-1.5 text-sm border rounded-lg focus:outline-none focus:ring-1 focus:ring-orange-300 dark:bg-neutral-800 dark:border-neutral-600 dark:text-white mt-1"
             placeholder="Enter star rating"
           />
         </div>

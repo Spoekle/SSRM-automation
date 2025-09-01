@@ -74,7 +74,7 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({ file, setFile }) 
           </div>
         ) : (
           <div className="flex flex-col items-center">
-            <FaCloudUploadAlt className="mb-1 text-purple-500" size={18} />
+            <FaCloudUploadAlt className="mb-1 text-orange-500" size={18} />
             <span className="text-sm text-neutral-700 dark:text-neutral-200">Select image or video</span>
             <span className="text-xs text-neutral-500 dark:text-neutral-400">or drag and drop</span>
           </div>

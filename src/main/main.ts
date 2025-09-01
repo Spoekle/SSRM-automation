@@ -72,6 +72,16 @@ ipcMain.handle('generate-ssrm-thumbnail', async (event, mapData: any, chosenDiff
   }
 });
 
+ipcMain.handle('generate-playlist-thumbnail', async (event, backgroundUrl: string, month: string, backgroundTransform?: { scale: number; x: number; y: number }) => {
+  try {
+    const { generatePlaylistThumbnail } = await import('./generation/thumbnails/playlistThumbnailGenerator');
+    return await generatePlaylistThumbnail(backgroundUrl, month, backgroundTransform);
+  } catch (error) {
+    log.error('Error generating playlist thumbnail:', error);
+    throw error;
+  }
+});
+
 ipcMain.handle('check-scoresaber', async () => {
   try {
     const response = await axios.get('https://scoresaber.com/api/', {

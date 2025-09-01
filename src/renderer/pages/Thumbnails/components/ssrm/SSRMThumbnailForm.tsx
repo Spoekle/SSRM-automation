@@ -199,7 +199,7 @@ const SSRMThumbnailForm: React.FC<ThumbnailFormProps> = ({
             onClick={(e) => e.stopPropagation()}
           >
             <motion.div
-              className="z-10 sticky top-0 backdrop-blur-md bg-gradient-to-r from-purple-500/10 to-pink-500/10 dark:from-purple-800/20 dark:to-pink-800/20 p-3 border-b border-neutral-300 dark:border-neutral-700 flex justify-between items-center"
+              className="z-10 sticky top-0 backdrop-blur-md bg-gradient-to-r from-orange-500/10 to-orange-400/10 dark:from-orange-800/20 dark:to-orange-700/20 p-3 border-b border-neutral-300 dark:border-neutral-700 flex justify-between items-center"
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1, type: "spring" }}
@@ -209,7 +209,7 @@ const SSRMThumbnailForm: React.FC<ThumbnailFormProps> = ({
                   className="text-lg bg-white/70 dark:bg-neutral-700/70 px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 shadow-sm"
                   whileHover={{ scale: 1.03 }}
                 >
-                  <FaImage className="text-purple-500" />
+                  <FaImage className="text-orange-500" />
                   SSRM Thumbnail Settings
                 </motion.h2>
               </div>
@@ -232,7 +232,7 @@ const SSRMThumbnailForm: React.FC<ThumbnailFormProps> = ({
                 {/* Background Image - File upload comes first */}
                 <div className='bg-white dark:bg-neutral-700 p-3 rounded-xl shadow-sm'>
                   <h2 className='text-base font-medium mb-2 border-b pb-1 border-neutral-200 dark:border-neutral-600 flex items-center gap-1.5'>
-                    <FaCloudUploadAlt className="text-purple-500" /> Background Image
+                    <FaCloudUploadAlt className="text-orange-500" /> Background Image
                   </h2>
                   <FileUploadSection
                     file={file}
@@ -243,7 +243,7 @@ const SSRMThumbnailForm: React.FC<ThumbnailFormProps> = ({
                 {/* Map Details */}
                 <div className='bg-white dark:bg-neutral-700 p-3 rounded-xl shadow-sm'>
                   <h2 className='text-base font-medium mb-2 border-b pb-1 border-neutral-200 dark:border-neutral-600 flex items-center gap-1.5'>
-                    <FaMapMarkedAlt className="text-purple-500" /> Map Details
+                    <FaMapMarkedAlt className="text-orange-500" /> Map Details
                   </h2>
                   <MapInfoSection
                     mapId={mapId}
@@ -262,7 +262,7 @@ const SSRMThumbnailForm: React.FC<ThumbnailFormProps> = ({
               <motion.button
                 type="button"
                 onClick={getMapInfo}
-                className='bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-1.5 text-sm rounded-lg shadow-sm hover:shadow-md font-medium flex items-center gap-1.5'
+                className='bg-gradient-to-r from-orange-500 to-orange-400 text-white px-4 py-1.5 text-sm rounded-lg shadow-sm hover:shadow-md font-medium flex items-center gap-1.5'
                 whileHover={{ scale: 1.03, boxShadow: "0px 4px 8px rgba(0,0,0,0.1)" }}
                 whileTap={{ scale: 0.97 }}
               >

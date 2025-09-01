@@ -2,51 +2,26 @@ import React, { FormEvent, useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaTimes, FaImage, FaCloudUploadAlt, FaMapMarkedAlt, FaCheck, FaCog } from 'react-icons/fa';
+import { FaTimes, FaImage, FaCloudUploadAlt, FaList, FaCheck, FaCog } from 'react-icons/fa';
 import log from 'electron-log';
 import { ipcRenderer } from 'electron';
-import BatchInfoSection from '../batch/BatchInfoSection';
-import BatchFileUploadSection from '../batch/BatchFileUploadSection';
-import BackgroundCustomizer from '../batch/BackgroundCustomizer';
-import { notifyMapInfoUpdated } from '../../../../utils/mapEvents';
-import '../../../../pages/Settings/styles/CustomScrollbar.css';
+import PlaylistThumbnailInfoSection from './PlaylistThumbnailInfoSection';
+import PlaylistFileUploadSection from './PlaylistFileUploadSection';
+import PlaylistBackgroundCustomizer from './PlaylistBackgroundCustomizer';
+import '../../../Settings/styles/CustomScrollbar.css';
 
-interface ThumbnailFormProps {
-  mapId: string;
-  setMapId: (id: string) => void;
-  setThumbnailFormModal: (show: string) => void;
-  setMapInfo: (info: any) => void;
+interface PlaylistThumbnailFormProps {
+  setPlaylistThumbnailFormModal: (show: boolean) => void;
   setImageSrc: (src: string) => void;
-  starRatings: StarRatings;
-  setStarRatings: (ratings: StarRatings) => void;
-  chosenDiff: string;
-  setChosenDiff: (diff: string) => void;
   createAlert: (message: string, type: 'success' | 'error' | 'alert' | 'info') => void;
   progress: (process: string, progress: number, visible: boolean) => void;
-  cancelGenerationRef: React.MutableRefObject<boolean>;
 }
 
-interface StarRatings {
-  ES: string;
-  NOR: string;
-  HARD: string;
-  EX: string;
-  EXP: string;
-}
-
-const BatchThumbnailForm: React.FC<ThumbnailFormProps> = ({
-  mapId,
-  setMapId,
-  setThumbnailFormModal,
-  setMapInfo,
+const PlaylistThumbnailForm: React.FC<PlaylistThumbnailFormProps> = ({
+  setPlaylistThumbnailFormModal,
   setImageSrc,
-  starRatings,
-  setStarRatings,
-  chosenDiff,
-  setChosenDiff,
   createAlert,
   progress: setProgress,
-  cancelGenerationRef,
 }) => {
   const [file, setFile] = useState<File | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -74,12 +49,11 @@ const BatchThumbnailForm: React.FC<ThumbnailFormProps> = ({
     setIsPanelOpen(false);
     setIsOverlayVisible(false);
     setTimeout(() => {
-      setThumbnailFormModal("none");
+      setPlaylistThumbnailFormModal(false);
     }, 300);
   };
 
-
-  const getMapInfo = async (event: FormEvent) => {
+  const generateThumbnail = async (event: FormEvent) => {
     event.preventDefault();
     
     // Validate that month is selected
@@ -87,69 +61,73 @@ const BatchThumbnailForm: React.FC<ThumbnailFormProps> = ({
       createAlert('Please select a month', 'error');
       return;
     }
+
+    // Validate that a file is uploaded
+    if (!file) {
+      createAlert('Please upload a background image', 'error');
+      return;
+    }
     
     try {
       setImageSrc("");
-      setThumbnailFormModal("none");
+      setPlaylistThumbnailFormModal(false);
       createAlert('Generation Started...', 'info');
       setProgress('Putting info together...', 10, true);
 
       let backgroundImage = '';
 
-      if (file) {
-        const fileType = file.type.startsWith('image/') ? 'image' : 'video';
+      const fileType = file.type.startsWith('image/') ? 'image' : 'video';
 
-        if (fileType === 'video') {
-          setProgress('Processing video to extract a frame...', 30, true);
-        } else {
-          setProgress('Processing image...', 30, true);
-        }
-
-        try {
-          const formData = new FormData();
-          formData.append('file', file);
-          formData.append('fileType', fileType);
-
-          const response = await axios.post(
-            'http://localhost:3000/api/generate-thumbnail',
-            formData,
-            {
-              headers: {
-                'Content-Type': 'multipart/form-data'
-              },
-              onUploadProgress: (progressEvent) => {
-                const percentCompleted = Math.round(
-                  (progressEvent.loaded * 100) / (progressEvent.total || file.size)
-                );
-                setProgress(`Uploading ${fileType}...`, percentCompleted, true);
-              }
-            }
-          );
-
-          if (response.data && response.data.thumbnail) {
-            backgroundImage = response.data.thumbnail;
-            setProgress('File processed successfully', 60, true);
-          } else {
-            throw new Error('Invalid response format from server');
-          }
-        } catch (error) {
-          log.error('Error processing file:', error);
-          createAlert('Error processing file', 'error');
-        }
+      if (fileType === 'video') {
+        setProgress('Processing video to extract a frame...', 30, true);
       } else {
-        createAlert('No file provided', 'info');
+        setProgress('Processing image...', 30, true);
+      }
+
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('fileType', fileType);
+
+        const response = await axios.post(
+          'http://localhost:3000/api/generate-thumbnail',
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            },
+            onUploadProgress: (progressEvent) => {
+              const percentCompleted = Math.round(
+                (progressEvent.loaded * 100) / (progressEvent.total || file.size)
+              );
+              setProgress(`Uploading ${fileType}...`, percentCompleted, true);
+            }
+          }
+        );
+
+        if (response.data && response.data.thumbnail) {
+          backgroundImage = response.data.thumbnail;
+          setProgress('File processed successfully', 60, true);
+        } else {
+          throw new Error('Invalid response format from server');
+        }
+      } catch (error) {
+        log.error('Error processing file:', error);
+        createAlert('Error processing file', 'error');
+        setProgress("", 0, false);
+        return;
       }
 
       setProgress('Generating thumbnail...', 70, true);
       let image;
       try {
-        image = await ipcRenderer.invoke('generate-batch-thumbnail', backgroundImage, month, {
+        image = await ipcRenderer.invoke('generate-playlist-thumbnail', backgroundImage, month, {
           scale: backgroundScale,
           x: backgroundX,
           y: backgroundY
         });
       } catch (error) {
-        log.error('Error generating thumbnail:', error);
+        log.error('Error generating playlist thumbnail:', error);
         createAlert('Error generating thumbnail', 'error');
         setProgress("", 0, false);
         return;
@@ -158,10 +136,10 @@ const BatchThumbnailForm: React.FC<ThumbnailFormProps> = ({
       setProgress('Thumbnail generated', 100, true);
       setImageSrc(image);
       setProgress("", 0, false);
-      createAlert('Thumbnail generated successfully', 'success');
+      createAlert('Playlist thumbnail generated successfully', 'success');
 
     } catch (error) {
-      log.error('Unhandled error in getMapInfo:', error);
+      log.error('Unhandled error in generateThumbnail:', error);
       createAlert('An unexpected error occurred', 'error');
       setProgress("", 0, false);
     }
@@ -188,7 +166,7 @@ const BatchThumbnailForm: React.FC<ThumbnailFormProps> = ({
             onClick={(e) => e.stopPropagation()}
           >
             <motion.div
-              className="z-10 sticky top-0 backdrop-blur-md bg-gradient-to-r from-yellow-500/10 to-yellow-400/10 dark:from-yellow-800/20 dark:to-yellow-700/20 p-3 border-b border-neutral-300 dark:border-neutral-700 flex justify-between items-center"
+              className="z-10 sticky top-0 backdrop-blur-md bg-gradient-to-r from-orange-500/10 to-orange-400/10 dark:from-orange-800/20 dark:to-orange-700/20 p-3 border-b border-neutral-300 dark:border-neutral-700 flex justify-between items-center"
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1, type: "spring" }}
@@ -198,8 +176,8 @@ const BatchThumbnailForm: React.FC<ThumbnailFormProps> = ({
                   className="text-lg bg-white/70 dark:bg-neutral-700/70 px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 shadow-sm"
                   whileHover={{ scale: 1.03 }}
                 >
-                  <FaImage className="text-yellow-500" />
-                  Batch Thumbnail Settings
+                  <FaImage className="text-orange-500" />
+                  Playlist Thumbnail Settings
                 </motion.h2>
               </div>
               <motion.button
@@ -213,24 +191,24 @@ const BatchThumbnailForm: React.FC<ThumbnailFormProps> = ({
             </motion.div>
 
             <div className="flex-1 overflow-auto custom-scrollbar">
-              <form onSubmit={getMapInfo} className='p-3 space-y-3'>
+              <form onSubmit={generateThumbnail} className='p-3 space-y-3'>
                 {/* Background Image - File upload comes first */}
                 <div className='bg-white dark:bg-neutral-700 p-3 rounded-xl shadow-sm'>
                   <h2 className='text-base font-medium mb-2 border-b pb-1 border-neutral-200 dark:border-neutral-600 flex items-center gap-1.5'>
-                    <FaCloudUploadAlt className="text-yellow-500" /> Background Image
+                    <FaCloudUploadAlt className="text-orange-500" /> Background Image
                   </h2>
-                  <BatchFileUploadSection
+                  <PlaylistFileUploadSection
                     file={file}
                     setFile={setFile}
                   />
                 </div>
 
-                {/* Map Details */}
+                {/* Playlist Details */}
                 <div className='bg-white dark:bg-neutral-700 p-3 rounded-xl shadow-sm'>
                   <h2 className='text-base font-medium mb-2 border-b pb-1 border-neutral-200 dark:border-neutral-600 flex items-center gap-1.5'>
-                    <FaMapMarkedAlt className="text-yellow-500" /> Batch Details
+                    <FaList className="text-orange-500" /> Playlist Details
                   </h2>
-                  <BatchInfoSection
+                  <PlaylistThumbnailInfoSection
                     month={month}
                     setMonth={setMonth}
                   />
@@ -240,9 +218,9 @@ const BatchThumbnailForm: React.FC<ThumbnailFormProps> = ({
                 {file && (
                   <div className='bg-white dark:bg-neutral-700 p-3 rounded-xl shadow-sm'>
                     <h2 className='text-base font-medium mb-2 border-b pb-1 border-neutral-200 dark:border-neutral-600 flex items-center gap-1.5'>
-                      <FaCog className="text-yellow-500" /> Background Customizer
+                      <FaCog className="text-orange-500" /> Background Customizer
                     </h2>
-                    <BackgroundCustomizer
+                    <PlaylistBackgroundCustomizer
                       file={file}
                       month={month}
                       backgroundScale={backgroundScale}
@@ -261,13 +239,13 @@ const BatchThumbnailForm: React.FC<ThumbnailFormProps> = ({
             <div className='sticky bottom-0 bg-white/80 dark:bg-neutral-800/80 backdrop-blur-sm p-2 border-t border-neutral-300 dark:border-neutral-700 flex justify-end items-center'>
               <motion.button
                 type="button"
-                onClick={getMapInfo}
-                className='bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-1.5 text-sm rounded-lg shadow-sm hover:shadow-md font-medium flex items-center gap-1.5'
+                onClick={generateThumbnail}
+                className='bg-gradient-to-r from-orange-500 to-orange-400 text-white px-4 py-1.5 text-sm rounded-lg shadow-sm hover:shadow-md font-medium flex items-center gap-1.5'
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
               >
                 <FaCheck size={12} />
-                Generate Thumbnail
+                Generate Thumbnail (512×512)
               </motion.button>
             </div>
           </motion.div>
@@ -278,4 +256,4 @@ const BatchThumbnailForm: React.FC<ThumbnailFormProps> = ({
   );
 };
 
-export default BatchThumbnailForm;
+export default PlaylistThumbnailForm;

@@ -21,7 +21,6 @@ interface MapInfo {
 
 const GlobalLoadedMap: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isVisible, setIsVisible] = useState(true);
   const [mapInfo, setMapInfo] = useState<MapInfo | null>(null);
   const [audioPlaying, setAudioPlaying] = useState(false);
   const [audioProgress, setAudioProgress] = useState(0);
@@ -53,7 +52,7 @@ const GlobalLoadedMap: React.FC = () => {
     return () => {
       window.removeEventListener('storage', loadMapInfo);
       window.removeEventListener('mapinfo-updated', handleMapInfoUpdate);
-      // Cleanup audio when component unmounts
+
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current = null;
@@ -64,19 +63,16 @@ const GlobalLoadedMap: React.FC = () => {
     };
   }, []);
 
-  // Update audio source when mapInfo changes
   useEffect(() => {
     if (mapInfo && mapInfo.versions[0].previewURL) {
-      // Clean up existing audio
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.removeEventListener('loadedmetadata', handleLoadedMetadata);
         audioRef.current.removeEventListener('ended', handleAudioEnded);
       }
       
-      // Create new audio element
       audioRef.current = new Audio(mapInfo.versions[0].previewURL);
-      audioRef.current.volume = 0.2; // Set volume to 50%
+      audioRef.current.volume = 0.2;
       audioRef.current.addEventListener('loadedmetadata', handleLoadedMetadata);
       audioRef.current.addEventListener('ended', handleAudioEnded);
       

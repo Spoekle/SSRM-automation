@@ -2,7 +2,7 @@
 /* eslint no-unused-vars: off */
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 
-export type Channels = 'ipc-example' | 'generate-batch-thumbnail';
+export type Channels = 'ipc-example' | 'generate-batch-thumbnail' | 'generate-playlist-thumbnail';
 
 const electronHandler = {
   ipcRenderer: {

@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { FaList, FaCloudUploadAlt, FaDownload, FaCopy } from 'react-icons/fa';
+import { FaList, FaCloudUploadAlt, FaDownload, FaCopy, FaImage, FaEye } from 'react-icons/fa';
 import log from 'electron-log';
 import PlaylistForm from './components/PlaylistForm';
+import PlaylistThumbnailForm from './components/thumbnail/PlaylistThumbnailForm';
 import { motion, AnimatePresence } from 'framer-motion';
 import AlertSystem from '../../components/AlertSystem';
 import ProgressBar from '../../components/ProgressBar';
@@ -17,8 +18,10 @@ interface Progress {
 const Playlists: React.FC = () => {
   const [progress, setProgress] = useState<Progress>({process: "", progress: 0, visible: false });
   const [playlistFormModal, setPlaylistFormModal] = useState<boolean>(false);
+  const [playlistThumbnailFormModal, setPlaylistThumbnailFormModal] = useState<boolean>(false);
   const [songHashes, setSongHashes] = useState<string[]>([]);
   const [outputText, setOutputText] = useState<string>('');
+  const [imageSrc, setImageSrc] = useState<string>('');
   const { alerts, createAlert } = useAlerts();
 
   const fadeIn = {
@@ -29,7 +32,7 @@ const Playlists: React.FC = () => {
       transition: {
         delay: i * 0.15,
         duration: 0.5,
-        ease: "easeOut"
+        ease: [0.25, 0.46, 0.45, 0.94] as const
       }
     })
   };
@@ -80,18 +83,25 @@ const Playlists: React.FC = () => {
           <p className='text-sm mb-3 text-neutral-600 dark:text-neutral-400'>
             Extract unique song hashes from JSON files!
           </p>
-          <div className="flex justify-center">
+          <div className="flex justify-center gap-4">
             <motion.button
-              className='bg-gradient-to-r from-orange-500 to-orange-400 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg flex items-center justify-center gap-2 mx-auto'
+              className='bg-gradient-to-r from-orange-500 to-orange-400 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg flex items-center justify-center gap-2'
               onClick={() => setPlaylistFormModal(true)}
               whileHover={{ scale: 1.05, boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.2)" }}
               whileTap={{ scale: 0.95 }}
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5, type: "spring" }}
             >
               <FaCloudUploadAlt size={18} />
               <span>Process Playlist</span>
+            </motion.button>
+            
+            <motion.button
+              className='bg-gradient-to-r from-blue-500 to-blue-400 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg flex items-center justify-center gap-2'
+              onClick={() => setPlaylistThumbnailFormModal(true)}
+              whileHover={{ scale: 1.05, boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.2)" }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <FaImage size={18} />
+              <span>Create Thumbnail</span>
             </motion.button>
           </div>
         </motion.div>
@@ -129,14 +139,63 @@ const Playlists: React.FC = () => {
           </motion.div>
         )}
 
-        {!songHashes.length && (
+        {/* Thumbnail Display Section */}
+        {imageSrc && (
+          <motion.div
+            className="w-full max-w-md mx-auto bg-white/40 dark:bg-neutral-800/40 backdrop-blur-sm p-4 rounded-xl shadow-md mt-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, type: "spring" }}
+          >
+            <div className="text-center mb-4">
+              <h2 className="text-lg font-semibold mb-2">Generated Thumbnail (512×512)</h2>
+              <div className="flex justify-center">
+                <img 
+                  src={imageSrc} 
+                  alt="Generated thumbnail" 
+                  className="max-w-full h-auto rounded-lg shadow-md border border-neutral-300 dark:border-neutral-600"
+                  style={{ maxHeight: '300px' }}
+                />
+              </div>
+              <div className="mt-3 flex justify-center gap-2">
+                <motion.button
+                  onClick={() => {
+                    const link = document.createElement('a');
+                    link.href = imageSrc;
+                    link.download = 'playlist-thumbnail.png';
+                    link.click();
+                  }}
+                  className='bg-green-500 hover:bg-green-600 text-white font-bold py-1.5 px-3 text-sm rounded-lg flex items-center gap-1.5'
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <FaDownload size={14} />
+                  Download
+                </motion.button>
+                <motion.button
+                  onClick={() => {
+                    window.open(imageSrc, '_blank');
+                  }}
+                  className='bg-purple-500 hover:bg-purple-600 text-white font-bold py-1.5 px-3 text-sm rounded-lg flex items-center gap-1.5'
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <FaEye size={14} />
+                  View Full Size
+                </motion.button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {(!songHashes.length && !imageSrc) && (
           <motion.div
             className="w-full max-w-md mx-auto bg-white/40 dark:bg-neutral-800/40 backdrop-blur-sm p-6 rounded-xl shadow-md mt-8 text-center"
             variants={fadeIn}
             custom={1}
           >
             <p className="text-neutral-600 dark:text-neutral-400">
-              No list generated yet. Click the button above to get started.
+              No content generated yet. Use the buttons above to get started.
             </p>
           </motion.div>
         )}
@@ -150,6 +209,15 @@ const Playlists: React.FC = () => {
           createAlert={createAlert}
           progress={(process: string, progress: number, visible: boolean) => setProgress({ process, progress, visible })}
           onProcessComplete={handleProcessComplete}
+        />
+      )}
+
+      {playlistThumbnailFormModal && (
+        <PlaylistThumbnailForm
+          setPlaylistThumbnailFormModal={setPlaylistThumbnailFormModal}
+          setImageSrc={setImageSrc}
+          createAlert={createAlert}
+          progress={(process: string, progress: number, visible: boolean) => setProgress({ process, progress, visible })}
         />
       )}
     </div>
