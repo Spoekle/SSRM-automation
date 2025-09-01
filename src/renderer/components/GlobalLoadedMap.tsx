@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaChevronUp, FaChevronDown, FaTimes, FaMusic, FaMapMarkerAlt, FaClock } from 'react-icons/fa';
-import { useConfirmationModal } from '../contexts/ConfirmationModalContext';
+import { FaChevronUp, FaChevronDown, FaTimes, FaMusic, FaMapMarkerAlt, FaClock, FaPlay, FaPause, FaExternalLinkAlt } from 'react-icons/fa';
 
 interface MapInfo {
   metadata: {
@@ -16,6 +15,7 @@ interface MapInfo {
   versions: {
     coverURL: string;
     hash: string;
+    previewURL: string
   }[];
 }
 
@@ -23,7 +23,13 @@ const GlobalLoadedMap: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [mapInfo, setMapInfo] = useState<MapInfo | null>(null);
-  const { showConfirmation } = useConfirmationModal();
+  const [audioPlaying, setAudioPlaying] = useState(false);
+  const [audioProgress, setAudioProgress] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(0);
+  const [isHovering, setIsHovering] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const songSubName = mapInfo?.metadata.songSubName ? ` ${mapInfo.metadata.songSubName}` : '';
 
   useEffect(() => {
     const loadMapInfo = () => {
@@ -47,26 +53,89 @@ const GlobalLoadedMap: React.FC = () => {
     return () => {
       window.removeEventListener('storage', loadMapInfo);
       window.removeEventListener('mapinfo-updated', handleMapInfoUpdate);
+      // Cleanup audio when component unmounts
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
     };
   }, []);
 
-  const handleClearMapData = () => {
-    showConfirmation({
-      title: "Clear Map Data",
-      message: "Are you sure you want to clear the loaded map data? This will remove it from local storage.",
-      onConfirm: () => {
-        localStorage.removeItem("mapId");
-        localStorage.removeItem("mapInfo");
-        localStorage.removeItem("starRatings");
-        localStorage.removeItem("oldStarRatings");
-        setMapInfo(null);
+  // Update audio source when mapInfo changes
+  useEffect(() => {
+    if (mapInfo && mapInfo.versions[0].previewURL) {
+      // Clean up existing audio
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.removeEventListener('loadedmetadata', handleLoadedMetadata);
+        audioRef.current.removeEventListener('ended', handleAudioEnded);
       }
-    });
+      
+      // Create new audio element
+      audioRef.current = new Audio(mapInfo.versions[0].previewURL);
+      audioRef.current.volume = 0.2; // Set volume to 50%
+      audioRef.current.addEventListener('loadedmetadata', handleLoadedMetadata);
+      audioRef.current.addEventListener('ended', handleAudioEnded);
+      
+      setAudioPlaying(false);
+      setAudioProgress(0);
+    }
+  }, [mapInfo]);
+
+  const handleLoadedMetadata = () => {
+    if (audioRef.current) {
+      setAudioDuration(audioRef.current.duration);
+    }
   };
 
-  if (!mapInfo || !isVisible) {
-    return null;
-  }
+  const handleAudioEnded = () => {
+    setAudioPlaying(false);
+    setAudioProgress(0);
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+  };
+
+  const startProgressTracking = () => {
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+    }
+    
+    progressIntervalRef.current = setInterval(() => {
+      if (audioRef.current && !audioRef.current.paused) {
+        const progress = (audioRef.current.currentTime / audioRef.current.duration) * 100;
+        setAudioProgress(progress);
+      }
+    }, 100);
+  };
+
+  const stopProgressTracking = () => {
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+  };
+
+  const toggleSongPreview = () => {
+    if (!audioRef.current || !mapInfo) return;
+
+    if (audioPlaying) {
+      audioRef.current.pause();
+      setAudioPlaying(false);
+      stopProgressTracking();
+    } else {
+      audioRef.current.play().then(() => {
+        setAudioPlaying(true);
+        startProgressTracking();
+      }).catch((error) => {
+        console.error('Failed to play audio:', error);
+      });
+    }
+  };
 
   const formatDuration = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -74,9 +143,9 @@ const GlobalLoadedMap: React.FC = () => {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  const songSubName = mapInfo.metadata.songSubName ? ` ${mapInfo.metadata.songSubName}` : '';
 
   return (
+    !mapInfo ? null :
     <AnimatePresence>
       <motion.div
         className="z-50 fixed bottom-0 left-10 flex flex-col"
@@ -102,20 +171,53 @@ const GlobalLoadedMap: React.FC = () => {
           <motion.div
             className="relative group"
             whileHover={{ scale: 1.1 }}
+            onMouseEnter={() => setIsHovering(true)}
+            onMouseLeave={() => setIsHovering(false)}
           >
             <motion.img
               src={mapInfo.versions[0].coverURL}
               alt="Map cover"
-              className=" max-h-12 object-cover rounded-lg"
+              className={`max-h-12 object-cover rounded-lg transition-all duration-300 ${
+                audioPlaying ? 'blur-[1px] brightness-75' : ''
+              }`}
               transition={{ type: "spring", stiffness: 300 }}
             />
+            
+            {/* Progress Circle */}
+            {audioPlaying && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <svg className="w-10 h-10 transform -rotate-90 drop-shadow-lg" viewBox="0 0 36 36">
+                  <path
+                    className="text-black/40"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    fill="none"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                  <path
+                    className="text-white drop-shadow-md"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    strokeDasharray={`${audioProgress}, 100`}
+                    strokeLinecap="round"
+                    fill="none"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                </svg>
+              </div>
+            )}
+            
             <motion.div
-              className="absolute inset-0 bg-black/0 group-hover:bg-black/30 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 hover:cursor-pointer transition-opacity"
+              className="absolute inset-0 bg-black/0 hover:bg-black/50 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 hover:cursor-pointer transition-opacity"
               whileHover={{ scale: 1.05 }}
-              onClick={() => window.open(`https://beatsaver.com/maps/${mapInfo.id}`, '_blank')}
-              title='Open map on BeatSaver'
+              onClick={toggleSongPreview}
+              title={audioPlaying ? 'Pause Song Preview' : 'Play Song Preview'}
             >
-              <FaMapMarkerAlt className="text-white" size={16} />
+              {isHovering && audioPlaying ? (
+                <FaPause className="text-white" size={16} />
+              ) : (
+                <FaPlay className="text-white" size={16} />
+              )}
             </motion.div>
           </motion.div>
 
@@ -140,13 +242,13 @@ const GlobalLoadedMap: React.FC = () => {
           </div>
 
           <motion.button
-            className="text-red-500 hover:text-red-700 dark:hover:text-red-400 p-1"
-            onClick={handleClearMapData}
-            whileHover={{ scale: 1.2, rotate: 90 }}
+            className="font-bold text-sm text-neutral-800 dark:text-neutral-200 hover:text-neutral-800 dark:hover:text-neutral-200 p-1"
+            whileHover={{ scale: 1.2 }}
             whileTap={{ scale: 0.9 }}
-            title="Clear map data"
+            onClick={() => window.open(`https://beatsaver.com/maps/${mapInfo.id}`, '_blank')}
+            title="Open map on BeatSaver"
           >
-            <FaTimes size={14} />
+            <FaExternalLinkAlt size={14} />
           </motion.button>
         </motion.div>
       </motion.div>

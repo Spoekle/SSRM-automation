@@ -81,7 +81,7 @@ function Home() {
             {features.map((item, i) => (
               <Link to={item.path} key={item.name}>
                 <motion.div
-                  className="relative p-2 bg-white/40 dark:bg-neutral-800/40 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group"
+                  className="relative p-2 bg-neutral-300/80 dark:bg-neutral-800/80 backdrop-blur-md rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group border border-neutral-200/30 dark:border-neutral-700/30"
                   whileHover={{
                     y: -5,
                     transition: { duration: 0.2 }
