@@ -144,7 +144,7 @@ const GlobalLoadedMap: React.FC = () => {
     !mapInfo ? null :
     <AnimatePresence>
       <motion.div
-        className="z-50 fixed bottom-0 left-10 flex flex-col"
+        className="z-50 fixed bottom-0 left-10 flex flex-col select-none"
         initial={{ y: 50 }}
         animate={{ y: isCollapsed ? 50 : 0 }}
         transition={{ duration: 0.3, type: "spring" }}
@@ -173,7 +173,7 @@ const GlobalLoadedMap: React.FC = () => {
             <motion.img
               src={mapInfo.versions[0].coverURL}
               alt="Map cover"
-              className={`max-h-12 object-cover rounded-lg transition-all duration-300 ${
+              className={`max-h-12 object-cover rounded-lg transition-all duration-300 select-none ${
                 audioPlaying ? 'blur-[1px] brightness-75' : ''
               }`}
               transition={{ type: "spring", stiffness: 300 }}
@@ -233,7 +233,7 @@ const GlobalLoadedMap: React.FC = () => {
                 <span>{formatDuration(mapInfo.metadata.duration)}</span>
               </div>
               <span>•</span>
-              <span>{mapInfo.metadata.bpm}BPM</span>
+              <span>{mapInfo.metadata.bpm} BPM</span>
             </div>
           </div>
 

@@ -48,7 +48,7 @@ function Home() {
   ];
 
   return (
-    <div className='max-h-96 h-96 grid justify-items-center dark:text-neutral-200 bg-neutral-200 dark:bg-neutral-900 p-4 pt-8 justify-center items-center'>
+    <div className='max-h-96 h-96 grid justify-items-center dark:text-neutral-200 bg-neutral-200 dark:bg-neutral-900 p-4 pt-8 justify-center items-center select-none'>
       <motion.div
         className='items-center justify-items-center'
         initial="hidden"

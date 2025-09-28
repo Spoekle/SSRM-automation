@@ -148,7 +148,7 @@ const Playlists: React.FC = () => {
             transition={{ delay: 0.3, type: "spring" }}
           >
             <div className="text-center mb-4">
-              <h2 className="text-lg font-semibold mb-2">Generated Thumbnail (512×512)</h2>
+              <h2 className="text-lg font-semibold mb-2">Generated Thumbnail</h2>
               <div className="flex justify-center">
                 <img 
                   src={imageSrc} 
@@ -171,17 +171,6 @@ const Playlists: React.FC = () => {
                 >
                   <FaDownload size={14} />
                   Download
-                </motion.button>
-                <motion.button
-                  onClick={() => {
-                    window.open(imageSrc, '_blank');
-                  }}
-                  className='bg-purple-500 hover:bg-purple-600 text-white font-bold py-1.5 px-3 text-sm rounded-lg flex items-center gap-1.5'
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <FaEye size={14} />
-                  View Full Size
                 </motion.button>
               </div>
             </div>

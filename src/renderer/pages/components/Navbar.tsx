@@ -107,7 +107,7 @@ const Navbar: React.FC = () => {
   ];
 
   return (
-    <div className='drag items-center justify-center bg-neutral-300 dark:bg-neutral-950 text-neutral-950 dark:text-neutral-200 shadow-md border-b border-neutral-200/30 dark:border-neutral-800/30'>
+    <div className='drag items-center justify-center bg-neutral-300 dark:bg-neutral-950 text-neutral-950 dark:text-neutral-200 shadow-md border-b border-neutral-200/30 dark:border-neutral-800/30 select-none'>
       <div className='mx-4 flex text-center justify-between'>
         <div className='flex text-center items-center text-lg'>
           <motion.img

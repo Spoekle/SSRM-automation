@@ -245,7 +245,7 @@ const PlaylistThumbnailForm: React.FC<PlaylistThumbnailFormProps> = ({
                 whileTap={{ scale: 0.97 }}
               >
                 <FaCheck size={12} />
-                Generate Thumbnail (512×512)
+                Generate Thumbnail
               </motion.button>
             </div>
           </motion.div>
