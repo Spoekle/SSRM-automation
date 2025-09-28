@@ -1,8 +1,73 @@
-import { Canvas, ExportFormat } from 'skia-canvas';
+import { Canvas, ExportFormat, FontLibrary } from 'skia-canvas';
 import { loadImage, truncateText } from '../utils/imageUtils';
 import { MapInfo, OldStarRatings, NewStarRatings } from '../types/interfaces';
+import log from 'electron-log';
+import * as path from 'path';
+import * as fs from 'fs';
+import { app } from 'electron';
+
+let fontsLoaded = false;
+
+// Get the correct path to assets based on whether app is packaged or not
+function getAssetPath(...paths: string[]): string {
+  let RESOURCES_PATH;
+  
+  if (app.isPackaged) {
+    RESOURCES_PATH = path.join(process.resourcesPath, 'assets');
+  } else {
+    // In development, use the app's path which should be the project directory
+    RESOURCES_PATH = path.join(app.getAppPath(), 'assets');
+  }
+  
+  const fullPath = path.join(RESOURCES_PATH, ...paths);
+  log.info(`Asset path resolved to: ${fullPath}`);
+  return fullPath;
+}
+
+async function loadFonts() {
+  if (fontsLoaded) return;
+  
+  try {
+    const fontsPath = getAssetPath('fonts/Torus.Pro');
+    const fontFiles = [
+      path.join(fontsPath, 'TorusPro-Bold.ttf'),
+      path.join(fontsPath, 'TorusPro-BoldItalic.ttf'),
+      path.join(fontsPath, 'TorusPro-Heavy.ttf'),
+      path.join(fontsPath, 'TorusPro-HeavyItalic.ttf'),
+      path.join(fontsPath, 'TorusPro-Italic.ttf'),
+      path.join(fontsPath, 'TorusPro-Light.ttf'),
+      path.join(fontsPath, 'TorusPro-LightItalic.ttf'),
+      path.join(fontsPath, 'TorusPro-Regular.ttf'),
+      path.join(fontsPath, 'TorusPro-SemiBold.ttf'),
+      path.join(fontsPath, 'TorusPro-SemiBoldItalic.ttf'),
+      path.join(fontsPath, 'TorusPro-Thin.ttf'),
+      path.join(fontsPath, 'TorusPro-ThinItalic.ttf')
+      
+    ];
+    log.info(`Attempting to load fonts from: ${fontsPath}`);
+    
+    if (!fs.existsSync(fontsPath)) {
+      log.error(`Fonts directory does not exist at: ${fontsPath}`);
+      return;
+    }
+    
+    log.info(`Fonts directory exists`);
+    
+    const fonts = FontLibrary.use('TorusPro', fontFiles);
+    fontsLoaded = true;
+    log.info('Custom font loaded successfully:', fonts);
+    
+    const family = FontLibrary.family('TorusPro');
+    log.info('Available font families:', family);
+  } catch (error) {
+    log.error('Error loading custom font:', error);
+  }
+}
 
 export async function generateReweightCard(data: MapInfo, oldStarRatings: OldStarRatings, newStarRatings: NewStarRatings, chosenDiff: keyof OldStarRatings): Promise<string> {
+  // Load fonts before generating card
+  await loadFonts();
+  
   const canvas = new Canvas(800, 270);
   const ctx = canvas.getContext('2d');
 
@@ -34,35 +99,41 @@ export async function generateReweightCard(data: MapInfo, oldStarRatings: OldSta
   ctx.textAlign = 'left';
 
   const maxWidth = 380;
-  ctx.font = '24px Heebo, sans-serif';
-
+  
+  // Use Light weight for author name
+  ctx.font = '300 24px TorusPro, "Segoe UI", Arial, sans-serif';
   const authorName = data.metadata.songAuthorName;
   const displayAuthorName = truncateText(ctx, authorName, maxWidth);
   ctx.fillText(displayAuthorName, 290, 55);
 
-  ctx.font = 'bold 30px Heebo, sans-serif';
+  // Use Bold weight for song name (most prominent)
+  ctx.font = '700 30px TorusPro, "Segoe UI", Arial, sans-serif';
   const songName = data.metadata.songName;
   const displaySongName = truncateText(ctx, songName, maxWidth);
   ctx.fillText(displaySongName, 290, 90);
 
-  ctx.font = '20px Heebo, sans-serif';
+  // Use Regular weight for sub name
+  ctx.font = '400 20px TorusPro, "Segoe UI", Arial, sans-serif';
   const subName = data.metadata.songSubName;
   const displaySubName = truncateText(ctx, subName, maxWidth);
   ctx.fillText(displaySubName, 290, 120);
 
-  ctx.font = '20px Heebo, sans-serif';
+  // Use Medium weight for mapper credit
+  ctx.font = '500 20px TorusPro, "Segoe UI", Arial, sans-serif';
   const levelAuthorName = `Mapped by ${data.metadata.levelAuthorName}`;
   const displayLevelAuthorName = truncateText(ctx, levelAuthorName, maxWidth);
   ctx.fillText(displayLevelAuthorName, 290, 150);
 
   // Display additional info
   ctx.textAlign = 'right';
-  ctx.font = '20px Heebo, sans-serif';
+  // Use Medium weight for labels
+  ctx.font = '500 20px TorusPro, "Segoe UI", Arial, sans-serif';
   ctx.fillText(`Map Code:`, 730, 55);
-  ctx.font = '20px Heebo, sans-serif';
+  // Use SemiBold weight for the ID
+  ctx.font = '600 20px TorusPro, "Segoe UI", Arial, sans-serif';
   ctx.fillText(`${data.id}`, 730, 75);
 
-  ctx.font = '20px Heebo, sans-serif';
+  ctx.font = '500 20px TorusPro, "Segoe UI", Arial, sans-serif';
   ctx.textAlign = 'center';
 
   let color = '';
@@ -112,7 +183,8 @@ export async function generateReweightCard(data: MapInfo, oldStarRatings: OldSta
     // Draw old rating text at the top
     ctx.fillStyle = 'white';
     ctx.textBaseline = 'middle';
-    ctx.font = 'bold 20px Heebo, sans-serif';
+    // Use Bold weight for rating text
+    ctx.font = '700 20px TorusPro, "Segoe UI", Arial, sans-serif';
     ctx.fillText(`${rating} ★`, x + 50, 200);
 
     // Draw white rounded triangle pointing to the right
@@ -138,7 +210,8 @@ export async function generateReweightCard(data: MapInfo, oldStarRatings: OldSta
     // Draw new rating text at the bottom
     ctx.fillStyle = 'white';
     ctx.textBaseline = 'middle';
-    ctx.font = 'bold 20px Heebo, sans-serif';
+    // Use Bold weight for rating text
+    ctx.font = '700 20px TorusPro, "Segoe UI", Arial, sans-serif';
     ctx.fillText(`${newRating} ★`, x + 250, 200);
   }
 

@@ -1,7 +1,79 @@
-import { Canvas, ExportFormat } from 'skia-canvas';
+import { Canvas, ExportFormat, FontLibrary } from 'skia-canvas';
 import { formatDuration, truncateText, loadImage } from '../utils/imageUtils';
 import { CardConfig, StarRating } from '../types/interfaces';
 import log from 'electron-log';
+import * as path from 'path';
+import * as fs from 'fs';
+import { app } from 'electron';
+
+let fontsLoaded = false;
+
+// Get the correct path to assets based on whether app is packaged or not
+function getAssetPath(...paths: string[]): string {
+  let RESOURCES_PATH;
+  
+  if (app.isPackaged) {
+    RESOURCES_PATH = path.join(process.resourcesPath, 'assets');
+  } else {
+    // In development, use the app's path which should be the project directory
+    RESOURCES_PATH = path.join(app.getAppPath(), 'assets');
+  }
+  
+  const fullPath = path.join(RESOURCES_PATH, ...paths);
+  log.info(`Asset path resolved to: ${fullPath}`);
+  return fullPath;
+}
+
+async function loadFonts() {
+  if (fontsLoaded) return;
+  
+  try {
+    // Get the correct path to the fonts directory
+    const fontsPath = getAssetPath('fonts');
+    
+    // Load Aller font
+    const allerPath = path.join(fontsPath, 'Aller_It.ttf');
+    log.info(`Attempting to load Aller font from: ${allerPath}`);
+    
+    if (fs.existsSync(allerPath)) {
+      log.info(`Aller font file exists, size: ${fs.statSync(allerPath).size} bytes`);
+      FontLibrary.use('Aller', [allerPath]);
+      log.info('Aller font loaded successfully');
+    } else {
+      log.error(`Aller font file does not exist at: ${allerPath}`);
+    }
+    
+    // Load Jura font family with multiple weights
+    const juraFontFiles = [
+      path.join(fontsPath, 'Jura-Light.ttf'),
+      path.join(fontsPath, 'Jura-Regular.ttf'),
+      path.join(fontsPath, 'Jura-Medium.ttf'),
+      path.join(fontsPath, 'Jura-SemiBold.ttf'),
+      path.join(fontsPath, 'Jura-Bold.ttf')
+    ];
+    
+    log.info(`Attempting to load Jura fonts from: ${fontsPath}`);
+    
+    // Check if fonts directory exists
+    if (fs.existsSync(fontsPath)) {
+      log.info(`Fonts directory exists`);
+      // Use FontLibrary.use with font family name and array of font file paths
+      const juraFonts = FontLibrary.use('Jura', juraFontFiles);
+      log.info('Jura font family loaded successfully:', juraFonts);
+    } else {
+      log.error(`Fonts directory does not exist at: ${fontsPath}`);
+    }
+    
+    fontsLoaded = true;
+    
+    // Also try to list available families to verify
+    const families = FontLibrary.families;
+    log.info('Available font families:', families);
+  } catch (error) {
+    log.error('Error loading custom fonts:', error);
+    console.error('Error loading custom fonts:', error);
+  }
+}
 
 function getNestedValue(obj: any, path: string): any {
   return path.split('.').reduce((acc, part) => acc && acc[part], obj);
@@ -13,6 +85,9 @@ export async function generateCardFromConfig(
   starRatings?: StarRating,
   useBackground?: boolean
 ): Promise<string> {
+  // Load fonts before generating card
+  await loadFonts();
+  
   if (data) {
     data.starRatings = starRatings;
     data.useBackground = useBackground;
