@@ -82,6 +82,36 @@ ipcMain.handle('generate-playlist-thumbnail', async (event, backgroundUrl: strin
   }
 });
 
+ipcMain.handle('generate-card', async (event, mapData: any, starRatings: any, useBackground: boolean) => {
+  try {
+    const { generateCard } = await import('./generation/cards/cardGenerator');
+    return await generateCard(mapData, starRatings, useBackground);
+  } catch (error) {
+    log.error('Error generating card:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('generate-reweight-card', async (event, mapData: any, oldStarRatings: any, newStarRatings: any, chosenDiff: string) => {
+  try {
+    const { generateReweightCard } = await import('./generation/cards/reweightCardGenerator');
+    return await generateReweightCard(mapData, oldStarRatings, newStarRatings, chosenDiff as 'ES' | 'NOR' | 'HARD' | 'EX' | 'EXP');
+  } catch (error) {
+    log.error('Error generating reweight card:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('generate-card-from-config', async (event, config: any, data?: any, starRatings?: any, useBackground?: boolean) => {
+  try {
+    const { generateCardFromConfig } = await import('./generation/cards/configCardGenerator');
+    return await generateCardFromConfig(config, data, starRatings, useBackground);
+  } catch (error) {
+    log.error('Error generating card from config:', error);
+    throw error;
+  }
+});
+
 ipcMain.handle('check-scoresaber', async () => {
   try {
     const response = await axios.get('https://scoresaber.com/api/', {

@@ -6,9 +6,10 @@ import { saveAs } from 'file-saver';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes, FaCloudUploadAlt, FaExchangeAlt, FaMapMarkedAlt, FaCheck, FaStar, FaSync } from "react-icons/fa";
 import log from 'electron-log';
-import { generateReweightCard } from '../../../../main/generation/cards/reweightCardGenerator';
 import { notifyMapInfoUpdated } from '../../../utils/mapEvents';
 import '../../../pages/Settings/styles/CustomScrollbar.css';
+
+const { ipcRenderer } = window.require('electron');
 
 interface StarRatingFormProps {
   mapId: string;
@@ -135,7 +136,7 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
       localStorage.setItem('mapInfo', JSON.stringify(data));
       notifyMapInfoUpdated();
 
-      const image = await generateReweightCard(data, oldStarRatings, newStarRatings, chosenDiff as keyof OldStarRatings);
+      const image = await ipcRenderer.invoke('generate-reweight-card', data, oldStarRatings, newStarRatings, chosenDiff as keyof OldStarRatings);
       setImageSrc(image);
       if (createAlert) createAlert("Star change image generated successfully.", "success");
       setStarRatingFormModal(false);
@@ -256,7 +257,7 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
             }
           }
           const mapInfo = response.data;
-          const imageDataUrl = await generateReweightCard(
+          const imageDataUrl = await ipcRenderer.invoke('generate-reweight-card',
             mapInfo,
             manualOld,
             manualNew,

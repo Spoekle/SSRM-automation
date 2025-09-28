@@ -5,12 +5,12 @@ import Switch from '@mui/material/Switch';
 import { FaTimes, FaCloudUploadAlt, FaLayerGroup, FaStar, FaToggleOn, FaCheck, FaSync } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import log from 'electron-log';
-import { generateCard } from '../../../../main/generation/cards/cardGenerator';
-import { generateCardFromConfig } from '../../../../main/generation/cards/configCardGenerator';
 import { notifyMapInfoUpdated } from '../../../utils/mapEvents';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import '../../../pages/Settings/styles/CustomScrollbar.css';
+
+const { ipcRenderer } = window.require('electron');
 
 interface CardFormProps {
   mapId: string;
@@ -126,10 +126,10 @@ const CardForm: React.FC<CardFormProps> = ({
       localStorage.setItem('mapInfo', JSON.stringify(data));
       notifyMapInfoUpdated();
 
-      const image = await generateCard(data, starRatings, useBackground);
+      const image = await ipcRenderer.invoke('generate-card', data, starRatings, useBackground);
       setImageSrc(image);
 
-      log.info(data);
+      log.info(data.metadata.songName);
       if (createAlert) createAlert('Card generated successfully!', 'success');
       setCardFormModal(false);
     } catch (error) {
@@ -221,7 +221,7 @@ const CardForm: React.FC<CardFormProps> = ({
       localStorage.setItem('mapId', `${mapId}`);
       localStorage.setItem('mapInfo', JSON.stringify(data));
 
-      const imageDataUrl = await generateCardFromConfig(cardConfig, data, starRatings, useBackground);
+      const imageDataUrl = await ipcRenderer.invoke('generate-card-from-config', cardConfig, data, starRatings, useBackground);
       setImageSrc(imageDataUrl);
       if (createAlert) createAlert("Card generated from stored configuration!", "success");
     } catch (error) {
@@ -316,7 +316,7 @@ const CardForm: React.FC<CardFormProps> = ({
             }
           }
           const mapInfo = response.data;
-          const imageDataUrl = await generateCard(mapInfo, combinedStarRatings, useBackground);
+          const imageDataUrl = await ipcRenderer.invoke('generate-card', mapInfo, combinedStarRatings, useBackground);
           const base64Data = imageDataUrl.split(",")[1];
           const byteCharacters = atob(base64Data);
           const byteNumbers = new Array(byteCharacters.length);
