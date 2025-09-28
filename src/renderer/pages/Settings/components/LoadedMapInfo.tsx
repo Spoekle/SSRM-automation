@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { FaMusic, FaClock } from 'react-icons/fa';
 import { useConfirmationModal } from '../../../contexts/ConfirmationModalContext';
 
 interface LoadedMapInfoProps {
@@ -39,7 +40,11 @@ const LoadedMapInfo: React.FC<LoadedMapInfoProps> = ({ loadedMapInfo }) => {
         const bpm = map.metadata.bpm || 'Unknown BPM';
         const duration = map.metadata.duration || 'Unknown Duration';
 
-        const formattedDuration = new Date(duration * 1000).toISOString().substr(14, 5);
+        const formattedDuration = (seconds: number) => {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = Math.floor(seconds % 60);
+            return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+        };
 
         let coverURL = '';
         if (map.versions && map.versions.length > 0 && map.versions[0].coverURL) {
@@ -47,59 +52,40 @@ const LoadedMapInfo: React.FC<LoadedMapInfoProps> = ({ loadedMapInfo }) => {
         }
 
         return (
-            <div className="relative p-3 rounded-2xl overflow-hidden text-white">
+            <motion.div layout className="bg-neutral-300/80 dark:bg-neutral-800/80 backdrop-blur-md p-3 rounded-lg flex items-center space-x-3 border border-neutral-200/30 dark:border-neutral-700/30">
                 {coverURL && (
-                    <>
-                        <div
-                            className="absolute top-0 bottom-0 left-0 right-0 bg-cover bg-center filter blur-lg opacity-70 z-0"
-                            style={{ backgroundImage: `url(${coverURL})` }}
-                        />
-                        <div className="absolute top-0 bottom-0 left-0 right-0 bg-black/60 z-[1]" />
-                    </>
+                    <img
+                        src={coverURL}
+                        alt="Map Cover"
+                        className="w-12 h-12 object-cover rounded-lg"
+                    />
                 )}
-
-                <div className="flex relative z-[2]">
-                    {coverURL && (
-                        <div className="flex-shrink-0 relative">
-                            <img
-                                src={coverURL}
-                                alt="Map Cover"
-                                className="w-16 h-16 object-cover rounded-md mr-3"
-                            />
-                        </div>
-                    )}
-
-                    <div className="flex flex-col flex-grow relative">
-                        <div className="flex justify-between items-start">
-                            <div className="flex flex-col">
-                                <h3 className="text-md">{songAuthor}</h3>
-                                <h3 className="text-lg font-semibold">
-                                    {songName}{" "}
-                                    {songSubName && <span className="text-sm font-normal truncate">{songSubName}</span>}
-                                </h3>
-                            </div>
-                            <div className="flex flex-col items-end">
-                                <h4 className="text-right text-sm font-semibold">BPM: {bpm}</h4>
-                                <h4 className="text-right text-sm font-semibold">Duration: {formattedDuration}</h4>
-                            </div>
-                        </div>
-                        <div className="flex items-center mt-1">
-                            <p className="m-0">
-                                Mapped by <span className="font-semibold">{mapper}</span>
-                            </p>
-                        </div>
-
-                        <motion.button
-                            className="absolute bottom-0 right-0 bg-red-500 text-white px-2 py-1 rounded-xl hover:bg-red-600 transition duration-200 z-10"
-                            onClick={handleResetMap}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                        >
-                            Reset Loaded Map
-                        </motion.button>
+                <div className="flex-grow overflow-hidden">
+                    <h3 className="font-bold text-sm text-neutral-800 dark:text-neutral-200 truncate">
+                        {songName} {songSubName}
+                    </h3>
+                    <div className="flex items-center text-xs text-neutral-600 dark:text-neutral-400 truncate">
+                        <FaMusic className="mr-1" size={10} />
+                        <span className="truncate" title={songAuthor}>{songAuthor}</span>
+                        <span className="mx-1">•</span>
+                        <span className="truncate" title={mapper}>{mapper}</span>
+                    </div>
+                    <div className="flex items-center space-x-1 text-xs text-neutral-500 dark:text-neutral-500">
+                        <FaClock size={10} />
+                        <span>{formattedDuration(duration)}</span>
+                        <span>•</span>
+                        <span>{bpm} BPM</span>
                     </div>
                 </div>
-            </div>
+                <motion.button
+                    className="bg-red-500 text-white px-2 py-1 rounded-xl hover:bg-red-600 transition duration-200"
+                    onClick={handleResetMap}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                >
+                    Reset
+                </motion.button>
+            </motion.div>
         );
     } catch (error) {
         return <p className="text-red-500">Error parsing map data</p>;
