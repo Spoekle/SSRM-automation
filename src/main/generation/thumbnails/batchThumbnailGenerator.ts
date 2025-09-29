@@ -5,6 +5,13 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { app } from 'electron';
 
+interface CropDimensions {
+  sx: number;
+  sy: number;
+  sw: number;
+  sh: number;
+}
+
 let fontsLoaded = false;
 
 // Get the correct path to assets based on whether app is packaged or not
@@ -24,6 +31,41 @@ function getAssetPath(...paths: string[]): string {
 }
 
 const logoPath = getAssetPath('thumbnails', 'SSRB_Logo.png');
+
+/**
+ * Calculate crop dimensions to maintain 16:9 aspect ratio
+ * @param imageWidth Original image width
+ * @param imageHeight Original image height
+ * @returns Crop dimensions for center cropping
+ */
+function calculateCropDimensions(imageWidth: number, imageHeight: number): CropDimensions {
+  const targetAspectRatio = 16 / 9;
+  const imageAspectRatio = imageWidth / imageHeight;
+  
+  let cropWidth: number;
+  let cropHeight: number;
+  let cropX: number;
+  let cropY: number;
+  
+  if (imageAspectRatio > targetAspectRatio) {
+    cropHeight = imageHeight;
+    cropWidth = imageHeight * targetAspectRatio;
+    cropX = (imageWidth - cropWidth) / 2;
+    cropY = 0;
+  } else {
+    cropWidth = imageWidth;
+    cropHeight = imageWidth / targetAspectRatio;
+    cropX = 0;
+    cropY = (imageHeight - cropHeight) / 2;
+  }
+  
+  return {
+    sx: cropX,
+    sy: cropY,
+    sw: cropWidth,
+    sh: cropHeight
+  };
+}
 
 async function loadFonts() {
   if (fontsLoaded) return;
@@ -92,6 +134,9 @@ export async function generateBatchThumbnail(
 
     ctx.save();
     
+    // Calculate crop dimensions to maintain 16:9 aspect ratio
+    const cropDimensions = calculateCropDimensions(backgroundImg.width, backgroundImg.height);
+    
     // Apply background transformations if provided
     if (backgroundTransform) {
         // Calculate the center of the canvas for scaling from center
@@ -104,7 +149,15 @@ export async function generateBatchThumbnail(
         ctx.translate(-centerX, -centerY);
     }
     
-    ctx.drawImage(backgroundImg, 0, 0, 1920, 1080);
+    // Draw the cropped image to maintain 16:9 aspect ratio
+    // ctx.drawImage(image, sx, sy, sw, sh, dx, dy, dw, dh)
+    // sx, sy, sw, sh = source rectangle (crop area)
+    // dx, dy, dw, dh = destination rectangle (canvas area)
+    ctx.drawImage(
+        backgroundImg,
+        cropDimensions.sx, cropDimensions.sy, cropDimensions.sw, cropDimensions.sh, // source (crop)
+        0, 0, 1920, 1080 // destination (canvas)
+    );
     ctx.restore(); // Restore context after drawing background
     
     ctx.shadowBlur = 20;
