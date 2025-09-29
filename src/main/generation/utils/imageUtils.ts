@@ -2,6 +2,9 @@ import { Image } from 'skia-canvas';
 import { CanvasRenderingContext2D as SkiaCanvasRenderingContext2D } from 'skia-canvas';
 import fs from 'fs';
 
+// Re-export types from canvasUtils for backwards compatibility
+export type { CropDimensions, BackgroundTransform } from './canvasUtils';
+
 export async function loadImage(urlOrBuffer: string | ArrayBuffer): Promise<Image> {
   let buffer;
   if (typeof urlOrBuffer === 'string') {

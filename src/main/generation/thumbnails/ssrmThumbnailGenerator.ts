@@ -1,68 +1,15 @@
 import { Canvas, ExportFormat, Path2D } from 'skia-canvas';
 import { loadImage, truncateText } from '../utils/imageUtils';
 import { MapInfo, StarRating } from '../types/interfaces';
+import {
+  calculateCropDimensions,
+  calculateSquareCropDimensions,
+  drawCroppedImage,
+  CropDimensions
+} from '../utils/canvasUtils';
 import log from 'electron-log';
 
-interface CropDimensions {
-  sx: number;
-  sy: number;
-  sw: number;
-  sh: number;
-}
 
-/**
- * Calculate crop dimensions to maintain 16:9 aspect ratio
- * @param imageWidth Original image width
- * @param imageHeight Original image height
- * @returns Crop dimensions for center cropping
- */
-function calculateCropDimensions(imageWidth: number, imageHeight: number): CropDimensions {
-  const targetAspectRatio = 16 / 9;
-  const imageAspectRatio = imageWidth / imageHeight;
-  
-  let cropWidth: number;
-  let cropHeight: number;
-  let cropX: number;
-  let cropY: number;
-  
-  if (imageAspectRatio > targetAspectRatio) {
-    cropHeight = imageHeight;
-    cropWidth = imageHeight * targetAspectRatio;
-    cropX = (imageWidth - cropWidth) / 2;
-    cropY = 0;
-  } else {
-    cropWidth = imageWidth;
-    cropHeight = imageWidth / targetAspectRatio;
-    cropX = 0;
-    cropY = (imageHeight - cropHeight) / 2;
-  }
-  
-  return {
-    sx: cropX,
-    sy: cropY,
-    sw: cropWidth,
-    sh: cropHeight
-  };
-}
-
-/**
- * Calculate crop dimensions to maintain 1:1 (square) aspect ratio
- * @param imageWidth Original image width
- * @param imageHeight Original image height
- * @returns Crop dimensions for center cropping to square
- */
-function calculateSquareCropDimensions(imageWidth: number, imageHeight: number): CropDimensions {
-  const cropSize = Math.min(imageWidth, imageHeight);
-  const cropX = (imageWidth - cropSize) / 2;
-  const cropY = (imageHeight - cropSize) / 2;
-  
-  return {
-    sx: cropX,
-    sy: cropY,
-    sw: cropSize,
-    sh: cropSize
-  };
-}
 
 export async function generateSsrmThumbnail(data: MapInfo, chosenDiff: keyof StarRating, starRatings: StarRating, backgroundUrl: string): Promise<string> {
   const canvas = new Canvas(1920, 1080);
@@ -96,18 +43,10 @@ export async function generateSsrmThumbnail(data: MapInfo, chosenDiff: keyof Sta
   ctx.filter = 'blur(10px)';
   if (backgroundImg) {
     const bgCropDimensions = calculateCropDimensions(backgroundImg.width, backgroundImg.height);
-    ctx.drawImage(
-      backgroundImg,
-      bgCropDimensions.sx, bgCropDimensions.sy, bgCropDimensions.sw, bgCropDimensions.sh,
-      0, 0, 1920, 1080
-    );
+    drawCroppedImage(ctx, backgroundImg, bgCropDimensions, 0, 0, 1920, 1080);
   } else {
     const coverCropDimensions = calculateCropDimensions(coverImg.width, coverImg.height);
-    ctx.drawImage(
-      coverImg,
-      coverCropDimensions.sx, coverCropDimensions.sy, coverCropDimensions.sw, coverCropDimensions.sh,
-      0, 0, 1920, 1080
-    );
+    drawCroppedImage(ctx, coverImg, coverCropDimensions, 0, 0, 1920, 1080);
   }
   ctx.filter = 'none';
 
@@ -128,11 +67,7 @@ export async function generateSsrmThumbnail(data: MapInfo, chosenDiff: keyof Sta
   ctx.clip();
   // Draw cropped cover image to maintain square aspect ratio
   const coverCropDimensions = calculateSquareCropDimensions(coverImg.width, coverImg.height);
-  ctx.drawImage(
-    coverImg,
-    coverCropDimensions.sx, coverCropDimensions.sy, coverCropDimensions.sw, coverCropDimensions.sh,
-    75, 495, 510, 510
-  );
+  drawCroppedImage(ctx, coverImg, coverCropDimensions, 75, 495, 510, 510);
   ctx.restore();
 
   // Draw outline around the image
