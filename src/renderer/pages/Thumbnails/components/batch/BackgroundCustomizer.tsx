@@ -148,15 +148,16 @@ const BackgroundCustomizer: React.FC<BackgroundCustomizerProps> = ({
         }
       `}</style>
       {/* Preview */}
-      <div className="bg-neutral-100 justify-items-center dark:bg-neutral-600 rounded-lg p-2">
+      <div className="bg-neutral-100 justify-items-center overflow-hidden dark:bg-neutral-600 rounded-lg p-2">
         <div 
           ref={previewRef}
-          className="relative h-48 aspect-video bg-neutral-200 dark:bg-neutral-700 rounded overflow-hidden cursor-move border-2 border-dashed border-neutral-300 dark:border-neutral-500"
+          className="relative h-48 aspect-video bg-neutral-200 dark:bg-neutral-700 rounded cursor-move border-2 border-dashed border-neutral-300 dark:border-neutral-500"
           onMouseDown={handleMouseDown}
           onWheel={handleWheel}
         >
+          {/* Full background image - shows entire image */}
           <div
-            className="absolute inset-0 bg-cover bg-center aspect-video transition-transform duration-75"
+            className="absolute inset-0 bg-contain bg-center bg-no-repeat transition-transform duration-75"
             style={{
               backgroundImage: `url(${URL.createObjectURL(file)})`,
               transform: `translate(${backgroundX * previewScale.x}px, ${backgroundY * previewScale.y}px) scale(${backgroundScale})`,
@@ -164,6 +165,30 @@ const BackgroundCustomizer: React.FC<BackgroundCustomizerProps> = ({
               cursor: isDragging ? 'grabbing' : 'grab'
             }}
           />
+          
+          {/* Crop area overlay to show what will be used in final thumbnail */}
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="relative w-full h-full">
+              {/* Semi-transparent overlay on areas that will be cropped out */}
+              <div className="absolute inset-0 bg-black/20"></div>
+              {/* Clear area showing the 16:9 crop region */}
+              <div 
+                className="absolute bg-transparent border-2 border-yellow-400 border-dashed"
+                style={{
+                  left: '12.5%',
+                  right: '12.5%',
+                  top: '0%',
+                  bottom: '0%'
+                }}
+              >
+                {/* Corner indicators */}
+                <div className="absolute -top-1 -left-1 w-2 h-2 bg-yellow-400 rounded-full"></div>
+                <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full"></div>
+                <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-yellow-400 rounded-full"></div>
+                <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full"></div>
+              </div>
+            </div>
+          </div>
             {/* Logo Overlay */}
             <div className="absolute inset-0 -mt-14 flex items-center justify-center pointer-events-none">
                 <img src={logo} alt="Logo" className="h-12" />
@@ -186,6 +211,12 @@ const BackgroundCustomizer: React.FC<BackgroundCustomizerProps> = ({
           <div className="absolute bottom-1 right-1 bg-black/50 text-white text-xs px-2 py-1 rounded">
             Ctrl + Scroll to zoom
           </div>
+        </div>
+        <div className="text-center">
+          <p className="text-xs text-neutral-600 dark:text-neutral-300">
+            <span className="inline-block w-2 h-2 bg-yellow-400 rounded-full mr-1"></span>
+            Dashed area shows final crop region (16:9)
+          </p>
         </div>
       </div>
 

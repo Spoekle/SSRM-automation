@@ -1,7 +1,15 @@
 import { Canvas, ExportFormat, Path2D } from 'skia-canvas';
 import { loadImage, truncateText } from '../utils/imageUtils';
 import { MapInfo, StarRating } from '../types/interfaces';
+import {
+  calculateCropDimensions,
+  calculateSquareCropDimensions,
+  drawCroppedImage,
+  CropDimensions
+} from '../utils/canvasUtils';
 import log from 'electron-log';
+
+
 
 export async function generateSsrmThumbnail(data: MapInfo, chosenDiff: keyof StarRating, starRatings: StarRating, backgroundUrl: string): Promise<string> {
   const canvas = new Canvas(1920, 1080);
@@ -34,9 +42,11 @@ export async function generateSsrmThumbnail(data: MapInfo, chosenDiff: keyof Sta
   // Draw background with blur effect
   ctx.filter = 'blur(10px)';
   if (backgroundImg) {
-    ctx.drawImage(backgroundImg, 0, 0, 1920, 1080);
+    const bgCropDimensions = calculateCropDimensions(backgroundImg.width, backgroundImg.height);
+    drawCroppedImage(ctx, backgroundImg, bgCropDimensions, 0, 0, 1920, 1080);
   } else {
-    ctx.drawImage(coverImg, 0, 0, 1920, 1080);
+    const coverCropDimensions = calculateCropDimensions(coverImg.width, coverImg.height);
+    drawCroppedImage(ctx, coverImg, coverCropDimensions, 0, 0, 1920, 1080);
   }
   ctx.filter = 'none';
 
@@ -55,7 +65,9 @@ export async function generateSsrmThumbnail(data: MapInfo, chosenDiff: keyof Sta
   ctx.beginPath();
   ctx.roundRect(75, 495, 510, 510, 50);
   ctx.clip();
-  ctx.drawImage(coverImg, 75, 495, 510, 510);
+  // Draw cropped cover image to maintain square aspect ratio
+  const coverCropDimensions = calculateSquareCropDimensions(coverImg.width, coverImg.height);
+  drawCroppedImage(ctx, coverImg, coverCropDimensions, 75, 495, 510, 510);
   ctx.restore();
 
   // Draw outline around the image
