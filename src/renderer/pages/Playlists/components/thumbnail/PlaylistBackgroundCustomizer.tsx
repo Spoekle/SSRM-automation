@@ -148,15 +148,16 @@ const PlaylistBackgroundCustomizer: React.FC<PlaylistBackgroundCustomizerProps> 
         }
       `}</style>
       {/* Preview - Square format for playlist thumbnails */}
-      <div className="bg-neutral-100 justify-items-center dark:bg-neutral-600 rounded-lg p-2">
+      <div className="bg-neutral-100 justify-items-center overflow-hidden dark:bg-neutral-600 rounded-lg p-2">
         <div 
           ref={previewRef}
-          className="relative w-48 h-48 bg-neutral-200 dark:bg-neutral-700 rounded overflow-hidden cursor-move border-2 border-dashed border-neutral-300 dark:border-neutral-500"
+          className="relative w-48 h-48 bg-neutral-200 dark:bg-neutral-700 rounded cursor-move border-2 border-dashed border-neutral-300 dark:border-neutral-500"
           onMouseDown={handleMouseDown}
           onWheel={handleWheel}
         >
+          {/* Full background image - shows entire image */}
           <div
-            className="absolute inset-0 bg-cover bg-center transition-transform duration-75"
+            className="absolute inset-0 bg-contain bg-center bg-no-repeat transition-transform duration-75"
             style={{
               backgroundImage: `url(${URL.createObjectURL(file)})`,
               transform: `translate(${backgroundX * previewScale.x}px, ${backgroundY * previewScale.y}px) scale(${backgroundScale})`,
@@ -164,6 +165,30 @@ const PlaylistBackgroundCustomizer: React.FC<PlaylistBackgroundCustomizerProps> 
               cursor: isDragging ? 'grabbing' : 'grab'
             }}
           />
+          
+          {/* Crop area overlay to show what will be used in final thumbnail */}
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="relative w-full h-full">
+              {/* Semi-transparent overlay on areas that will be cropped out */}
+              <div className="absolute inset-0 bg-black/20"></div>
+              {/* Clear area showing the square crop region */}
+              <div 
+                className="absolute bg-transparent border-2 border-orange-400 border-dashed"
+                style={{
+                  left: '0%',
+                  right: '0%',
+                  top: '0%',
+                  bottom: '0%'
+                }}
+              >
+                {/* Corner indicators */}
+                <div className="absolute -top-1 -left-1 w-2 h-2 bg-orange-400 rounded-full"></div>
+                <div className="absolute -top-1 -right-1 w-2 h-2 bg-orange-400 rounded-full"></div>
+                <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-orange-400 rounded-full"></div>
+                <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-orange-400 rounded-full"></div>
+              </div>
+            </div>
+          </div>
             {/* Logo Overlay - scaled for 512x512 preview */}
             <div className="absolute inset-0 flex items-start justify-center pt-4 pointer-events-none">
                 <img src={logo} alt="Logo" className="h-8" />
@@ -187,9 +212,15 @@ const PlaylistBackgroundCustomizer: React.FC<PlaylistBackgroundCustomizerProps> 
             Ctrl + Scroll
           </div>
         </div>
-        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 text-center">
-          512×512 Preview
-        </p>
+        <div className="text-center mt-1">
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            512×512 Preview
+          </p>
+          <p className="text-xs text-neutral-600 dark:text-neutral-300">
+            <span className="inline-block w-2 h-2 bg-orange-400 rounded-full mr-1"></span>
+            Shows full image with square crop area
+          </p>
+        </div>
       </div>
 
       {/* Controls */}
