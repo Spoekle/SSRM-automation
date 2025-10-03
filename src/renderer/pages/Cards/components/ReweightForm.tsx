@@ -1,12 +1,17 @@
-import React, { FormEvent, ChangeEvent, useState, useEffect } from 'react';
+import React, { FormEvent, ChangeEvent, useState } from 'react';
 import ReactDOM from 'react-dom';
-import axios from 'axios';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes, FaCloudUploadAlt, FaExchangeAlt, FaMapMarkedAlt, FaCheck, FaStar, FaSync, FaSort, FaList, FaCheckSquare, FaSquare, FaArrowUp, FaArrowDown, FaEquals } from "react-icons/fa";
 import log from 'electron-log';
 import { notifyMapInfoUpdated } from '../../../utils/mapEvents';
+import { getStarRating } from '../../../api/scoresaber';
+import { fetchMapData, fetchMapDataByHashWithRetry } from '../../../api/beatsaver';
+import { storage, STORAGE_KEYS } from '../../../utils/storage';
+import { useModal } from '../../../hooks/useModal';
+import { handleError } from '../../../utils/errorHandler';
+import type { StarRatings, ReweightJson } from '../../../types';
 import '../../../pages/Settings/styles/CustomScrollbar.css';
 
 const { ipcRenderer } = window.require('electron');
@@ -28,21 +33,8 @@ interface StarRatingFormProps {
   cancelGenerationRef: React.MutableRefObject<boolean>;
 }
 
-interface OldStarRatings {
-  ES: string;
-  NOR: string;
-  HARD: string;
-  EX: string;
-  EXP: string;
-}
-
-interface NewStarRatings {
-  ES: string;
-  NOR: string;
-  HARD: string;
-  EX: string;
-  EXP: string;
-}
+interface OldStarRatings extends StarRatings {}
+interface NewStarRatings extends StarRatings {}
 
 interface UploadedMap {
   id: number;
@@ -55,16 +47,7 @@ interface UploadedMap {
   new_stars: number;
 }
 
-interface ReweightJson {
-  id: number;
-  songHash: string;
-  songName: string;
-  songSubName: string;
-  levelAuthorName: string;
-  difficulty: number;
-  old_stars: number;
-  new_stars: number;
-}
+
 
 interface ParsedReweightData {
   songHash: string;
@@ -102,8 +85,7 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
 }) => {
   const [songName, setSongName] = useState('');
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [isPanelOpen, setIsPanelOpen] = useState(false);
-  const [isOverlayVisible, setIsOverlayVisible] = useState(false);
+  const { isPanelOpen, isOverlayVisible, handleClose: closeModal } = useModal(() => setStarRatingFormModal(false));
   const [isFetching, setIsFetching] = useState(false);
   
   // JSON parsing state
@@ -115,18 +97,21 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
   const [buffCount, setBuffCount] = useState(0);
   const [nerfCount, setNerfCount] = useState(0);
 
-  useEffect(() => {
-    setIsOverlayVisible(true);
-    setIsPanelOpen(true);
+  // Load saved reweight maps from storage on mount
+  React.useEffect(() => {
+    const savedReweights = storage.get<ParsedReweightData[]>(STORAGE_KEYS.REWEIGHT_MAPS_JSON);
+    if (savedReweights && savedReweights.length > 0) {
+      setParsedReweights(savedReweights);
+      setIsJsonMode(true);
+      // Recalculate buff/nerf counts
+      const buffs = savedReweights.filter(map => map.changeType === 'buff').length;
+      const nerfs = savedReweights.filter(map => map.changeType === 'nerf').length;
+      setBuffCount(buffs);
+      setNerfCount(nerfs);
+    }
   }, []);
 
-  const handleClose = () => {
-    setIsPanelOpen(false);
-    setIsOverlayVisible(false);
-    setTimeout(() => {
-      setStarRatingFormModal(false);
-    }, 300);
-  };
+  const handleClose = closeModal;
 
   const handleClickOutside = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     if ((event.target as HTMLDivElement).classList.contains('modal-overlay')) {
@@ -146,8 +131,7 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
 
     setIsFetching(true);
     try {
-      const response = await axios.get(`https://api.beatsaver.com/maps/id/${mapId}`);
-      const data = response.data;
+      const data = await fetchMapData(mapId);
       setSongName(data.metadata.songName);
 
       const fetchedRatings = await getStarRating(data.versions[0].hash);
@@ -155,8 +139,7 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
 
       if (createAlert) createAlert("Star ratings fetched successfully", "success");
     } catch (error) {
-      log.error('Error fetching star ratings:', error);
-      if (createAlert) createAlert("Error fetching star ratings", "error");
+      handleError(error, 'fetchStarRatings', createAlert);
     } finally {
       setIsFetching(false);
     }
@@ -166,12 +149,11 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
     event.preventDefault();
     if (createAlert) createAlert("Fetching map info...", 'info');
     try {
-      const response = await axios.get(`https://api.beatsaver.com/maps/id/${mapId}`);
-      const data = response.data;
+      const data = await fetchMapData(mapId);
       setMapInfo(data);
-      localStorage.setItem('mapId', `${mapId}`);
-      localStorage.setItem('oldStarRatings', JSON.stringify(oldStarRatings));
-      localStorage.setItem('mapInfo', JSON.stringify(data));
+      storage.setString(STORAGE_KEYS.MAP_ID, mapId);
+      storage.set(STORAGE_KEYS.OLD_STAR_RATINGS, oldStarRatings);
+      storage.set(STORAGE_KEYS.MAP_INFO, data);
       notifyMapInfoUpdated();
 
       const image = await ipcRenderer.invoke('generate-reweight-card', data, oldStarRatings, newStarRatings, chosenDiff as keyof OldStarRatings);
@@ -184,30 +166,7 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
     }
   };
 
-  async function getStarRating(hash: string): Promise<NewStarRatings> {
-    let diffs = ['1', '3', '5', '7', '9'];
-    let fetchedStarRatings: NewStarRatings = {
-      ES: '',
-      NOR: '',
-      HARD: '',
-      EX: '',
-      EXP: ''
-    };
 
-    for (let i = 0; i < diffs.length; i++) {
-      try {
-        const response = await axios.get(`http://localhost:3000/api/scoresaber/${hash}/${diffs[i]}`);
-        const data = response.data;
-        const key = Object.keys(fetchedStarRatings)[i] as keyof NewStarRatings;
-        fetchedStarRatings[key] = data.stars === 0 ? 'Unranked' : data.stars.toString();
-        localStorage.setItem('starRatings', JSON.stringify(fetchedStarRatings));
-        log.info(fetchedStarRatings);
-      } catch (error) {
-        log.error("Error fetching star rating, diff " + diffs[i] + " probably doesnt exist :)");
-      }
-    }
-    return fetchedStarRatings;
-  }
 
   const handleJsonUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -263,6 +222,9 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
       setBuffCount(buffs);
       setNerfCount(nerfs);
       setIsJsonMode(true);
+      
+      // Save to storage for persistence
+      storage.set(STORAGE_KEYS.REWEIGHT_MAPS_JSON, filteredAndParsed);
       
       if (createAlert) {
         createAlert(
@@ -324,6 +286,7 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
     const updated = [...parsedReweights];
     updated[index].selected = !updated[index].selected;
     setParsedReweights(updated);
+    storage.set(STORAGE_KEYS.REWEIGHT_MAPS_JSON, updated);
     
     // Update allSelected state
     const selectedCount = updated.filter(map => map.selected).length;
@@ -334,6 +297,7 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
     const newSelected = !allSelected;
     const updated = parsedReweights.map(map => ({ ...map, selected: newSelected }));
     setParsedReweights(updated);
+    storage.set(STORAGE_KEYS.REWEIGHT_MAPS_JSON, updated);
     setAllSelected(newSelected);
   };
 
@@ -377,21 +341,7 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
         manualNew[diffKey as keyof NewStarRatings] = reweightData.newStars.toString();
 
         try {
-          let response;
-          while (true) {
-            try {
-              response = await axios.get(`https://api.beatsaver.com/maps/hash/${reweightData.songHash}`);
-              break;
-            } catch (err: any) {
-              if (err.response && err.response.status === 429) {
-                await new Promise((resolve) => setTimeout(resolve, 2000));
-              } else {
-                throw err;
-              }
-            }
-          }
-          
-          const mapInfo = response.data;
+          const mapInfo = await fetchMapDataByHashWithRetry(reweightData.songHash);
           const imageDataUrl = await ipcRenderer.invoke('generate-reweight-card',
             mapInfo,
             manualOld,
@@ -645,6 +595,8 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
                             setAllSelected(false);
                             setBuffCount(0);
                             setNerfCount(0);
+                            storage.remove(STORAGE_KEYS.REWEIGHT_MAPS_JSON);
+                            if (createAlert) createAlert('Cleared stored reweight maps', 'info');
                           }}
                           className='bg-red-500 text-white px-3 py-1 text-xs rounded-md flex items-center gap-1'
                           whileHover={{ scale: 1.05 }}

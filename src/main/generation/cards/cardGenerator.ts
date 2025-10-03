@@ -69,7 +69,7 @@ export async function generateCard(data: MapInfo, starRatings: StarRating, useBa
     ctx.drawImage(img, offsetX, offsetY, scaledWidth, scaledHeight);
     ctx.filter = 'none';
     ctx.beginPath();
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
     ctx.roundRect(0, 0, 900, 300, 20);
     ctx.fill();
     ctx.closePath();
@@ -98,7 +98,7 @@ export async function generateCard(data: MapInfo, starRatings: StarRating, useBa
   ctx.fillStyle = 'white';
   ctx.textAlign = 'left';
 
-  const maxWidth = 480;
+  const maxWidth = 420;
   
   // Use Light weight for author name
   ctx.font = `400 24px ${getFontFamily('TorusPro')}`;
@@ -116,7 +116,7 @@ export async function generateCard(data: MapInfo, starRatings: StarRating, useBa
   ctx.font = `500 20px ${getFontFamily('TorusPro')}`;
   const subName = data.metadata.songSubName;
   const displaySubName = truncateText(ctx, subName, maxWidth);
-  ctx.fillText(displaySubName, 320, 120);
+  ctx.fillText(displaySubName, 320, 125);
 
   // Use Medium weight for mapper credit
   ctx.font = `600 20px ${getFontFamily('TorusPro')}`;
@@ -135,16 +135,16 @@ export async function generateCard(data: MapInfo, starRatings: StarRating, useBa
   const defaultIconSize = 18;
   
   // ID with key icon
-  ctx.fillText(`${data.id}`, 845, 55);
-  await drawIcon(ctx, 'key', 850, 39, defaultIconSize);
+  ctx.fillText(`${data.id}`, 830, 55);
+  await drawIcon(ctx, 'key', 835, 39, defaultIconSize);
   
   // BPM with metronome icon (using larger size)
-  ctx.fillText(`${data.metadata.bpm}`, 845, 80);
-  await drawIcon(ctx, 'metronome', 850, 63, defaultIconSize);
+  ctx.fillText(`${data.metadata.bpm}`, 830, 85);
+  await drawIcon(ctx, 'metronome', 835, 68, defaultIconSize);
   
   // Duration with clock icon
-  ctx.fillText(`${durationFormatted}`, 845, 105);
-  await drawIcon(ctx, 'clock', 850, 88, defaultIconSize);
+  ctx.fillText(`${durationFormatted}`, 830, 115);
+  await drawIcon(ctx, 'clock', 835, 98, defaultIconSize);
 
 
   ctx.textAlign = 'center';
@@ -173,8 +173,8 @@ export async function generateCard(data: MapInfo, starRatings: StarRating, useBa
       ctx.fillStyle = 'white';
       ctx.textBaseline = 'middle';
       // Use SemiBold for rating text
-      ctx.font = isWide ? `600 16px ${getFontFamily('TorusPro')}` : `600 20px ${getFontFamily('TorusPro')}`;
-      ctx.fillText(`${rating}${!isWide ? ' ★' : ''}`, x + boxWidth / 2, 244);
+      ctx.font = isWide ? `600 20px ${getFontFamily('TorusPro')}` : `600 28px ${getFontFamily('TorusPro')}`;
+      ctx.fillText(`${rating}${!isWide ? '★' : ''}`, x + boxWidth / 2, 244);
 
       x += 118;
     }

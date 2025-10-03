@@ -15,7 +15,7 @@ import './App.css';
 import { ConfirmationModalProvider } from './contexts/ConfirmationModalContext';
 
 export default function App() {
-  const appVersion = '2.3.0';
+  const appVersion = '2.3.1-beta.1';
   const [isSplashScreen, setIsSplashScreen] = useState(false);
   const [latestVersion, setLatestVersion] = useState('');
   const [isLoading, setIsLoading] = useState(true);
