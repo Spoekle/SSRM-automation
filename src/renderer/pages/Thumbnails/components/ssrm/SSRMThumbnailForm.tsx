@@ -1,4 +1,4 @@
-import React, { FormEvent, useState, useEffect } from 'react';
+import React, { FormEvent, useState } from 'react';
 import ReactDOM from 'react-dom';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,6 +8,11 @@ import { ipcRenderer } from 'electron';
 import MapInfoSection from './MapInfoSection';
 import FileUploadSection from './FileUploadSection';
 import { notifyMapInfoUpdated } from '../../../../utils/mapEvents';
+import { fetchMapData } from '../../../../api/beatsaver';
+import { storage, STORAGE_KEYS } from '../../../../utils/storage';
+import { useModal } from '../../../../hooks/useModal';
+import { handleError } from '../../../../utils/errorHandler';
+import type { StarRatings } from '../../../../types';
 import '../../../../pages/Settings/styles/CustomScrollbar.css';
 
 interface ThumbnailFormProps {
@@ -25,13 +30,7 @@ interface ThumbnailFormProps {
   cancelGenerationRef: React.MutableRefObject<boolean>;
 }
 
-interface StarRatings {
-  ES: string;
-  NOR: string;
-  HARD: string;
-  EX: string;
-  EXP: string;
-}
+
 
 const SSRMThumbnailForm: React.FC<ThumbnailFormProps> = ({
   mapId,
@@ -48,37 +47,9 @@ const SSRMThumbnailForm: React.FC<ThumbnailFormProps> = ({
   cancelGenerationRef,
 }) => {
   const [file, setFile] = useState<File | null>(null);
-  const [isPanelOpen, setIsPanelOpen] = useState(false);
-  const [isOverlayVisible, setIsOverlayVisible] = useState(false);
+  const { isPanelOpen, isOverlayVisible, handleClose: closeModal } = useModal(() => setThumbnailFormModal("none"));
 
-  useEffect(() => {
-    setIsOverlayVisible(true);
-    setIsPanelOpen(true);
-  }, []);
-
-  const handleClose = () => {
-    setIsPanelOpen(false);
-    setIsOverlayVisible(false);
-    setTimeout(() => {
-      setThumbnailFormModal("none");
-    }, 300);
-  };
-
-  async function getStarRating(hash: string): Promise<StarRatings> {
-    const diffs = ['1', '3', '5', '7', '9'];
-    const ratings: StarRatings = { ES: '', NOR: '', HARD: '', EX: '', EXP: '' };
-
-    for (let i = 0; i < diffs.length; i++) {
-      try {
-        const { data } = await axios.get(`http://localhost:3000/api/scoresaber/${hash}/${diffs[i]}`);
-        const key = Object.keys(ratings)[i] as keyof StarRatings;
-        ratings[key] = data.stars === 0 ? (data.qualified ? 'Qualified' : 'Unranked') : `${data.stars}`;
-      } catch (error) {
-        log.error(`Error fetching star rating for difficulty ${diffs[i]}:`, error);
-      }
-    }
-    return ratings;
-  }
+  const handleClose = closeModal;
 
   const getMapInfo = async (event: FormEvent) => {
     event.preventDefault();
@@ -92,16 +63,14 @@ const SSRMThumbnailForm: React.FC<ThumbnailFormProps> = ({
       let currentStarRatings = starRatings;
 
       try {
-        const { data } = await axios.get(`https://api.beatsaver.com/maps/id/${mapId}`);
-        mapData = data;
+        mapData = await fetchMapData(mapId);
         setMapInfo(mapData);
-        localStorage.setItem('mapId', mapId);
-        localStorage.setItem('mapInfo', JSON.stringify(mapData));
+        storage.setString(STORAGE_KEYS.MAP_ID, mapId);
+        storage.set(STORAGE_KEYS.MAP_INFO, mapData);
         notifyMapInfoUpdated();
 
       } catch (error) {
-        log.error('Error fetching map data:', error);
-        createAlert('Error fetching map info', 'error');
+        handleError(error, 'fetchMapData', createAlert);
         setProgress("", 0, false);
         return;
       }

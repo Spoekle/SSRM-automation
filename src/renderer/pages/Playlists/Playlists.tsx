@@ -20,6 +20,7 @@ const Playlists: React.FC = () => {
   const [playlistFormModal, setPlaylistFormModal] = useState<boolean>(false);
   const [playlistThumbnailFormModal, setPlaylistThumbnailFormModal] = useState<boolean>(false);
   const [songHashes, setSongHashes] = useState<string[]>([]);
+  const [chosenMonth, setChosenMonth] = useState<string>('');
   const [outputText, setOutputText] = useState<string>('');
   const [imageSrc, setImageSrc] = useState<string>('');
   const { alerts, createAlert } = useAlerts();
@@ -162,7 +163,7 @@ const Playlists: React.FC = () => {
                   onClick={() => {
                     const link = document.createElement('a');
                     link.href = imageSrc;
-                    link.download = 'playlist-thumbnail.png';
+                    link.download = `playlist-thumbnail-${chosenMonth}.png`;
                     link.click();
                   }}
                   className='bg-green-500 hover:bg-green-600 text-white font-bold py-1.5 px-3 text-sm rounded-lg flex items-center gap-1.5'
@@ -204,6 +205,8 @@ const Playlists: React.FC = () => {
       {playlistThumbnailFormModal && (
         <PlaylistThumbnailForm
           setPlaylistThumbnailFormModal={setPlaylistThumbnailFormModal}
+          month={chosenMonth}
+          setMonth={setChosenMonth}
           setImageSrc={setImageSrc}
           createAlert={createAlert}
           progress={(process: string, progress: number, visible: boolean) => setProgress({ process, progress, visible })}

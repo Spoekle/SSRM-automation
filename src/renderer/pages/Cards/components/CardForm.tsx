@@ -1,13 +1,18 @@
-import React, { FormEvent, ChangeEvent, useState, useEffect } from 'react';
+import React, { FormEvent, ChangeEvent, useState } from 'react';
 import ReactDOM from 'react-dom';
-import axios from 'axios';
 import Switch from '@mui/material/Switch';
 import { FaTimes, FaCloudUploadAlt, FaLayerGroup, FaStar, FaToggleOn, FaCheck, FaSync, FaSort, FaList, FaCheckSquare, FaSquare } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import log from 'electron-log';
-import { notifyMapInfoUpdated } from '../../../utils/mapEvents';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
+import { notifyMapInfoUpdated } from '../../../utils/mapEvents';
+import { getStarRating } from '../../../api/scoresaber';
+import { fetchMapData, fetchMapDataByHashWithRetry } from '../../../api/beatsaver';
+import { storage, STORAGE_KEYS } from '../../../utils/storage';
+import { useModal } from '../../../hooks/useModal';
+import { handleError } from '../../../utils/errorHandler';
+import type { StarRatings, MapInfo, QualifiedJson } from '../../../types';
 import '../../../pages/Settings/styles/CustomScrollbar.css';
 
 const { ipcRenderer } = window.require('electron');
@@ -27,23 +32,7 @@ interface CardFormProps {
   cancelGenerationRef: React.MutableRefObject<boolean>;
 }
 
-interface StarRatings {
-  ES: string;
-  NOR: string;
-  HARD: string;
-  EX: string;
-  EXP: string;
-}
 
-interface QualifiedJson {
-  id: number;
-  songHash: string;
-  songName: string;
-  songSubName: string;
-  levelAuthorName: string;
-  difficulty: number;
-  stars: number;
-}
 
 interface ParsedMapData {
   songHash: string;
@@ -73,8 +62,7 @@ const CardForm: React.FC<CardFormProps> = ({
   cancelGenerationRef,
 }) => {
   const [songName, setSongName] = useState('');
-  const [isPanelOpen, setIsPanelOpen] = useState(false);
-  const [isOverlayVisible, setIsOverlayVisible] = useState(false);
+  const { isPanelOpen, isOverlayVisible, handleClose: closeModal } = useModal(() => setCardFormModal(false));
   const [isFetching, setIsFetching] = useState(false);
   
   // JSON parsing state
@@ -84,18 +72,16 @@ const CardForm: React.FC<CardFormProps> = ({
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [allSelected, setAllSelected] = useState(false);
 
-  useEffect(() => {
-    setIsOverlayVisible(true);
-    setIsPanelOpen(true);
+  // Load saved maps from storage on mount
+  React.useEffect(() => {
+    const savedMaps = storage.get<ParsedMapData[]>(STORAGE_KEYS.QUALIFIED_MAPS_JSON);
+    if (savedMaps && savedMaps.length > 0) {
+      setParsedMaps(savedMaps);
+      setIsJsonMode(true);
+    }
   }, []);
 
-  const handleClose = () => {
-    setIsPanelOpen(false);
-    setIsOverlayVisible(false);
-    setTimeout(() => {
-      setCardFormModal(false);
-    }, 300);
-  };
+  const handleClose = closeModal;
 
   const handleClickOutside = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     if ((event.target as HTMLDivElement).classList.contains('modal-overlay')) {
@@ -105,7 +91,7 @@ const CardForm: React.FC<CardFormProps> = ({
 
   const handleSwitch = (event: React.ChangeEvent<HTMLInputElement>) => {
     setUseBackground(event.target.checked);
-    localStorage.setItem('useBackground', `${event.target.checked}`);
+    storage.setString(STORAGE_KEYS.USE_BACKGROUND, `${event.target.checked}`);
   };
 
   const handleMapIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -120,8 +106,7 @@ const CardForm: React.FC<CardFormProps> = ({
 
     setIsFetching(true);
     try {
-      const response = await axios.get(`https://api.beatsaver.com/maps/id/${mapId}`);
-      const data = response.data;
+      const data = await fetchMapData(mapId);
       setSongName(data.metadata.songName);
 
       const latestStarRatings = await getStarRating(data.versions[0].hash);
@@ -129,8 +114,7 @@ const CardForm: React.FC<CardFormProps> = ({
 
       if (createAlert) createAlert("Star ratings fetched successfully", "success");
     } catch (error) {
-      log.error('Error fetching star ratings:', error);
-      if (createAlert) createAlert("Error fetching star ratings", "error");
+      handleError(error, 'fetchStarRatings', createAlert);
     } finally {
       setIsFetching(false);
     }
@@ -139,11 +123,10 @@ const CardForm: React.FC<CardFormProps> = ({
   const getMapInfo = async (event: FormEvent) => {
     event.preventDefault();
     try {
-      const response = await axios.get(`https://api.beatsaver.com/maps/id/${mapId}`);
-      const data = response.data;
+      const data = await fetchMapData(mapId);
       setMapInfo(data);
-      localStorage.setItem('mapId', `${mapId}`);
-      localStorage.setItem('mapInfo', JSON.stringify(data));
+      storage.setString(STORAGE_KEYS.MAP_ID, mapId);
+      storage.set(STORAGE_KEYS.MAP_INFO, data);
       notifyMapInfoUpdated();
 
       const image = await ipcRenderer.invoke('generate-card', data, starRatings, useBackground);
@@ -158,69 +141,24 @@ const CardForm: React.FC<CardFormProps> = ({
     }
   };
 
-  async function getStarRating(hash: string): Promise<StarRatings> {
-    let diffs = ['1', '3', '5', '7', '9'];
-    let starRatings: StarRatings = {
-      ES: '',
-      NOR: '',
-      HARD: '',
-      EX: '',
-      EXP: ''
-    };
 
-    for (let i = 0; i < diffs.length; i++) {
-      try {
-        const response = await axios.get(`http://localhost:3000/api/scoresaber/${hash}/${diffs[i]}`);
-        const data = response.data;
-        const key = Object.keys(starRatings)[i] as keyof StarRatings;
-        if (data.stars === 0) {
-          starRatings[key] = 'Unranked';
-        } else {
-          starRatings[key] = data.stars.toString();
-        }
-        localStorage.setItem('starRatings', JSON.stringify(starRatings));
-        log.info(starRatings);
-      } catch (error) {
-        log.error("Error fetching star rating, diff " + diffs[i] + " probably doesnt exist :)");
-      }
-    }
-    return starRatings;
-  }
-
-  interface MapInfo {
-    metadata: {
-        songAuthorName: string;
-        songName: string;
-        songSubName: string;
-        levelAuthorName: string;
-        duration: number;
-        bpm: number;
-    };
-    id: string;
-    versions: {
-        coverURL: string;
-        hash: string;
-    }[];
-  }
 
   const handleStoredConfigGeneration = async () => {
-    const configStr = localStorage.getItem('cardConfig');
+    const cardConfig = storage.get<any>('cardConfig');
     setCardFormModal(false);
-    if (!configStr) {
-      if (createAlert) createAlert("No saved card configuration found in localStorage!", "error");
+    if (!cardConfig) {
+      if (createAlert) createAlert("No saved card configuration found!", "error");
       return;
     }
     try {
-      const cardConfig = JSON.parse(configStr);
 
       if (!cardConfig.width || !cardConfig.height || !cardConfig.background || !cardConfig.components) {
         throw new Error("Invalid card configuration");
       }
-      const response = await axios.get(`https://api.beatsaver.com/maps/id/${mapId}`);
-      const data = response.data;
+      const data = await fetchMapData(mapId);
       setMapInfo(data);
-      localStorage.setItem('mapId', `${mapId}`);
-      localStorage.setItem('mapInfo', JSON.stringify(data));
+      storage.setString(STORAGE_KEYS.MAP_ID, mapId);
+      storage.set(STORAGE_KEYS.MAP_INFO, data);
 
       const imageDataUrl = await ipcRenderer.invoke('generate-card-from-config', cardConfig, data, starRatings, useBackground);
       setImageSrc(imageDataUrl);
@@ -301,6 +239,8 @@ const CardForm: React.FC<CardFormProps> = ({
 
       setParsedMaps(parsed);
       setIsJsonMode(true);
+      // Save to storage for persistence
+      storage.set(STORAGE_KEYS.QUALIFIED_MAPS_JSON, parsed);
       if (createAlert) createAlert(`Parsed ${parsed.length} maps successfully!`, 'success');
     } catch (error: any) {
       log.error("Error parsing JSON:", error);
@@ -356,6 +296,7 @@ const CardForm: React.FC<CardFormProps> = ({
     const updated = [...parsedMaps];
     updated[index].selected = !updated[index].selected;
     setParsedMaps(updated);
+    storage.set(STORAGE_KEYS.QUALIFIED_MAPS_JSON, updated);
     
     // Update allSelected state
     const selectedCount = updated.filter(map => map.selected).length;
@@ -366,6 +307,7 @@ const CardForm: React.FC<CardFormProps> = ({
     const newSelected = !allSelected;
     const updated = parsedMaps.map(map => ({ ...map, selected: newSelected }));
     setParsedMaps(updated);
+    storage.set(STORAGE_KEYS.QUALIFIED_MAPS_JSON, updated);
     setAllSelected(newSelected);
   };
 
@@ -394,23 +336,7 @@ const CardForm: React.FC<CardFormProps> = ({
         }
 
         try {
-          let response;
-          while (true) {
-            try {
-              response = await axios.get<MapInfo>(
-                `https://api.beatsaver.com/maps/hash/${mapData.songHash}`
-              );
-              break;
-            } catch (err: any) {
-              if (err.response && err.response.status === 429) {
-                await new Promise((resolve) => setTimeout(resolve, 2000));
-              } else {
-                throw err;
-              }
-            }
-          }
-          
-          const mapInfo = response.data;
+          const mapInfo = await fetchMapDataByHashWithRetry(mapData.songHash);
           const imageDataUrl = await ipcRenderer.invoke('generate-card', mapInfo, mapData.starRatings, useBackground);
           const base64Data = imageDataUrl.split(",")[1];
           const byteCharacters = atob(base64Data);
@@ -633,6 +559,8 @@ const CardForm: React.FC<CardFormProps> = ({
                             setParsedMaps([]);
                             setIsJsonMode(false);
                             setAllSelected(false);
+                            storage.remove(STORAGE_KEYS.QUALIFIED_MAPS_JSON);
+                            if (createAlert) createAlert('Cleared stored maps', 'info');
                           }}
                           className='bg-red-500 text-white px-3 py-1 text-xs rounded-md flex items-center gap-1'
                           whileHover={{ scale: 1.05 }}

@@ -1,16 +1,14 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import log from 'electron-log';
 import { FaStar, FaSync } from 'react-icons/fa';
 import { motion } from 'framer-motion';
+import { getStarRating } from '../../../../api/scoresaber';
+import { fetchMapData } from '../../../../api/beatsaver';
+import { storage, STORAGE_KEYS } from '../../../../utils/storage';
+import { handleError } from '../../../../utils/errorHandler';
+import type { StarRatings } from '../../../../types';
 
-interface StarRatings {
-  ES: string;
-  NOR: string;
-  HARD: string;
-  EX: string;
-  EXP: string;
-}
+
 
 interface MapInfoSectionProps {
   mapId: string;
@@ -36,22 +34,7 @@ const MapInfoSection: React.FC<MapInfoSectionProps> = ({
     setMapId(id);
   };
 
-  async function getStarRating(hash: string): Promise<StarRatings> {
-    const diffs = ['1', '3', '5', '7', '9'];
-    const ratings: StarRatings = { ES: '', NOR: '', HARD: '', EX: '', EXP: '' };
 
-    for (let i = 0; i < diffs.length; i++) {
-      try {
-        const { data } = await axios.get(`http://localhost:3000/api/scoresaber/${hash}/${diffs[i]}`);
-        const key = Object.keys(ratings)[i] as keyof StarRatings;
-        ratings[key] = data.stars === 0 ? (data.qualified ? 'Qualified' : 'Unranked') : `${data.stars}`;
-        localStorage.setItem('starRatings', JSON.stringify(ratings));
-      } catch (error) {
-        log.error(error);
-      }
-    }
-    return ratings;
-  }
 
   const fetchStarRatings = async () => {
     if (!mapId) {
@@ -60,12 +43,12 @@ const MapInfoSection: React.FC<MapInfoSectionProps> = ({
 
     setIsFetching(true);
     try {
-      const { data } = await axios.get(`https://api.beatsaver.com/maps/id/${mapId}`);
+      const data = await fetchMapData(mapId);
       setSongName(data.metadata.songName);
 
       const ratings = await getStarRating(data.versions[0].hash);
       setStarRatings(ratings);
-      localStorage.setItem('starRatings', JSON.stringify(ratings));
+      storage.set(STORAGE_KEYS.STAR_RATINGS, ratings);
     } catch (error) {
       log.error('Error fetching map info or star ratings:', error);
     } finally {
@@ -76,7 +59,7 @@ const MapInfoSection: React.FC<MapInfoSectionProps> = ({
   const updateStarRating = (diff: keyof StarRatings, value: string) => {
     const newRatings = { ...starRatings, [diff]: value };
     setStarRatings(newRatings);
-    localStorage.setItem('starRatings', JSON.stringify(newRatings));
+    storage.set(STORAGE_KEYS.STAR_RATINGS, newRatings);
   };
 
   return (
@@ -117,7 +100,7 @@ const MapInfoSection: React.FC<MapInfoSectionProps> = ({
             className="w-full px-3 py-1.5 text-sm border rounded-lg focus:outline-none focus:ring-1 focus:ring-orange-300 dark:bg-neutral-800 dark:border-neutral-600 dark:text-white"
             onChange={(e) => {
               setChosenDiff(e.target.value);
-              localStorage.setItem('chosenDiff', e.target.value)
+              storage.setString(STORAGE_KEYS.CHOSEN_DIFF, e.target.value);
             }}
             value={chosenDiff}
           >

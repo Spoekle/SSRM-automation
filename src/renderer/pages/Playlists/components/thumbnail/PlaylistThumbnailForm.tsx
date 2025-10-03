@@ -12,6 +12,8 @@ import '../../../Settings/styles/CustomScrollbar.css';
 
 interface PlaylistThumbnailFormProps {
   setPlaylistThumbnailFormModal: (show: boolean) => void;
+  month: string;
+  setMonth: (month: string) => void;
   setImageSrc: (src: string) => void;
   createAlert: (message: string, type: 'success' | 'error' | 'alert' | 'info') => void;
   progress: (process: string, progress: number, visible: boolean) => void;
@@ -19,6 +21,8 @@ interface PlaylistThumbnailFormProps {
 
 const PlaylistThumbnailForm: React.FC<PlaylistThumbnailFormProps> = ({
   setPlaylistThumbnailFormModal,
+  month,
+  setMonth,
   setImageSrc,
   createAlert,
   progress: setProgress,
@@ -26,7 +30,6 @@ const PlaylistThumbnailForm: React.FC<PlaylistThumbnailFormProps> = ({
   const [file, setFile] = useState<File | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [isOverlayVisible, setIsOverlayVisible] = useState(false);
-  const [month, setMonth] = useState<string>('');
   const [backgroundScale, setBackgroundScale] = useState<number>(1);
   const [backgroundX, setBackgroundX] = useState<number>(0);
   const [backgroundY, setBackgroundY] = useState<number>(0);
