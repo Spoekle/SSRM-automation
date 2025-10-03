@@ -173,7 +173,7 @@ const GlobalLoadedMap: React.FC = () => {
             <motion.img
               src={mapInfo.versions[0].coverURL}
               alt="Map cover"
-              className={`max-h-12 object-cover rounded-lg transition-all duration-300 select-none ${
+              className={`min-h-12 min-w-12 max-h-12 object-cover rounded-lg transition-all duration-300 select-none ${
                 audioPlaying ? 'blur-[1px] brightness-75' : ''
               }`}
               transition={{ type: "spring", stiffness: 300 }}

@@ -34,9 +34,6 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ visible, progress, process, o
                   <motion.span
                     className="font-medium text-neutral-800 dark:text-neutral-200"
                     key={process}
-                    initial={{ opacity: 0, x: -5 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ type: "spring" }}
                   >
                     {process}
                   </motion.span>
