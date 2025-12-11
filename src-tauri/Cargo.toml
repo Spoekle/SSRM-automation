@@ -1,0 +1,35 @@
+[package]
+name = "ssrm-automation"
+version = "3.0.0-1"
+description = "Generate Beatsaber titles and thumbnails in a single click!"
+authors = ["Spoekle"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "ssrm_automation_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+reqwest = { version = "0.11", features = ["json"] }
+skia-safe = { version = "0.78", features = ["textlayout"] }
+base64 = "0.21"
+image = "0.24"
+resvg = "0.37"
+usvg = "0.37"
+tiny-skia = "0.11"
+tauri-plugin-dialog = "2"
+
+[target.'cfg(any(target_os = "macos", windows, target_os = "linux"))'.dependencies]
+tauri-plugin-updater = "2.9.0"

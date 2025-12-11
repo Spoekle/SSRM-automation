@@ -1,0 +1,62 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "SSRM Automation",
+  "version": "3.0.0-1",
+  "identifier": "com.spoekle.ssrm-automation",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "SSRM Automation",
+        "width": 800,
+        "height": 518,
+        "minWidth": 800,
+        "minHeight": 518,
+        "resizable": false,
+        "decorations": false,
+        "center": true,
+        "visible": true,
+        "transparent": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "createUpdaterArtifacts": true,
+    "resources": [
+      "fonts/**/*"
+    ],
+    "windows": {
+      "nsis": {
+        "installerIcon": "icons/icon.ico",
+        "headerImage": null,
+        "sidebarImage": null,
+        "installMode": "currentUser"
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEUyMjI1NEY0NTIzQUIyODgKUldTSXNqcFM5RlFpNG9SLzBQTktCMmZERTJLNXpZVTBheWdlaSsrNGswVXNsL2dnRDVzMWdvSkkK",
+      "endpoints": [
+        "https://github.com/Spoekle/SSRM-automation/releases/latest/download/latest.json"
+      ]
+    }
+  }
+}

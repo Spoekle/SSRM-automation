@@ -1,0 +1,272 @@
+import React, { FormEvent, useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FaTimes, FaImage, FaCloudUploadAlt, FaMapMarkedAlt, FaCheck, FaCog, FaSpinner } from 'react-icons/fa';
+import log from '../../../../utils/log';
+import { ipcRenderer } from '../../../../utils/tauri-api';
+import BatchInfoSection from './BatchInfoSection';
+import NativeFileUpload from '../common/NativeFileUpload';
+import BackgroundCustomizer from '../../../../components/forms/BackgroundCustomizer';
+
+interface ThumbnailFormProps {
+  mapId: string;
+  setMapId: (id: string) => void;
+  setThumbnailFormModal: (show: string) => void;
+  setMapInfo: (info: any) => void;
+  setImageSrc: (src: string) => void;
+  starRatings: StarRatings;
+  setStarRatings: (ratings: StarRatings) => void;
+  chosenDiff: string;
+  setChosenDiff: (diff: string) => void;
+  createAlert: (message: string, type: 'success' | 'error' | 'alert' | 'info') => void;
+  progress: (process: string, progress: number, visible: boolean) => void;
+  cancelGenerationRef: React.MutableRefObject<boolean>;
+}
+
+interface StarRatings {
+  ES: string;
+  NOR: string;
+  HARD: string;
+  EX: string;
+  EXP: string;
+}
+
+const BatchThumbnailForm: React.FC<ThumbnailFormProps> = ({
+  mapId,
+  setMapId,
+  setThumbnailFormModal,
+  setMapInfo,
+  setImageSrc,
+  starRatings,
+  setStarRatings,
+  chosenDiff,
+  setChosenDiff,
+  createAlert,
+  progress: setProgress,
+  cancelGenerationRef,
+}) => {
+  const [customBackgroundPath, setCustomBackgroundPath] = useState<string | null>(null);
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [isOverlayVisible, setIsOverlayVisible] = useState(false);
+  const [month, setMonth] = useState<string>('');
+  const [backgroundScale, setBackgroundScale] = useState<number>(1);
+  const [backgroundX, setBackgroundX] = useState<number>(0);
+  const [backgroundY, setBackgroundY] = useState<number>(0);
+
+  useEffect(() => {
+    setIsOverlayVisible(true);
+    setIsPanelOpen(true);
+  }, []);
+
+  // Generate preview when file changes (image only)
+  useEffect(() => {
+    const generatePreview = async () => {
+      if (!customBackgroundPath) {
+        setPreviewSrc(null);
+        setBackgroundScale(1);
+        setBackgroundX(0);
+        setBackgroundY(0);
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        log.info(`Reading image for preview: ${customBackgroundPath}`);
+        const imageData = await ipcRenderer.invoke('read-image-as-base64', { imagePath: customBackgroundPath }) as string;
+        setPreviewSrc(imageData);
+      } catch (e) {
+        log.error('Failed to read image for preview', e);
+        createAlert('Failed to load image preview', 'error');
+        setPreviewSrc(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    generatePreview();
+  }, [customBackgroundPath]);
+
+  const handleClose = () => {
+    setIsPanelOpen(false);
+    setIsOverlayVisible(false);
+    setTimeout(() => {
+      setThumbnailFormModal("none");
+    }, 300);
+  };
+
+  const getMapInfo = async (event: FormEvent) => {
+    event.preventDefault();
+
+    // Validate that month is selected
+    if (!month) {
+      createAlert('Please select a month', 'error');
+      return;
+    }
+
+    if (!customBackgroundPath) {
+      createAlert('No file provided', 'info');
+      return;
+    }
+
+    try {
+      setImageSrc("");
+      setThumbnailFormModal("none");
+      createAlert('Generation Started...', 'info');
+      setProgress('Putting info together...', 10, true);
+
+      setProgress('Background prepared', 30, true);
+
+      setProgress('Generating thumbnail...', 70, true);
+      let image;
+      try {
+        image = await ipcRenderer.invoke('generate-batch-thumbnail', customBackgroundPath, month, {
+          scale: backgroundScale,
+          x: backgroundX,
+          y: backgroundY
+        }) as string;
+      } catch (error) {
+        log.error('Error generating thumbnail:', error);
+        createAlert('Error generating thumbnail', 'error');
+        setProgress("", 0, false);
+        return;
+      }
+
+      setProgress('Thumbnail generated', 100, true);
+      setImageSrc(image);
+      setProgress("", 0, false);
+      createAlert('Thumbnail generated successfully', 'success');
+
+    } catch (error) {
+      log.error('Unhandled error in getMapInfo:', error);
+      createAlert('An unexpected error occurred', 'error');
+      setProgress("", 0, false);
+    }
+  };
+
+  return ReactDOM.createPortal(
+    <AnimatePresence>
+      {true && (
+        <motion.div
+          className={`fixed top-16 left-0 right-0 bottom-16 z-40 rounded-br-3xl backdrop-blur-md flex justify-center items-center ${isOverlayVisible ? "opacity-100" : "opacity-0"
+            } bg-black/20`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: isOverlayVisible ? 1 : 0 }}
+          exit={{ opacity: 0 }}
+          onClick={handleClose}
+        >
+          <motion.div
+            className="absolute left-0 top-0 h-full w-2/3 rounded-r-xl bg-neutral-200 dark:bg-neutral-800 text-neutral-950 dark:text-white shadow-lg overflow-hidden flex flex-col"
+            initial={{ x: "-100%" }}
+            animate={{ x: isPanelOpen ? "0%" : "-100%" }}
+            exit={{ x: "-100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <motion.div
+              className="z-10 sticky top-0 backdrop-blur-md bg-gradient-to-r from-yellow-500/10 to-yellow-400/10 dark:from-yellow-800/20 dark:to-yellow-700/20 p-3 border-b border-neutral-300 dark:border-neutral-700 flex justify-between items-center"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1, type: "spring" }}
+            >
+              <div className="flex items-center">
+                <motion.h2
+                  className="text-lg bg-white/70 dark:bg-neutral-700/70 px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 shadow-sm"
+                  whileHover={{ scale: 1.03 }}
+                >
+                  <FaImage className="text-yellow-500" />
+                  Batch Thumbnail Settings
+                </motion.h2>
+              </div>
+              <motion.button
+                className="text-red-500 bg-white/70 dark:bg-neutral-700/70 p-1.5 rounded-md hover:bg-red-500 hover:text-white transition duration-200 shadow-sm"
+                onClick={handleClose}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <FaTimes />
+              </motion.button>
+            </motion.div>
+
+            <div className="flex-1 overflow-auto custom-scrollbar">
+              <form onSubmit={getMapInfo} className='p-3 space-y-3'>
+                {/* Background Image - File upload comes first */}
+                <div className='bg-white dark:bg-neutral-700 p-3 rounded-xl shadow-sm'>
+                  <h2 className='text-base font-medium mb-2 border-b pb-1 border-neutral-200 dark:border-neutral-600 flex items-center gap-1.5'>
+                    <FaCloudUploadAlt className="text-yellow-500" /> Background Image
+                  </h2>
+                  <NativeFileUpload
+                    accepts="image"
+                    onFileSelect={setCustomBackgroundPath}
+                    currentPath={customBackgroundPath}
+                    label="Background Source"
+                    helperText="Click to browse image or drag & drop"
+                  />
+                </div>
+
+                {/* Map Details */}
+                <div className='bg-white dark:bg-neutral-700 p-3 rounded-xl shadow-sm'>
+                  <h2 className='text-base font-medium mb-2 border-b pb-1 border-neutral-200 dark:border-neutral-600 flex items-center gap-1.5'>
+                    <FaMapMarkedAlt className="text-yellow-500" /> Batch Details
+                  </h2>
+                  <BatchInfoSection
+                    month={month}
+                    setMonth={setMonth}
+                  />
+                </div>
+
+                {/* Background Customizer */}
+                {customBackgroundPath && (
+                  <div className='bg-white dark:bg-neutral-700 p-3 rounded-xl shadow-sm'>
+                    <div className='flex items-center justify-between mb-2 border-b pb-1 border-neutral-200 dark:border-neutral-600'>
+                      <h2 className='text-base font-medium flex items-center gap-1.5'>
+                        <FaCog className="text-yellow-500" /> Background Customizer
+                      </h2>
+                      {isLoading && (
+                        <span className="text-xs text-neutral-500 flex items-center gap-1">
+                          <FaSpinner className="animate-spin" /> Loading...
+                        </span>
+                      )}
+                    </div>
+                    <BackgroundCustomizer
+                      previewSrc={previewSrc || ''}
+                      month={month}
+                      backgroundScale={backgroundScale}
+                      setBackgroundScale={setBackgroundScale}
+                      backgroundX={backgroundX}
+                      setBackgroundX={setBackgroundX}
+                      backgroundY={backgroundY}
+                      setBackgroundY={setBackgroundY}
+                      aspectRatio="16:9"
+                      accentColor="yellow"
+                      positionRange={500}
+                    />
+                  </div>
+                )}
+              </form>
+            </div>
+
+            {/* Sticky footer with Generate button */}
+            <div className='sticky bottom-0 bg-white/80 dark:bg-neutral-800/80 backdrop-blur-sm p-2 border-t border-neutral-300 dark:border-neutral-700 flex justify-end items-center'>
+              <motion.button
+                type="button"
+                onClick={getMapInfo}
+                className='bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-1.5 text-sm rounded-lg shadow-sm hover:shadow-md font-medium flex items-center gap-1.5'
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+              >
+                <FaCheck size={12} />
+                Generate Thumbnail
+              </motion.button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>,
+    document.body
+  );
+};
+
+export default BatchThumbnailForm;

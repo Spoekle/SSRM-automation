@@ -15,7 +15,7 @@ npm install
 Start the app in the `dev` environment:
 
 ```bash
-npm start
+npm run tauri dev
 ```
 
 ## Building
@@ -23,10 +23,5 @@ npm start
 Run the package command in the `dev` environment:
 
 ```bash
-npm run package
+npm run tauri package
 ```
-
-
-## License
-
-MIT © [Electron React Boilerplate](https://github.com/electron-react-boilerplate)
