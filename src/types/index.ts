@@ -53,6 +53,7 @@ export interface MapInfo {
   versions: Array<{
     coverURL: string;
     hash: string;
+    previewURL?: string;
   }>;
 }
 

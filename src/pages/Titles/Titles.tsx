@@ -6,28 +6,8 @@ import AlertSystem from '../../components/AlertSystem';
 import { useAlerts } from '../../utils/alertSystem';
 import { FaFileAlt, FaCopy, FaEdit } from 'react-icons/fa';
 
-interface MapInfo {
-  metadata: {
-    songAuthorName: string;
-    songName: string;
-    songSubName: string;
-    levelAuthorName: string;
-    duration: number;
-    bpm: number;
-  };
-  id: string;
-  versions: {
-    coverURL: string;
-    hash: string;
-  }[];
-}
+import { useMapInfo } from '../../hooks';
 
-interface Alert {
-  id: number;
-  message: string;
-  fadeOut: boolean;
-  type: 'success' | 'error' | 'alert';
-}
 const abbreviatedToDifficulty = (abbreviated: string): string => {
   switch (abbreviated) {
     case 'ES':
@@ -49,7 +29,7 @@ const Titles: React.FC = () => {
   const [mapId, setMapId] = useState<string>('');
   const [chosenDiff, setChosenDiff] = useState<string>('Easy');
   const [player, setPlayer] = useState<string>('Mr_bjo');
-  const [mapInfo, setMapInfo] = useState<MapInfo | null>(null);
+  const { mapInfo, setMapInfo } = useMapInfo(); // Use the custom hook
   const [mapFormModal, setMapFormModal] = useState<boolean>(false);
   const [useSubname, setUseSubname] = useState<boolean>(false);
 
@@ -60,10 +40,7 @@ const Titles: React.FC = () => {
     if (storedMapId) {
       setMapId(storedMapId);
     }
-    const storedMapInfo = localStorage.getItem('mapInfo');
-    if (storedMapInfo) {
-      setMapInfo(JSON.parse(storedMapInfo));
-    }
+    // mapInfo loading is handled by the hook now
     const storedChosenDiff = localStorage.getItem('chosenDiff');
     if (storedChosenDiff) {
       setChosenDiff(abbreviatedToDifficulty(storedChosenDiff));
@@ -95,7 +72,7 @@ const Titles: React.FC = () => {
   const mapLink = `https://beatsaver.com/maps/${mapId}`;
 
   return (
-    <div className='max-h-96 h-96 relative dark:text-neutral-200 bg-neutral-200 dark:bg-neutral-900 p-4 pt-6 overflow-auto custom-scrollbar'>
+    <div className='w-full min-h-full relative p-4 pt-6 overflow-x-hidden custom-scrollbar'>
       <motion.div
         className='flex flex-col items-center justify-start max-w-4xl mx-auto'
         initial="hidden"
@@ -110,12 +87,12 @@ const Titles: React.FC = () => {
             Generate your title and description for Beat Saber videos!
           </p>
           <motion.button
-            className='bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg flex items-center justify-center gap-2 mx-auto'
+            className='group relative inline-flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-semibold text-neutral-700 dark:text-neutral-200 bg-white/50 dark:bg-neutral-800/50 backdrop-blur-md border border-neutral-200/50 dark:border-neutral-700/50 rounded-xl shadow-sm hover:bg-white/80 dark:hover:bg-neutral-800 hover:shadow-md transition-all mx-auto'
             onClick={() => setMapFormModal(true)}
-            whileHover={{ scale: 1.05, boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.2)" }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.02, y: -1 }}
+            whileTap={{ scale: 0.98 }}
           >
-            <FaEdit size={16} />
+            <FaEdit size={16} className="text-blue-500 group-hover:scale-110 transition-transform" />
             <span>Map Settings</span>
           </motion.button>
         </motion.div>

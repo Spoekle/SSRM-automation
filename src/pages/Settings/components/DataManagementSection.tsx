@@ -19,13 +19,13 @@ const DataManagementSection: React.FC<DataManagementSectionProps> = ({
 }) => {
     return (
         <motion.section
-            className="bg-white dark:bg-neutral-700 rounded-xl shadow p-4"
+            className="bg-neutral-50/50 dark:bg-neutral-800/30 p-3.5 rounded-xl border border-neutral-200 dark:border-neutral-700/50 shadow-sm"
             initial="hidden"
             animate="visible"
             variants={sectionVariants}
             custom={2}
         >
-            <h3 className="text-lg font-semibold border-b pb-2 mb-4 border-neutral-200 dark:border-neutral-600">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-3 flex items-center gap-2">
                 Data Management
             </h3>
 

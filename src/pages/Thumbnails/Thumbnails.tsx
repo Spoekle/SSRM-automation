@@ -9,29 +9,7 @@ import ProgressBar from '../../components/ProgressBar';
 import { useAlerts } from '../../utils/alertSystem';
 import { nativeDialog } from '../../utils/tauri-api';
 
-interface MapInfo {
-  metadata: {
-    songAuthorName: string;
-    songName: string;
-    songSubName: string;
-    levelAuthorName: string;
-    duration: number;
-    bpm: number;
-  };
-  id: string;
-  versions: {
-    coverURL: string;
-    hash: string;
-  }[];
-}
-
-interface StarRatings {
-  ES: string;
-  NOR: string;
-  HARD: string;
-  EX: string;
-  EXP: string;
-}
+import { useMapInfo, useStarRatings } from '../../hooks';
 
 interface Progress {
   process: string;
@@ -41,9 +19,11 @@ interface Progress {
 
 const Thumbnails: React.FC = () => {
   const [mapId, setMapId] = useState<string>('');
-  const [progress, setProgress] = useState<Progress>({process: "", progress: 0, visible: false });
-  const [mapInfo, setMapInfo] = useState<MapInfo | null>(null);
-  const [starRatings, setStarRatings] = useState<StarRatings>({ ES: "", NOR: "", HARD: "", EX: "", EXP: "" });
+  const [progress, setProgress] = useState<Progress>({ process: "", progress: 0, visible: false });
+  // Custom hooks
+  const { mapInfo, setMapInfo } = useMapInfo();
+  const { starRatings, setStarRatings } = useStarRatings();
+
   const [chosenDiff, setChosenDiff] = React.useState('ES');
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [thumbnailFormModal, setThumbnailFormModal] = useState<string>("none");
@@ -56,14 +36,7 @@ const Thumbnails: React.FC = () => {
     if (storedMapId) {
       setMapId(storedMapId);
     }
-    const storedMapInfo = localStorage.getItem('mapInfo');
-    if (storedMapInfo) {
-      setMapInfo(JSON.parse(storedMapInfo));
-    }
-    const storedStarRatings = localStorage.getItem('starRatings');
-    if (storedStarRatings) {
-      setStarRatings(JSON.parse(storedStarRatings));
-    }
+    // mapInfo and starRatings are handled by hooks
     const storedChosenDiff = localStorage.getItem('chosenDiff');
     if (storedChosenDiff) {
       setChosenDiff(storedChosenDiff);
@@ -92,7 +65,7 @@ const Thumbnails: React.FC = () => {
 
     const success = await nativeDialog.saveImage(imageSrc, safeFilename);
     if (success) {
-        createAlert('Saved thumbnail!', 'success');
+      createAlert('Saved thumbnail!', 'success');
     }
   };
 
@@ -111,7 +84,7 @@ const Thumbnails: React.FC = () => {
   };
 
   return (
-    <div className='max-h-96 h-96 relative dark:text-neutral-200 bg-neutral-200 dark:bg-neutral-900 p-4 pt-6 overflow-auto custom-scrollbar'>
+    <div className='w-full min-h-full relative p-4 pt-6 overflow-x-hidden custom-scrollbar'>
       <ProgressBar
         visible={progress.visible}
         progress={progress.progress}
@@ -132,33 +105,32 @@ const Thumbnails: React.FC = () => {
           <p className='text-sm mb-3 text-neutral-600 dark:text-neutral-400'>
             Generate a thumbnail in a single click!
           </p>
-            <div className="flex justify-center space-x-3">
+          <div className="flex justify-center gap-3">
             <motion.button
-              className='bg-gradient-to-r from-yellow-500 to-yellow-400 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg flex items-center justify-center gap-2 mx-auto'
+              className='group relative inline-flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-semibold text-neutral-700 dark:text-neutral-200 bg-white/50 dark:bg-neutral-800/50 backdrop-blur-md border border-neutral-200/50 dark:border-neutral-700/50 rounded-xl shadow-sm hover:bg-white/80 dark:hover:bg-neutral-800 hover:shadow-md transition-all'
               onClick={() => setThumbnailFormModal("batch")}
-              whileHover={{ scale: 1.05, boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.2)" }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.02, y: -1 }}
+              whileTap={{ scale: 0.98 }}
               initial={{ opacity: 0, x: -30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ type: "spring" }}
             >
-              <FaImage size={16} />
+              <FaImage size={16} className="text-yellow-500 group-hover:scale-110 transition-transform" />
               <span>Batch Thumbnail</span>
             </motion.button>
             <motion.button
-              className='bg-gradient-to-r from-orange-500 to-orange-400 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg flex items-center justify-center gap-2 mx-auto'
+              className='group relative inline-flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-semibold text-neutral-700 dark:text-neutral-200 bg-white/50 dark:bg-neutral-800/50 backdrop-blur-md border border-neutral-200/50 dark:border-neutral-700/50 rounded-xl shadow-sm hover:bg-white/80 dark:hover:bg-neutral-800 hover:shadow-md transition-all'
               onClick={() => setThumbnailFormModal("ssrm")}
-              whileHover={{ scale: 1.05, boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.2)" }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.02, y: -1 }}
+              whileTap={{ scale: 0.98 }}
               initial={{ opacity: 0, x: 30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ type: "spring" }}
-
             >
-              <FaImage size={16} />
+              <FaImage size={16} className="text-orange-500 group-hover:scale-110 transition-transform" />
               <span>SSRM Thumbnail</span>
             </motion.button>
-            </div>
+          </div>
         </motion.div>
 
         {imageSrc && (

@@ -178,17 +178,19 @@ export default function Footer({
 
   return (
     <>
-      <div className="no-move h-[69px] items-center justify-center bg-neutral-200 dark:bg-neutral-900 text-neutral-950 dark:text-neutral-200">
-        <div className="flex justify-between items-center p-4">
-          <div className="flex-1 flex items-center gap-4">
+      <div className="no-move flex-none flex items-center justify-center bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md border-t border-neutral-200 dark:border-neutral-800 text-neutral-950 dark:text-neutral-200 transition-colors duration-200">
+        <div className="w-full relative flex items-center px-4 py-2.5">
+          {/* Centered Status Indicators */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-3">
             <StatusDot status={apiStatus.scoresaber} label="ScoreSaber" />
             <StatusDot status={apiStatus.beatsaver} label="BeatSaver" />
           </div>
 
-          <div className="flex items-center">
+          {/* Right Side Controls */}
+          <div className="ml-auto flex items-center">
             {hasUpdate && (
               <motion.div
-                className="z-20 relative rounded-full shadow-sm mr-4"
+                className="z-20 relative rounded-full shadow-sm mr-3"
                 animate={{ y: [0, -3, 0] }}
                 transition={{
                   y: { repeat: Infinity, repeatDelay: 2, duration: 1 },
@@ -203,7 +205,7 @@ export default function Footer({
                   >
                     <button
                       type="button"
-                      className="flex items-center bg-blue-500 dark:bg-blue-600 text-xs font-semibold text-white px-2 py-1 rounded-full hover:underline transition"
+                      className="flex items-center bg-blue-500 dark:bg-blue-600 text-[10px] font-bold uppercase tracking-wide text-white px-2.5 py-1 rounded-full hover:bg-blue-600 transition"
                     >
                       {getUpdateButtonText()}
                     </button>
@@ -215,14 +217,14 @@ export default function Footer({
             <motion.button
               type="button"
               onClick={handleCogClick}
-              className="py-2 px-2 bg-transparent hover:bg-black/20 rounded-full transition duration-200"
-              whileHover={{ scale: 1.1, rotate: 90 }}
+              className="p-1.5 bg-transparent hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded-lg transition-colors duration-200"
+              whileHover={{ rotate: 90 }}
               whileTap={{ scale: 0.9 }}
             >
-              <FaCog size="20" className="transition duration-200" />
+              <FaCog size="18" className="text-neutral-600 dark:text-neutral-400" />
             </motion.button>
 
-            <div className="text-xs ml-2 text-neutral-600 dark:text-neutral-400">
+            <div className="text-[10px] uppercase tracking-wider font-medium ml-3 text-neutral-500 dark:text-neutral-500">
               v{appVersion} {isDevBranch && '(dev)'}
             </div>
           </div>

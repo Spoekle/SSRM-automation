@@ -14,7 +14,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ visible, progress, process, o
     <AnimatePresence>
       {visible && (
         <motion.div
-          className="fixed top-16 left-0 right-0 z-50"
+          className="fixed top-17 left-0 right-0 z-50"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}

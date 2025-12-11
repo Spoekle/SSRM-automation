@@ -20,14 +20,14 @@ const BatchInfoSection: React.FC<BatchInfoSectionProps> = ({
         <label className='block mb-1 text-sm text-neutral-700 dark:text-neutral-200 font-medium'>
           Month:
         </label>
-        <div className="relative flex space-x-2 items-center">
+        <div className="relative">
           <select
             value={month}
             onChange={(e) => setMonth(e.target.value)}
-            className="flex-1 px-3 py-1.5 text-sm border rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-300 dark:bg-neutral-800 dark:border-neutral-600 dark:text-white"
+            className="w-full px-3 py-1.5 text-sm border bg-white dark:bg-neutral-900 border-neutral-300 dark:border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/50 dark:text-white transition-shadow"
           >
             <option value="">Select a month</option>
-            {months.map((monthName, index) => (
+            {months.map((monthName) => (
               <option key={monthName} value={monthName.toUpperCase()}>
                 {monthName}
               </option>

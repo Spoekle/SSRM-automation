@@ -16,7 +16,7 @@ interface Progress {
 }
 
 const Playlists: React.FC = () => {
-  const [progress, setProgress] = useState<Progress>({process: "", progress: 0, visible: false });
+  const [progress, setProgress] = useState<Progress>({ process: "", progress: 0, visible: false });
   const [playlistFormModal, setPlaylistFormModal] = useState<boolean>(false);
   const [playlistThumbnailFormModal, setPlaylistThumbnailFormModal] = useState<boolean>(false);
   const [songHashes, setSongHashes] = useState<string[]>([]);
@@ -63,7 +63,7 @@ const Playlists: React.FC = () => {
   };
 
   return (
-    <div className='max-h-96 h-96 relative dark:text-neutral-200 bg-neutral-200 dark:bg-neutral-900 p-4 pt-6 overflow-auto custom-scrollbar'>
+    <div className='w-full min-h-full relative p-4 pt-6 overflow-x-hidden custom-scrollbar'>
       <ProgressBar
         visible={progress.visible}
         progress={progress.progress}
@@ -84,24 +84,29 @@ const Playlists: React.FC = () => {
           <p className='text-sm mb-3 text-neutral-600 dark:text-neutral-400'>
             Extract unique song hashes from JSON files!
           </p>
-          <div className="flex justify-center gap-4">
+          <div className="flex justify-center gap-3">
             <motion.button
-              className='bg-gradient-to-r from-orange-500 to-orange-400 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg flex items-center justify-center gap-2'
+              className='group relative inline-flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-semibold text-neutral-700 dark:text-neutral-200 bg-white/50 dark:bg-neutral-800/50 backdrop-blur-md border border-neutral-200/50 dark:border-neutral-700/50 rounded-xl shadow-sm hover:bg-white/80 dark:hover:bg-neutral-800 hover:shadow-md transition-all'
               onClick={() => setPlaylistFormModal(true)}
-              whileHover={{ scale: 1.05, boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.2)" }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.02, y: -1 }}
+              whileTap={{ scale: 0.98 }}
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ type: "spring" }}
             >
-              <FaCloudUploadAlt size={18} />
+              <FaCloudUploadAlt size={16} className="text-orange-500 group-hover:scale-110 transition-transform" />
               <span>Process Playlist</span>
             </motion.button>
-
             <motion.button
-              className='bg-gradient-to-r from-blue-500 to-blue-400 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg flex items-center justify-center gap-2'
+              className='group relative inline-flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-semibold text-neutral-700 dark:text-neutral-200 bg-white/50 dark:bg-neutral-800/50 backdrop-blur-md border border-neutral-200/50 dark:border-neutral-700/50 rounded-xl shadow-sm hover:bg-white/80 dark:hover:bg-neutral-800 hover:shadow-md transition-all'
               onClick={() => setPlaylistThumbnailFormModal(true)}
-              whileHover={{ scale: 1.05, boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.2)" }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.02, y: -1 }}
+              whileTap={{ scale: 0.98 }}
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ type: "spring" }}
             >
-              <FaImage size={18} />
+              <FaImage size={16} className="text-blue-500 group-hover:scale-110 transition-transform" />
               <span>Create Thumbnail</span>
             </motion.button>
           </div>

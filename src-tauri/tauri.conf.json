@@ -13,11 +13,13 @@
     "windows": [
       {
         "title": "SSRM Automation",
-        "width": 800,
-        "height": 518,
+        "width": 1024,
+        "height": 720,
         "minWidth": 800,
-        "minHeight": 518,
-        "resizable": false,
+        "minHeight": 600,
+        "maxWidth": 1400,
+        "maxHeight": 1000,
+        "resizable": true,
         "decorations": false,
         "center": true,
         "visible": true,

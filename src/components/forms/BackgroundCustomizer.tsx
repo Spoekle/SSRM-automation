@@ -217,127 +217,132 @@ const BackgroundCustomizer: React.FC<BackgroundCustomizerProps> = ({
   `;
 
     return (
-        <div className="space-y-3">
+        <div className="space-y-4">
             <style>{sliderStyles}</style>
             {/* Preview */}
-            <div className="bg-neutral-100 justify-items-center overflow-hidden dark:bg-neutral-600 rounded-lg p-2">
-                <div
-                    ref={previewRef}
-                    className={`relative ${config.previewClass} bg-neutral-200 dark:bg-neutral-700 rounded cursor-move border-2 border-dashed border-neutral-300 dark:border-neutral-500`}
-                    onMouseDown={handleMouseDown}
-                    onWheel={handleWheel}
-                >
-                    {/* Full background image - shows entire image */}
+            <div className={`p-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50/50 dark:bg-neutral-800/50 backdrop-blur-sm`}>
+                <div className="flex justify-center">
                     <div
-                        className="absolute inset-0 bg-contain bg-center bg-no-repeat transition-transform duration-75"
-                        style={{
-                            backgroundImage: `url('${backgroundImage}')`,
-                            transform: `translate(${backgroundX * previewScale.x}px, ${backgroundY * previewScale.y}px) scale(${backgroundScale})`,
-                            transformOrigin: 'center',
-                            cursor: isDragging ? 'grabbing' : 'grab'
-                        }}
-                    />
+                        ref={previewRef}
+                        className={`relative ${config.previewClass} bg-neutral-200 dark:bg-neutral-700 rounded-lg cursor-move shadow-inner overflow-hidden ring-1 ring-neutral-900/5 dark:ring-white/10`}
+                        onMouseDown={handleMouseDown}
+                        onWheel={handleWheel}
+                    >
+                        {/* Full background image - shows entire image */}
+                        <div
+                            className="absolute inset-0 bg-contain bg-center bg-no-repeat transition-transform duration-75"
+                            style={{
+                                backgroundImage: `url('${backgroundImage}')`,
+                                transform: `translate(${backgroundX * previewScale.x}px, ${backgroundY * previewScale.y}px) scale(${backgroundScale})`,
+                                transformOrigin: 'center',
+                                cursor: isDragging ? 'grabbing' : 'grab'
+                            }}
+                        />
 
-                    {/* Crop area overlay to show what will be used in final thumbnail */}
-                    <div className="absolute inset-0 pointer-events-none">
-                        <div className="relative w-full h-full">
-                            {/* Semi-transparent overlay on areas that will be cropped out */}
-                            <div className="absolute inset-0 bg-black/20"></div>
-                            {/* Clear area showing the crop region */}
-                            <div
-                                className={`absolute bg-transparent border-2 ${colors.border} border-dashed`}
-                                style={config.cropStyle}
-                            >
-                                {/* Corner indicators */}
-                                <div className={`absolute -top-1 -left-1 w-2 h-2 ${colors.dot} rounded-full`}></div>
-                                <div className={`absolute -top-1 -right-1 w-2 h-2 ${colors.dot} rounded-full`}></div>
-                                <div className={`absolute -bottom-1 -left-1 w-2 h-2 ${colors.dot} rounded-full`}></div>
-                                <div className={`absolute -bottom-1 -right-1 w-2 h-2 ${colors.dot} rounded-full`}></div>
+                        {/* Crop area overlay to show what will be used in final thumbnail */}
+                        <div className="absolute inset-0 pointer-events-none">
+                            <div className="relative w-full h-full">
+                                {/* Semi-transparent overlay on areas that will be cropped out */}
+                                <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px]"></div>
+                                {/* Clear area showing the crop region */}
+                                <div
+                                    className={`absolute bg-transparent border-2 ${colors.border} border-dashed shadow-sm`}
+                                    style={config.cropStyle}
+                                >
+                                    {/* Corner indicators */}
+                                    <div className={`absolute -top-1.5 -left-1.5 w-3 h-3 ${colors.dot} rounded-full ring-2 ring-white dark:ring-neutral-900`}></div>
+                                    <div className={`absolute -top-1.5 -right-1.5 w-3 h-3 ${colors.dot} rounded-full ring-2 ring-white dark:ring-neutral-900`}></div>
+                                    <div className={`absolute -bottom-1.5 -left-1.5 w-3 h-3 ${colors.dot} rounded-full ring-2 ring-white dark:ring-neutral-900`}></div>
+                                    <div className={`absolute -bottom-1.5 -right-1.5 w-3 h-3 ${colors.dot} rounded-full ring-2 ring-white dark:ring-neutral-900`}></div>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Logo Overlay */}
-                    {showLogo && (
-                        <div className={config.logoClass}>
-                            <img src={logo} alt="Logo" className={config.logoSize} />
+                        {/* Logo Overlay */}
+                        {showLogo && (
+                            <div className={config.logoClass}>
+                                <img src={logo} alt="Logo" className={`${config.logoSize} drop-shadow-lg`} />
+                            </div>
+                        )}
+
+                        {/* Month Overlay */}
+                        {showMonth && month && (
+                            <div className={config.monthClass}>
+                                <span className={`${config.monthTextClass} backdrop-blur-md bg-black/30`}>
+                                    {month}
+                                </span>
+                            </div>
+                        )}
+
+                        {/* Overlay hints */}
+                        <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-full shadow-lg border border-white/10">
+                            <FaArrowsAlt className="inline mr-1" />
+                            {config.hintDragText}
                         </div>
-                    )}
-
-                    {/* Month Overlay */}
-                    {showMonth && month && (
-                        <div className={config.monthClass}>
-                            <span className={config.monthTextClass}>
-                                {month}
-                            </span>
+                        <div className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-full shadow-lg border border-white/10">
+                            {config.hintZoomText}
                         </div>
-                    )}
-
-                    {/* Overlay hints */}
-                    <div className="absolute bottom-1 left-1 bg-black/50 text-white text-xs px-1 py-0.5 rounded">
-                        <FaArrowsAlt className="inline mr-1" />
-                        {config.hintDragText}
-                    </div>
-                    <div className="absolute bottom-1 right-1 bg-black/50 text-white text-xs px-1 py-0.5 rounded">
-                        {config.hintZoomText}
                     </div>
                 </div>
-                <div className="text-center mt-1">
-                    {config.previewSizeText && (
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                            {config.previewSizeText}
-                        </p>
-                    )}
-                    <p className="text-xs text-neutral-600 dark:text-neutral-300">
-                        <span className={`inline-block w-2 h-2 ${colors.dot} rounded-full mr-1`}></span>
+
+                <div className="text-center mt-3 flex justify-between items-center text-xs text-neutral-500 dark:text-neutral-400 px-1">
+                    <div className="flex items-center gap-1.5">
+                        <span className={`inline-block w-2 h-2 ${colors.dot} rounded-full ring-1 ring-neutral-200 dark:ring-neutral-700`}></span>
                         {config.cropDescription}
-                    </p>
+                    </div>
+                    {config.previewSizeText && (
+                        <span>{config.previewSizeText}</span>
+                    )}
                 </div>
             </div>
 
             {/* Controls */}
-            <div className="space-y-2">
+            <div className="space-y-4 px-1">
                 {/* Scale Control */}
                 <div>
-                    <label className="block text-xs font-medium mb-1 text-neutral-700 dark:text-neutral-200">
-                        Scale: {(backgroundScale * 100).toFixed(0)}%
+                    <label className="flex justify-between text-xs font-medium mb-1.5 text-neutral-700 dark:text-neutral-300">
+                        <span>Zoom Level</span>
+                        <span className="font-mono bg-neutral-100 dark:bg-neutral-800 px-1.5 rounded">{(backgroundScale * 100).toFixed(0)}%</span>
                     </label>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                         <motion.button
                             type="button"
                             onClick={() => setBackgroundScale(Math.max(0.1, backgroundScale - 0.1))}
-                            className="p-1 bg-neutral-200 dark:bg-neutral-600 rounded hover:bg-neutral-300 dark:hover:bg-neutral-500 transition-colors"
+                            className="p-1.5 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-lg transition-colors border border-neutral-200 dark:border-neutral-700"
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                         >
-                            <FaCompress size={10} />
+                            <FaCompress size={12} />
                         </motion.button>
-                        <input
-                            type="range"
-                            min="0.1"
-                            max="3"
-                            step="0.1"
-                            value={backgroundScale}
-                            onChange={(e) => setBackgroundScale(parseFloat(e.target.value))}
-                            className={`flex-1 h-2 bg-neutral-200 dark:bg-neutral-600 rounded-lg appearance-none cursor-pointer slider-${accentColor}`}
-                        />
+                        <div className="flex-1 relative h-6 flex items-center">
+                            <input
+                                type="range"
+                                min="0.1"
+                                max="3"
+                                step="0.1"
+                                value={backgroundScale}
+                                onChange={(e) => setBackgroundScale(parseFloat(e.target.value))}
+                                className={`w-full h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-lg appearance-none cursor-pointer slider-${accentColor}`}
+                            />
+                        </div>
                         <motion.button
                             type="button"
                             onClick={() => setBackgroundScale(Math.min(3, backgroundScale + 0.1))}
-                            className="p-1 bg-neutral-200 dark:bg-neutral-600 rounded hover:bg-neutral-300 dark:hover:bg-neutral-500 transition-colors"
+                            className="p-1.5 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-lg transition-colors border border-neutral-200 dark:border-neutral-700"
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                         >
-                            <FaExpand size={10} />
+                            <FaExpand size={12} />
                         </motion.button>
                     </div>
                 </div>
 
                 {/* Position Controls */}
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-xs font-medium mb-1 text-neutral-700 dark:text-neutral-200">
-                            X: {backgroundX.toFixed(0)}px
+                        <label className="flex justify-between text-xs font-medium mb-1.5 text-neutral-700 dark:text-neutral-300">
+                            <span>Position X</span>
+                            <span className="font-mono text-[10px] text-neutral-500">{backgroundX.toFixed(0)}</span>
                         </label>
                         <input
                             type="range"
@@ -346,12 +351,13 @@ const BackgroundCustomizer: React.FC<BackgroundCustomizerProps> = ({
                             step="1"
                             value={backgroundX}
                             onChange={(e) => setBackgroundX(parseInt(e.target.value))}
-                            className={`w-full h-2 bg-neutral-200 dark:bg-neutral-600 rounded-lg appearance-none cursor-pointer slider-${accentColor}`}
+                            className={`w-full h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-lg appearance-none cursor-pointer slider-${accentColor}`}
                         />
                     </div>
                     <div>
-                        <label className="block text-xs font-medium mb-1 text-neutral-700 dark:text-neutral-200">
-                            Y: {backgroundY.toFixed(0)}px
+                        <label className="flex justify-between text-xs font-medium mb-1.5 text-neutral-700 dark:text-neutral-300">
+                            <span>Position Y</span>
+                            <span className="font-mono text-[10px] text-neutral-500">{backgroundY.toFixed(0)}</span>
                         </label>
                         <input
                             type="range"
@@ -360,7 +366,7 @@ const BackgroundCustomizer: React.FC<BackgroundCustomizerProps> = ({
                             step="1"
                             value={backgroundY}
                             onChange={(e) => setBackgroundY(parseInt(e.target.value))}
-                            className={`w-full h-2 bg-neutral-200 dark:bg-neutral-600 rounded-lg appearance-none cursor-pointer slider-${accentColor}`}
+                            className={`w-full h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-lg appearance-none cursor-pointer slider-${accentColor}`}
                         />
                     </div>
                 </div>
@@ -369,11 +375,11 @@ const BackgroundCustomizer: React.FC<BackgroundCustomizerProps> = ({
                 <motion.button
                     type="button"
                     onClick={resetPosition}
-                    className={`w-full p-2 ${colors.button} text-white text-xs rounded-lg font-medium flex items-center justify-center gap-1`}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                    className={`w-full py-2 px-4 rounded-xl border border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 text-xs font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800/50 hover:border-neutral-400 dark:hover:border-neutral-500 transition-all flex items-center justify-center gap-2 group`}
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
                 >
-                    <FaUndo size={10} />
+                    <FaUndo size={10} className="group-hover:-rotate-45 transition-transform duration-300" />
                     Reset Position & Scale
                 </motion.button>
             </div>

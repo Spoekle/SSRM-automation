@@ -30,11 +30,10 @@ const MapInfoSection: React.FC<MapInfoSectionProps> = ({
   const [songName, setSongName] = useState('');
   const [isFetching, setIsFetching] = useState(false);
 
+  // Helper to handle mapId changes - prop setMapId handles state update
   const handleMapIdChange = (id: string) => {
     setMapId(id);
   };
-
-
 
   const fetchStarRatings = async () => {
     if (!mapId) {
@@ -48,7 +47,8 @@ const MapInfoSection: React.FC<MapInfoSectionProps> = ({
 
       const ratings = await getStarRating(data.versions[0].hash);
       setStarRatings(ratings);
-      storage.set(STORAGE_KEYS.STAR_RATINGS, ratings);
+      // Storage update for STAR_RATINGS is handled by the useStarRatings hook in parent
+      // storage.set(STORAGE_KEYS.STAR_RATINGS, ratings); 
     } catch (error) {
       log.error('Error fetching map info or star ratings:', error);
     } finally {
@@ -59,7 +59,7 @@ const MapInfoSection: React.FC<MapInfoSectionProps> = ({
   const updateStarRating = (diff: keyof StarRatings, value: string) => {
     const newRatings = { ...starRatings, [diff]: value };
     setStarRatings(newRatings);
-    storage.set(STORAGE_KEYS.STAR_RATINGS, newRatings);
+    // storage.set(STORAGE_KEYS.STAR_RATINGS, newRatings); // Handled by hook
   };
 
   return (
@@ -72,24 +72,28 @@ const MapInfoSection: React.FC<MapInfoSectionProps> = ({
             value={mapId}
             onChange={(e) => handleMapIdChange(e.target.value)}
             placeholder="Enter map ID..."
-            className="flex-1 px-3 py-1.5 text-sm border rounded-lg focus:outline-none focus:ring-1 focus:ring-orange-300 dark:bg-neutral-800 dark:border-neutral-600 dark:text-white"
+            className="flex-1 px-3 py-1.5 text-sm border bg-white dark:bg-neutral-900 border-neutral-300 dark:border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/50 dark:text-white transition-shadow"
           />
           <motion.button
             type="button"
             onClick={fetchStarRatings}
             disabled={isFetching}
-            className="absolute right-0 bg-orange-500 text-white px-3 py-1.5 text-sm rounded-lg flex items-center gap-1"
+            className="absolute right-1 bg-orange-500 text-white px-2.5 py-1 text-xs font-medium rounded-md flex items-center gap-1.5 shadow-sm hover:bg-orange-600 transition-colors"
             whileHover={!isFetching ? { scale: 1.05 } : {}}
             whileTap={!isFetching ? { scale: 0.95 } : {}}
           >
-            {isFetching ? <FaSync className="animate-spin" size={12} /> : <FaStar size={12} />}
-            <span className="hidden sm:inline">{isFetching ? 'Fetching...' : 'Fetch Ratings'}</span>
+            {isFetching ? <FaSync className="animate-spin" /> : <FaStar />}
+            <span className="hidden sm:inline">{isFetching ? 'Fetching...' : 'Fetch'}</span>
           </motion.button>
         </div>
         {songName && (
-          <div className="mt-1 text-xs text-green-600 dark:text-green-400 font-medium">
-            {songName}
-          </div>
+          <motion.p
+            className="mt-2 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded inline-block border border-green-200 dark:border-green-800/50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            Found: {songName}
+          </motion.p>
         )}
       </div>
 
@@ -97,7 +101,7 @@ const MapInfoSection: React.FC<MapInfoSectionProps> = ({
         <div>
           <label className='block mb-1 text-sm text-neutral-700 dark:text-neutral-200 font-medium'>Difficulty:</label>
           <select
-            className="w-full px-3 py-1.5 text-sm border rounded-lg focus:outline-none focus:ring-1 focus:ring-orange-300 dark:bg-neutral-800 dark:border-neutral-600 dark:text-white"
+            className="w-full px-3 py-1.5 text-sm border bg-white dark:bg-neutral-900 border-neutral-300 dark:border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/50 dark:text-white transition-shadow"
             onChange={(e) => {
               setChosenDiff(e.target.value);
               storage.setString(STORAGE_KEYS.CHOSEN_DIFF, e.target.value);
@@ -113,15 +117,15 @@ const MapInfoSection: React.FC<MapInfoSectionProps> = ({
         </div>
 
         <div>
-          <div className="flex items-center">
-            <FaStar className="text-yellow-500 mr-1.5" />
+          <div className="flex items-center mb-1">
+            <FaStar className="text-yellow-500 mr-2" />
             <label className='text-sm text-neutral-700 dark:text-neutral-200 font-medium'>Star Rating:</label>
           </div>
           <input
             type="text"
             value={starRatings[chosenDiff as keyof StarRatings]}
             onChange={(e) => updateStarRating(chosenDiff as keyof StarRatings, e.target.value)}
-            className="w-full px-3 py-1.5 text-sm border rounded-lg focus:outline-none focus:ring-1 focus:ring-orange-300 dark:bg-neutral-800 dark:border-neutral-600 dark:text-white mt-1"
+            className="w-full px-3 py-1.5 text-sm border bg-white dark:bg-neutral-900 border-neutral-300 dark:border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/50 dark:text-white transition-shadow"
             placeholder="Enter star rating"
           />
         </div>

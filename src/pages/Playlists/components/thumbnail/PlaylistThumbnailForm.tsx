@@ -168,15 +168,15 @@ const PlaylistThumbnailForm: React.FC<PlaylistThumbnailFormProps> = ({
     <AnimatePresence>
       {true && (
         <motion.div
-          className={`fixed top-16 left-0 right-0 bottom-16 z-40 rounded-br-3xl backdrop-blur-md flex justify-center items-center ${isOverlayVisible ? "opacity-100" : "opacity-0"
-            } bg-black/20`}
+          className={`fixed top-17 left-0 right-0 bottom-13 z-40 rounded-br-3xl backdrop-blur-sm flex justify-center items-center ${isOverlayVisible ? "opacity-100" : "opacity-0"
+            } bg-neutral-900/30`}
           initial={{ opacity: 0 }}
           animate={{ opacity: isOverlayVisible ? 1 : 0 }}
           exit={{ opacity: 0 }}
           onClick={handleClose}
         >
           <motion.div
-            className="absolute left-0 top-0 h-full w-2/3 rounded-r-xl bg-neutral-200 dark:bg-neutral-800 text-neutral-950 dark:text-white shadow-lg overflow-hidden flex flex-col"
+            className="absolute left-0 top-0 h-full w-2/3 max-w-2xl lg:max-w-4xl rounded-r-2xl bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md shadow-2xl border-r border-y border-white/20 dark:border-white/5 overflow-hidden flex flex-col"
             initial={{ x: "-100%" }}
             animate={{ x: isPanelOpen ? "0%" : "-100%" }}
             exit={{ x: "-100%" }}
@@ -184,35 +184,35 @@ const PlaylistThumbnailForm: React.FC<PlaylistThumbnailFormProps> = ({
             onClick={(e) => e.stopPropagation()}
           >
             <motion.div
-              className="z-10 sticky top-0 backdrop-blur-md bg-gradient-to-r from-orange-500/10 to-orange-400/10 dark:from-orange-800/20 dark:to-orange-700/20 p-3 border-b border-neutral-300 dark:border-neutral-700 flex justify-between items-center"
+              className="z-10 sticky top-0 bg-white/50 dark:bg-neutral-900/50 backdrop-blur-md p-4 border-b border-neutral-200 dark:border-neutral-800 flex justify-between items-center"
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1, type: "spring" }}
             >
               <div className="flex items-center">
                 <motion.h2
-                  className="text-lg bg-white/70 dark:bg-neutral-700/70 px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 shadow-sm"
-                  whileHover={{ scale: 1.03 }}
+                  className="text-lg font-bold flex items-center gap-2 text-neutral-800 dark:text-neutral-100"
+                  whileHover={{ scale: 1.01 }}
                 >
                   <FaImage className="text-orange-500" />
                   Playlist Thumbnail Settings
                 </motion.h2>
               </div>
               <motion.button
-                className="text-red-500 bg-white/70 dark:bg-neutral-700/70 p-1.5 rounded-md hover:bg-red-500 hover:text-white transition duration-200 shadow-sm"
+                className="text-neutral-500 hover:text-red-500 p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                 onClick={handleClose}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
+                whileHover={{ rotate: 90 }}
+                whileTap={{ scale: 0.9 }}
               >
-                <FaTimes />
+                <FaTimes size={18} />
               </motion.button>
             </motion.div>
 
-            <div className="flex-1 overflow-auto custom-scrollbar">
-              <form onSubmit={generateThumbnail} className='p-3 space-y-3'>
+            <div className="flex-1 overflow-auto custom-scrollbar p-6">
+              <form onSubmit={generateThumbnail} className='space-y-6'>
                 {/* Background Image - File upload comes first */}
-                <div className='bg-white dark:bg-neutral-700 p-3 rounded-xl shadow-sm'>
-                  <h2 className='text-base font-medium mb-2 border-b pb-1 border-neutral-200 dark:border-neutral-600 flex items-center gap-1.5'>
+                <div className='bg-neutral-50/50 dark:bg-neutral-800/30 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700/50 shadow-sm'>
+                  <h2 className='text-sm font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-4 flex items-center gap-2'>
                     <FaCloudUploadAlt className="text-orange-500" /> Background Image
                   </h2>
                   <NativeFileUpload
@@ -225,8 +225,8 @@ const PlaylistThumbnailForm: React.FC<PlaylistThumbnailFormProps> = ({
                 </div>
 
                 {/* Playlist Details */}
-                <div className='bg-white dark:bg-neutral-700 p-3 rounded-xl shadow-sm'>
-                  <h2 className='text-base font-medium mb-2 border-b pb-1 border-neutral-200 dark:border-neutral-600 flex items-center gap-1.5'>
+                <div className='bg-neutral-50/50 dark:bg-neutral-800/30 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700/50 shadow-sm'>
+                  <h2 className='text-sm font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-4 flex items-center gap-2'>
                     <FaList className="text-orange-500" /> Playlist Details
                   </h2>
                   <PlaylistThumbnailInfoSection
@@ -236,11 +236,10 @@ const PlaylistThumbnailForm: React.FC<PlaylistThumbnailFormProps> = ({
                 </div>
 
                 {/* Background Customizer */}
-                {/* Background Customizer */}
                 {customBackgroundPath && (
-                  <div className='bg-white dark:bg-neutral-700 p-3 rounded-xl shadow-sm'>
-                    <div className='flex items-center justify-between mb-2 border-b pb-1 border-neutral-200 dark:border-neutral-600'>
-                      <h2 className='text-base font-medium flex items-center gap-1.5'>
+                  <div className='bg-neutral-50/50 dark:bg-neutral-800/30 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700/50 shadow-sm'>
+                    <div className='flex items-center justify-between mb-4 pb-2 border-b border-neutral-200 dark:border-neutral-700/50'>
+                      <h2 className='text-sm font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 flex items-center gap-2'>
                         <FaCog className="text-orange-500" /> Background Customizer
                       </h2>
                       {previewSrc && previewSrc.startsWith('data:') && (
@@ -248,7 +247,7 @@ const PlaylistThumbnailForm: React.FC<PlaylistThumbnailFormProps> = ({
                           type="button"
                           onClick={refreshVideoPreview}
                           disabled={isLoading}
-                          className={`text-xs bg-neutral-200 dark:bg-neutral-600 hover:bg-neutral-300 dark:hover:bg-neutral-500 text-neutral-700 dark:text-neutral-200 px-2 py-1 rounded flex items-center gap-1 transition-colors ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          className={`text-xs bg-white dark:bg-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-600 border border-neutral-200 dark:border-neutral-600 text-neutral-600 dark:text-neutral-300 px-2 py-1 rounded-lg flex items-center gap-1 transition-colors ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                           title="Get a different random frame"
                         >
                           {isLoading ? <FaSpinner className="animate-spin" size={10} /> : <FaSync size={10} />} Refresh Frame
@@ -274,15 +273,22 @@ const PlaylistThumbnailForm: React.FC<PlaylistThumbnailFormProps> = ({
             </div>
 
             {/* Sticky footer with Generate button */}
-            <div className='sticky bottom-0 bg-white/80 dark:bg-neutral-800/80 backdrop-blur-sm p-2 border-t border-neutral-300 dark:border-neutral-700 flex justify-end items-center'>
+            <div className='sticky bottom-0 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md p-4 border-t border-neutral-200 dark:border-neutral-800 flex justify-end items-center gap-3'>
+              <button
+                type="button"
+                onClick={handleClose}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+              >
+                Cancel
+              </button>
               <motion.button
                 type="button"
                 onClick={generateThumbnail}
-                className='bg-gradient-to-r from-orange-500 to-orange-400 text-white px-4 py-1.5 text-sm rounded-lg shadow-sm hover:shadow-md font-medium flex items-center gap-1.5'
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
+                className='bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-2.5 text-sm rounded-lg shadow-lg shadow-orange-500/20 font-semibold flex items-center gap-2'
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
-                <FaCheck size={12} />
+                <FaCheck size={14} />
                 Generate Thumbnail
               </motion.button>
             </div>
