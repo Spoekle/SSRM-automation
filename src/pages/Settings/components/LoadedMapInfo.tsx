@@ -52,7 +52,7 @@ const LoadedMapInfo: React.FC<LoadedMapInfoProps> = ({ loadedMapInfo }) => {
         }
 
         return (
-            <motion.div layout className="bg-neutral-300/80 dark:bg-neutral-800/80 backdrop-blur-md p-3 rounded-lg flex items-center space-x-3 border border-neutral-200/30 dark:border-neutral-700/30">
+            <motion.div layout className="bg-white/50 dark:bg-neutral-900/50 backdrop-blur-sm p-3 rounded-lg flex items-center space-x-3 border border-neutral-200/50 dark:border-neutral-700/50 shadow-sm">
                 {coverURL && (
                     <img
                         src={coverURL}

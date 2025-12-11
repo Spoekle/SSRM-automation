@@ -106,24 +106,28 @@ export default function App() {
   return (
     <Router>
       <ConfirmationModalProvider>
-        <Navbar />
-        <GlobalLoadedMap />
-        <div>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/titles" element={<Titles />} />
-            <Route path="/mapcards" element={<MapCards />} />
-            <Route path="/thumbnails" element={<Thumbnails />} />
-            <Route path="/playlists" element={<Playlists />} />
-          </Routes>
+        <div className="flex flex-col h-screen overflow-hidden bg-neutral-100 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 transition-colors duration-200">
+          <Navbar />
+
+          <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 relative custom-scrollbar">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/titles" element={<Titles />} />
+              <Route path="/mapcards" element={<MapCards />} />
+              <Route path="/thumbnails" element={<Thumbnails />} />
+              <Route path="/playlists" element={<Playlists />} />
+            </Routes>
+          </main>
+
+          <Footer
+            appVersion={appVersion}
+            latestVersion={latestVersion}
+            isVersionLoading={isLoading}
+            isDevBranch={isDevBranch}
+            getLatestVersion={getLatestVersion}
+          />
         </div>
-        <Footer
-          appVersion={appVersion}
-          latestVersion={latestVersion}
-          isVersionLoading={isLoading}
-          isDevBranch={isDevBranch}
-          getLatestVersion={getLatestVersion}
-        />
+        <GlobalLoadedMap />
       </ConfirmationModalProvider>
     </Router>
   );

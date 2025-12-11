@@ -53,7 +53,7 @@ const SettingsConfirmationModal: React.FC<ConfirmationModalProps> = ({
           onClick={handleClose}
         >
           <motion.div
-            className="bg-white dark:bg-neutral-800 rounded-xl shadow-2xl max-w-md w-full mx-4 border border-neutral-300/50 dark:border-neutral-700/50"
+            className="bg-white/95 dark:bg-neutral-900/95 rounded-xl shadow-2xl max-w-md w-full mx-4 border border-neutral-300/50 dark:border-neutral-700/50 backdrop-blur-md"
             initial={{ scale: 0.95, opacity: 0, y: 10 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 10 }}

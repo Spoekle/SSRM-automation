@@ -286,14 +286,14 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
     return (
       <>
         <motion.div
-          className={`fixed top-16 left-0 right-0 bottom-16 z-40 rounded-bl-3xl backdrop-blur-md flex justify-center items-center ${isOverlayVisible ? "opacity-100" : "opacity-0"
-            } bg-black/20`}
+          className={`fixed top-17 left-0 right-0 bottom-13 z-40 rounded-bl-3xl backdrop-blur-sm flex justify-center items-center ${isOverlayVisible ? "opacity-100" : "opacity-0"
+            } bg-neutral-900/30`}
           initial={{ opacity: 0 }}
           animate={{ opacity: isOverlayVisible ? 1 : 0 }}
           onClick={handleClose}
         >
           <motion.div
-            className="absolute right-0 top-0 h-full w-2/3 rounded-l-xl bg-neutral-200 dark:bg-neutral-800 text-neutral-950 dark:text-white shadow-lg overflow-y-auto custom-scrollbar"
+            className="absolute right-0 top-0 h-full w-2/3 max-w-2xl rounded-l-2xl bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md shadow-2xl border-l border-y border-white/20 dark:border-white/5 overflow-y-auto custom-scrollbar"
             initial={{ x: "100%" }}
             animate={{ x: isPanelOpen ? "0%" : "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
@@ -302,31 +302,30 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
           >
             {/* Header */}
             <motion.div
-              className="z-10 sticky top-0 backdrop-blur-md p-4 border-b border-neutral-200 dark:border-neutral-500 flex justify-between items-center"
+              className="z-10 sticky top-0 bg-white/50 dark:bg-neutral-900/50 backdrop-blur-md p-3 border-b border-neutral-200 dark:border-neutral-800 flex justify-between items-center"
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1, type: "spring" }}
             >
               <motion.h2
-                className="text-xl font-bold"
-                whileHover={{ scale: 1.05 }}
-                transition={{ type: "spring", stiffness: 300 }}
+                className="text-lg font-bold flex items-center gap-2 text-neutral-800 dark:text-neutral-100"
+                whileHover={{ scale: 1.01 }}
               >
                 Settings
               </motion.h2>
               <motion.button
                 onClick={handleClose}
-                className="p-2 rounded-lg hover:bg-neutral-300 dark:hover:bg-neutral-700"
-                whileHover={{ scale: 1.1 }}
+                className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                whileHover={{ scale: 1.1, rotate: 90 }}
                 whileTap={{ scale: 0.9 }}
               >
-                <FaTimes className="text-neutral-700 dark:text-neutral-300" />
+                <FaTimes size={16} className="text-neutral-500 hover:text-red-500 transition-colors" />
               </motion.button>
             </motion.div>
 
             {/* Content */}
-            <div className="p-4">
-              <div className="space-y-6">
+            <div className="p-5">
+              <div className="space-y-5">
                 <ThemeSection
                   isDarkMode={isDarkMode}
                   toggleTheme={toggleTheme}

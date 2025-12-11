@@ -98,7 +98,7 @@ function Navbar() {
     <div
       role="presentation"
       onMouseDown={handleDragStart}
-      className="items-center justify-center bg-neutral-300 dark:bg-neutral-950 text-neutral-950 dark:text-neutral-200 shadow-md border-b border-neutral-200/30 dark:border-neutral-800/30 select-none cursor-default"
+      className="glass-subtle items-center justify-center text-neutral-950 dark:text-neutral-200 shadow-md select-none cursor-default"
     >
       <div className="mx-4 flex text-center justify-between">
         <div className="flex text-center items-center text-lg">
@@ -120,7 +120,7 @@ function Navbar() {
               <p className="ml-1 -mt-2 text-sm text-left font-semibold text-neutral-600 dark:text-neutral-400">
                 Automation
               </p>
-              <p className="ml-1 -mt-1 text-xs text-left font-semibold text-neutral-600 dark:text-neutral-400">
+              <p className="ml-1 -mt-1 text-xs text-left font-medium text-neutral-500 dark:text-neutral-500">
                 by Spoekle
               </p>
             </Link>
@@ -131,7 +131,7 @@ function Navbar() {
             className="text-center items-center text-md relative"
             ref={navRef}
           >
-            <div className="flex space-x-1 bg-neutral-200 dark:bg-neutral-800 rounded-full px-2 py-1 shadow-inner">
+            <div className="flex space-x-1 bg-neutral-200/80 dark:bg-neutral-800/80 backdrop-blur-sm rounded-full px-2 py-1 shadow-inner border border-neutral-300/50 dark:border-neutral-700/50">
               {navItems.map((item) => (
                 <motion.div
                   key={item.path}
@@ -140,46 +140,43 @@ function Navbar() {
                 >
                   <Link
                     to={item.path}
-                    className={`p-2 px-4 rounded-full flex items-center hover:text-blue-500 dark:hover:text-blue-400 transition-colors ${
-                      location.pathname === item.path
-                        ? 'bg-white dark:bg-neutral-700 shadow-md text-blue-600 dark:text-blue-400'
-                        : 'text-neutral-600 dark:text-neutral-400'
-                    }`}
+                    className={`p-2 px-4 rounded-full flex items-center transition-all duration-200 ${location.pathname === item.path
+                      ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/25'
+                      : 'text-neutral-600 dark:text-neutral-400 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-white/50 dark:hover:bg-neutral-700/50'
+                      }`}
                   >
                     {item.icon}
-                    {item.label}
+                    <span className="font-medium">{item.label}</span>
                   </Link>
                 </motion.div>
               ))}
             </div>
           </div>
         </div>
-        <div className="text-center items-center text-lg flex space-x-2">
+        <div className="text-center items-center text-lg flex space-x-1">
           {os !== 'macos' && (
             <>
               <motion.button
                 onClick={minimizeWindow}
                 whileHover={{
                   scale: 1.1,
-                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
                 }}
                 whileTap={{ scale: 0.9 }}
-                className="p-2 rounded-full hover:bg-neutral-400/30 dark:hover:bg-neutral-700/50 transition-colors"
+                className="p-2 rounded-lg hover:bg-neutral-400/20 dark:hover:bg-neutral-700/50 transition-all duration-200"
                 title="Minimize"
               >
-                <FaMinus className="text-neutral-600 dark:text-neutral-400" />
+                <FaMinus className="text-neutral-500 dark:text-neutral-400" />
               </motion.button>
               <motion.button
                 onClick={closeWindow}
                 whileHover={{
                   scale: 1.1,
-                  backgroundColor: 'rgba(239, 68, 68, 0.3)',
                 }}
                 whileTap={{ scale: 0.9 }}
-                className="p-2 rounded-full hover:bg-red-400/30 transition-colors"
+                className="p-2 rounded-lg hover:bg-red-500/20 transition-all duration-200 group"
                 title="Close"
               >
-                <FaTimes className="text-neutral-600 dark:text-neutral-400 hover:text-red-500" />
+                <FaTimes className="text-neutral-500 dark:text-neutral-400 group-hover:text-red-500 transition-colors" />
               </motion.button>
             </>
           )}
