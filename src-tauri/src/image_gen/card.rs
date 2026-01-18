@@ -38,8 +38,7 @@ pub struct MapMetadata {
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct MapVersion {
     #[serde(rename = "coverURL")]
-    pub cover_url: String,
-    pub hash: String,
+    pub cover_url: String
 }
 
 /// Map info for cards

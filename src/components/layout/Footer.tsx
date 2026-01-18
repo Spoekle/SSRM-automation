@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { FaCog } from 'react-icons/fa';
 import { invoke } from '@tauri-apps/api/core';
 import { motion } from 'framer-motion';
-import Settings, { SettingsHandles } from '../Settings/Settings';
+import Settings, { SettingsHandles } from '../../pages/Settings/Settings';
 import log from '../../utils/log';
 import { determineBestUpdateVersion } from '../../helpers/versionHelpers';
 

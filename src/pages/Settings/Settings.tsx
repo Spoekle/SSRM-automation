@@ -3,9 +3,9 @@ import { motion } from 'framer-motion';
 import { FaTimes } from 'react-icons/fa';
 import log from '../../utils/log';
 import { useConfirmationModal } from '../../contexts/ConfirmationModalContext';
-import ConfirmationModal from './components/ConfirmationModal';
 import { determineBestUpdateVersion } from '../../helpers/versionHelpers';
 import { ipcRenderer } from '../../utils/tauri-api';
+import { checkForUpdate, downloadAndInstallUpdate, UpdateProgress } from '../../services/updateService';
 
 // Section components
 import ThemeSection from './components/ThemeSection';
@@ -54,7 +54,6 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
     const [installProgressPercent, setInstallProgressPercent] = useState<number | null>(null);
 
     // Data management state
-    const [confirmResetAllOpen, setConfirmResetAllOpen] = useState(false);
     const [loadedMapInfo, setLoadedMapInfo] = useState<string | null>(null);
     const [storedCardConfigName, setStoredCardConfigName] = useState<string | null>(() => {
       try {
@@ -148,30 +147,29 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
     const updateApplication = async () => {
       try {
         setIsUpdating(true);
-        setUpdateProgress("Starting update...");
+        setUpdateProgress("Checking for updates...");
 
-        ipcRenderer.on("update-progress", ((_event: unknown, progressMsg: unknown) => {
-          setUpdateProgress(progressMsg as string);
-        }) as (...args: unknown[]) => void);
+        const result = await checkForUpdate();
 
-        const latestBetaVersion = latestVersion.includes('-') ? latestVersion : null;
-        const updateInfo = determineBestUpdateVersion(
-          appVersion,
-          latestStableVersion || null,
-          latestBetaVersion,
-          isDevBranch
-        );
-
-        if (updateInfo.shouldUpdate) {
-          await ipcRenderer.invoke("update-application", {
-            useStable: updateInfo.useStable,
-            targetVersion: updateInfo.updateToVersion
-          });
-        } else {
-          await ipcRenderer.invoke("update-application");
+        if (!result.available || !result.update) {
+          setUpdateProgress("No update available");
+          setIsUpdating(false);
+          return;
         }
 
+        setUpdateProgress(`Downloading v${result.version}...`);
+
+        await downloadAndInstallUpdate(result.update, (progress: UpdateProgress) => {
+          if (progress.event === 'Progress' && progress.contentLength) {
+            const percent = Math.round((progress.downloaded! / progress.contentLength) * 100);
+            setUpdateProgress(`Downloading... ${percent}%`);
+          } else if (progress.event === 'Finished') {
+            setUpdateProgress("Installing update...");
+          }
+        });
+
         localStorage.removeItem("skipUpdateCheck");
+        // App will restart automatically after install
       } catch (error) {
         log.error("Error updating application:", error);
         setIsUpdating(false);
@@ -268,11 +266,17 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
       localStorage.setItem("forceVersionCheck", "true");
     };
 
-    const resetLocalStorage = () => setConfirmResetAllOpen(true);
-
-    const handleConfirmResetAll = () => {
-      localStorage.clear();
-      window.location.reload();
+    const resetLocalStorage = () => {
+      showConfirmation({
+        title: "Reset All Local Storage",
+        message: "Are you sure you want to reset all local storage? This will clear all saved settings and data.",
+        confirmText: "Reset All",
+        cancelText: "Cancel",
+        onConfirm: () => {
+          localStorage.clear();
+          window.location.reload();
+        }
+      });
     };
 
     const handleClose = () => {
@@ -286,7 +290,7 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
     return (
       <>
         <motion.div
-          className={`fixed top-17 left-0 right-0 bottom-13 z-40 rounded-bl-3xl backdrop-blur-sm flex justify-center items-center ${isOverlayVisible ? "opacity-100" : "opacity-0"
+          className={`fixed top-17 left-0 right-0 bottom-13 z-40 backdrop-blur-sm flex justify-center items-center ${isOverlayVisible ? "opacity-100" : "opacity-0"
             } bg-neutral-900/30`}
           initial={{ opacity: 0 }}
           animate={{ opacity: isOverlayVisible ? 1 : 0 }}
@@ -378,17 +382,6 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
             </div>
           </motion.div>
         </motion.div>
-
-        <ConfirmationModal
-          open={confirmResetAllOpen}
-          title="Reset All Local Storage"
-          message="Are you sure you want to reset all local storage?"
-          onCancel={() => setConfirmResetAllOpen(false)}
-          onConfirm={() => {
-            setConfirmResetAllOpen(false);
-            handleConfirmResetAll();
-          }}
-        />
       </>
     );
   },

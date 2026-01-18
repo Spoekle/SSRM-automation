@@ -1,12 +1,11 @@
 import React, { FormEvent, useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaTimes, FaImage, FaCloudUploadAlt, FaMapMarkedAlt, FaCheck, FaCog, FaSpinner } from 'react-icons/fa';
+import { FaTimes, FaImage, FaCloudUploadAlt, FaMapMarkedAlt, FaCheck, FaSpinner } from 'react-icons/fa';
 import log from '../../../../utils/log';
 import { ipcRenderer } from '../../../../utils/tauri-api';
 import BatchInfoSection from './BatchInfoSection';
-import NativeFileUpload from '../common/NativeFileUpload';
-import BackgroundCustomizer from '../../../../components/forms/BackgroundCustomizer';
+import { NativeFileUpload } from '../../../../components/forms';
 
 interface ThumbnailFormProps {
   mapId: string;
@@ -51,9 +50,6 @@ const BatchThumbnailForm: React.FC<ThumbnailFormProps> = ({
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [isOverlayVisible, setIsOverlayVisible] = useState(false);
   const [month, setMonth] = useState<string>('');
-  const [backgroundScale, setBackgroundScale] = useState<number>(1);
-  const [backgroundX, setBackgroundX] = useState<number>(0);
-  const [backgroundY, setBackgroundY] = useState<number>(0);
 
   useEffect(() => {
     setIsOverlayVisible(true);
@@ -65,9 +61,6 @@ const BatchThumbnailForm: React.FC<ThumbnailFormProps> = ({
     const generatePreview = async () => {
       if (!customBackgroundPath) {
         setPreviewSrc(null);
-        setBackgroundScale(1);
-        setBackgroundX(0);
-        setBackgroundY(0);
         setIsLoading(false);
         return;
       }
@@ -119,14 +112,9 @@ const BatchThumbnailForm: React.FC<ThumbnailFormProps> = ({
 
       setProgress('Background prepared', 30, true);
 
-      setProgress('Generating thumbnail...', 70, true);
       let image;
       try {
-        image = await ipcRenderer.invoke('generate-batch-thumbnail', customBackgroundPath, month, {
-          scale: backgroundScale,
-          x: backgroundX,
-          y: backgroundY
-        }) as string;
+        image = await ipcRenderer.invoke('generate-batch-thumbnail', customBackgroundPath, month) as string;
       } catch (error) {
         log.error('Error generating thumbnail:', error);
         createAlert('Error generating thumbnail', 'error');
@@ -150,7 +138,7 @@ const BatchThumbnailForm: React.FC<ThumbnailFormProps> = ({
     <AnimatePresence>
       {true && (
         <motion.div
-          className={`fixed top-17 left-0 right-0 bottom-13 z-40 rounded-br-3xl backdrop-blur-sm flex justify-center items-center ${isOverlayVisible ? "opacity-100" : "opacity-0"
+          className={`fixed top-17 left-0 right-0 bottom-13 z-40 backdrop-blur-sm flex justify-center items-center ${isOverlayVisible ? "opacity-100" : "opacity-0"
             } bg-neutral-900/30`}
           initial={{ opacity: 0 }}
           animate={{ opacity: isOverlayVisible ? 1 : 0 }}
@@ -217,32 +205,36 @@ const BatchThumbnailForm: React.FC<ThumbnailFormProps> = ({
                   />
                 </div>
 
-                {/* Background Customizer */}
+                {/* Preview Section */}
                 {customBackgroundPath && (
                   <div className='bg-neutral-50/50 dark:bg-neutral-800/30 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700/50 shadow-sm'>
                     <div className='flex items-center justify-between mb-4 border-b border-neutral-200 dark:border-neutral-700 pb-2'>
                       <h2 className='text-sm font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 flex items-center gap-2'>
-                        <FaCog /> Background Customizer
+                        <FaImage /> Preview
                       </h2>
+                      <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-2 text-center">
+                     (Editor port is still WIP)
+                      </p>
                       {isLoading && (
                         <span className="text-xs text-neutral-500 flex items-center gap-1">
                           <FaSpinner className="animate-spin" /> Loading...
                         </span>
                       )}
                     </div>
-                    <BackgroundCustomizer
-                      previewSrc={previewSrc || ''}
-                      month={month}
-                      backgroundScale={backgroundScale}
-                      setBackgroundScale={setBackgroundScale}
-                      backgroundX={backgroundX}
-                      setBackgroundX={setBackgroundX}
-                      backgroundY={backgroundY}
-                      setBackgroundY={setBackgroundY}
-                      aspectRatio="16:9"
-                      accentColor="yellow"
-                      positionRange={500}
-                    />
+                    {previewSrc && (
+                      <div className="flex justify-center">
+                        <div className="relative h-48 aspect-video bg-neutral-200 dark:bg-neutral-700 rounded-lg overflow-hidden shadow-inner ring-1 ring-neutral-900/5 dark:ring-white/10">
+                          <img
+                            src={previewSrc}
+                            alt="Background preview"
+                            className="absolute inset-0 w-full h-full object-cover"
+                          />
+                        </div>
+                      </div>
+                    )}
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2 text-center">
+                      Image will be auto-cropped to 16:9 (centered)
+                    </p>
                   </div>
                 )}
               </form>

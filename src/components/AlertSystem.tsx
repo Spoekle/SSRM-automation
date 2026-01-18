@@ -33,11 +33,11 @@ const AlertSystem: React.FC<AlertSystemProps> = ({ alerts, position = 'top-right
 
   const getBgColor = (type: string) => {
     switch (type) {
-      case 'success': return 'from-green-500/90 to-green-600/90 border-green-400/40';
-      case 'error': return 'from-red-500/90 to-red-600/90 border-red-400/40';
-      case 'info': return 'from-blue-500/90 to-blue-600/90 border-blue-400/40';
-      case 'alert': return 'from-yellow-500/90 to-yellow-600/90 border-yellow-400/40';
-      default: return 'from-blue-500/90 to-blue-600/90 border-blue-400/40';
+      case 'success': return 'bg-green-500/90 border-green-400/40';
+      case 'error': return 'bg-red-500/90 border-red-400/40';
+      case 'info': return 'bg-blue-500/90 border-blue-400/40';
+      case 'alert': return 'bg-yellow-500/90 border-yellow-400/40';
+      default: return 'bg-blue-500/90 border-blue-400/40';
     }
   };
 
@@ -72,7 +72,7 @@ const AlertSystem: React.FC<AlertSystemProps> = ({ alerts, position = 'top-right
               }}
             >
               <motion.div
-                className={`flex items-center backdrop-blur-md px-4 py-2 rounded-xl shadow-lg border ${getBgColor(alert.type)} bg-gradient-to-r ${alert.fadeOut ? 'animate-fade-out' : ''}`}
+                className={`flex items-center backdrop-blur-md px-4 py-2 rounded-xl shadow-lg border ${getBgColor(alert.type)} ${alert.fadeOut ? 'animate-fade-out' : ''}`}
               >
                 {getAlertIcon(alert.type)}
                 <p className='text-sm text-white font-medium'>{alert.message}</p>

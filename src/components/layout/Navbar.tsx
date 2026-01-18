@@ -7,15 +7,18 @@ import {
   FaLayerGroup,
   FaImage,
   FaList,
+  FaScroll,
+  FaExchangeAlt,
+  FaImages,
+  FaStar,
 } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import logo from '../../../assets/icons/icon.png';
+import DropdownMenu from '../ui/DropdownMenu';
 
 function Navbar() {
-  const location = useLocation();
   const navRef = useRef<HTMLDivElement>(null);
-  const [os, setOS] = useState('windows');
   const isDarkMode = localStorage.getItem('theme') === 'dark';
 
   useEffect(() => {
@@ -27,18 +30,6 @@ function Navbar() {
       localStorage.setItem('theme', 'light');
     }
   }, [isDarkMode]);
-
-  // Detect OS from user agent
-  useEffect(() => {
-    const ua = navigator.userAgent.toLowerCase();
-    if (ua.includes('mac')) {
-      setOS('macos');
-    } else if (ua.includes('linux')) {
-      setOS('linux');
-    } else {
-      setOS('windows');
-    }
-  }, []);
 
   const minimizeWindow = async () => {
     try {
@@ -59,7 +50,6 @@ function Navbar() {
   };
 
   const handleDragStart = async (e: React.MouseEvent) => {
-    // Only start dragging if clicking on the navbar background, not on buttons/links
     if ((e.target as HTMLElement).closest('button, a, .no-drag')) {
       return;
     }
@@ -67,30 +57,45 @@ function Navbar() {
       const appWindow = getCurrentWindow();
       await appWindow.startDragging();
     } catch (error) {
-      // Ignore errors
     }
   };
 
-  const navItems = [
+  const navCategories = [
     {
-      path: '/titles',
-      label: 'Titles',
+      label: 'Text',
       icon: <FaFileAlt className="mr-1" />,
+      activeColor: 'blue',
+      items: [
+        { path: '/titles', label: 'Titles', icon: <FaFileAlt /> },
+        { path: '/scripts', label: 'Scripts', icon: <FaScroll /> },
+      ],
     },
     {
-      path: '/mapcards',
-      label: 'Mapcards',
+      label: 'Cards',
       icon: <FaLayerGroup className="mr-1" />,
+      activeColor: 'purple',
+      items: [
+        { path: '/cards/map', label: 'Map Card', icon: <FaLayerGroup /> },
+        { path: '/cards/reweight', label: 'Reweight', icon: <FaExchangeAlt /> },
+      ],
     },
     {
-      path: '/thumbnails',
       label: 'Thumbnails',
       icon: <FaImage className="mr-1" />,
+      activeColor: 'yellow',
+      items: [
+        { path: '/thumbnails/batch', label: 'Batch', icon: <FaImages /> },
+        { path: '/thumbnails/ssrm', label: 'SSRM', icon: <FaStar /> },
+      ],
     },
     {
-      path: '/playlists',
       label: 'Playlists',
       icon: <FaList className="mr-1" />,
+      activeColor: 'amber',
+      items: [
+        { path: '/playlists/playlist', label: 'Playlist', icon: <FaList /> },
+        { path: '/playlists/playlist-thumbnail', label: 'Thumbnail', icon: <FaImage /> },
+      ],
     },
   ];
 
@@ -98,7 +103,7 @@ function Navbar() {
     <div
       role="presentation"
       onMouseDown={handleDragStart}
-      className="glass-subtle items-center justify-center text-neutral-950 dark:text-neutral-200 shadow-md select-none cursor-default"
+      className="glass-subtle items-center justify-center text-neutral-950 dark:text-neutral-200 shadow-md select-none cursor-default relative z-50"
     >
       <div className="mx-4 flex text-center justify-between">
         <div className="flex text-center items-center text-lg">
@@ -131,55 +136,43 @@ function Navbar() {
             className="text-center items-center text-md relative"
             ref={navRef}
           >
-            <div className="flex space-x-1 bg-neutral-200/80 dark:bg-neutral-800/80 backdrop-blur-sm rounded-full px-2 py-1 shadow-inner border border-neutral-300/50 dark:border-neutral-700/50">
-              {navItems.map((item) => (
-                <motion.div
-                  key={item.path}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Link
-                    to={item.path}
-                    className={`p-2 px-4 rounded-full flex items-center transition-all duration-200 ${location.pathname === item.path
-                      ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/25'
-                      : 'text-neutral-600 dark:text-neutral-400 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-white/50 dark:hover:bg-neutral-700/50'
-                      }`}
-                  >
-                    {item.icon}
-                    <span className="font-medium">{item.label}</span>
-                  </Link>
-                </motion.div>
+            <div className="z-20 flex space-x-1 bg-neutral-200/80 dark:bg-neutral-800/80 backdrop-blur-sm rounded-full px-2 py-1 shadow-inner border border-neutral-300/50 dark:border-neutral-700/50">
+              {/* Dropdown categories */}
+              {navCategories.map((category) => (
+                <DropdownMenu
+                  key={category.label}
+                  label={category.label}
+                  icon={category.icon}
+                  items={category.items}
+                  activeColor={category.activeColor}
+                />
               ))}
             </div>
           </div>
         </div>
         <div className="text-center items-center text-lg flex space-x-1">
-          {os !== 'macos' && (
-            <>
-              <motion.button
-                onClick={minimizeWindow}
-                whileHover={{
-                  scale: 1.1,
-                }}
-                whileTap={{ scale: 0.9 }}
-                className="p-2 rounded-lg hover:bg-neutral-400/20 dark:hover:bg-neutral-700/50 transition-all duration-200"
-                title="Minimize"
-              >
-                <FaMinus className="text-neutral-500 dark:text-neutral-400" />
-              </motion.button>
-              <motion.button
-                onClick={closeWindow}
-                whileHover={{
-                  scale: 1.1,
-                }}
-                whileTap={{ scale: 0.9 }}
-                className="p-2 rounded-lg hover:bg-red-500/20 transition-all duration-200 group"
-                title="Close"
-              >
-                <FaTimes className="text-neutral-500 dark:text-neutral-400 group-hover:text-red-500 transition-colors" />
-              </motion.button>
-            </>
-          )}
+          <motion.button
+            onClick={minimizeWindow}
+            whileHover={{
+              scale: 1.1,
+            }}
+            whileTap={{ scale: 0.9 }}
+            className="p-2 rounded-lg hover:bg-neutral-400/20 dark:hover:bg-neutral-700/50 transition-all duration-200"
+            title="Minimize"
+          >
+            <FaMinus className="text-neutral-500 dark:text-neutral-400" />
+          </motion.button>
+          <motion.button
+            onClick={closeWindow}
+            whileHover={{
+              scale: 1.1,
+            }}
+            whileTap={{ scale: 0.9 }}
+            className="p-2 rounded-lg hover:bg-red-500/20 transition-all duration-200 group"
+            title="Close"
+          >
+            <FaTimes className="text-neutral-500 dark:text-neutral-400 group-hover:text-red-500 transition-colors" />
+          </motion.button>
         </div>
       </div>
     </div>

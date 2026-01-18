@@ -3,11 +3,15 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import Home from './pages/Home';
 import Titles from './pages/Titles/Titles';
-import MapCards from './pages/Cards/MapCards';
-import Thumbnails from './pages/Thumbnails/Thumbnails';
-import Playlists from './pages/Playlists/Playlists';
-import Navbar from './pages/components/Navbar';
-import Footer from './pages/components/Footer';
+import MapCard from './pages/Cards/MapCard';
+import ReweightCard from './pages/Cards/ReweightCard';
+import BatchThumbnail from './pages/Thumbnails/BatchThumbnail';
+import SSRMThumbnail from './pages/Thumbnails/SSRMThumbnail';
+import Scripts from './pages/Scripts/Scripts';
+import Playlist from './pages/Playlists/Playlist';
+import PlaylistThumbnail from './pages/Playlists/PlaylistThumbnail';
+import Navbar from './components/layout/Navbar';
+import Footer from './components/layout/Footer';
 import GlobalLoadedMap from './components/GlobalLoadedMap';
 import './App.css';
 import { ConfirmationModalProvider } from './contexts/ConfirmationModalContext';
@@ -109,13 +113,17 @@ export default function App() {
         <div className="flex flex-col h-screen overflow-hidden bg-neutral-100 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 transition-colors duration-200">
           <Navbar />
 
-          <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 relative custom-scrollbar">
+          <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 custom-scrollbar isolate">
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/titles" element={<Titles />} />
-              <Route path="/mapcards" element={<MapCards />} />
-              <Route path="/thumbnails" element={<Thumbnails />} />
-              <Route path="/playlists" element={<Playlists />} />
+              <Route path="/scripts" element={<Scripts />} />
+              <Route path="/cards/map" element={<MapCard />} />
+              <Route path="/cards/reweight" element={<ReweightCard />} />
+              <Route path="/thumbnails/batch" element={<BatchThumbnail />} />
+              <Route path="/thumbnails/ssrm" element={<SSRMThumbnail />} />
+              <Route path="/playlists/playlist" element={<Playlist />} />
+              <Route path="/playlists/playlist-thumbnail" element={<PlaylistThumbnail />} />
             </Routes>
           </main>
 
@@ -132,3 +140,4 @@ export default function App() {
     </Router>
   );
 }
+

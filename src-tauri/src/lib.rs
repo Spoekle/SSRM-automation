@@ -446,31 +446,25 @@ async fn reinstall_ffmpeg(app_handle: tauri::AppHandle) -> Result<bool, String> 
     install_ffmpeg(app_handle).await
 }
 
-// Force check update - placeholder
-#[tauri::command]
-async fn force_check_update() -> Result<bool, String> {
-    Ok(true)
-}
-
-// Update application - placeholder
-#[tauri::command]
-async fn update_application() -> Result<String, String> {
-    Err("Update not yet implemented in Tauri version".to_string())
-}
-
 // Generate a thumbnail from video data by extracting a frame using FFmpeg
 // Accepts base64-encoded video data, saves to temp, extracts frame, returns base64 image
 // Generate a thumbnail from video data by extracting a frame using FFmpeg
 // Accepts base64-encoded video data OR a direct file path
 #[tauri::command]
-async fn generate_video_thumbnail(video_data: Option<String>, video_path: Option<String>) -> Result<String, String> {
+async fn generate_video_thumbnail(
+    video_data: Option<String>,
+    video_path: Option<String>,
+) -> Result<String, String> {
     use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
     use std::fs;
     use std::path::{Path, PathBuf};
     use std::process::Command;
 
-    println!("[Debugging IPC] Received args: video_data is_some={}, video_path={:?}", video_data.is_some(), video_path);
-
+    println!(
+        "[Debugging IPC] Received args: video_data is_some={}, video_path={:?}",
+        video_data.is_some(),
+        video_path
+    );
 
     // Create temp files
     let temp_dir = std::env::temp_dir();
@@ -527,7 +521,8 @@ async fn generate_video_thumbnail(video_data: Option<String>, video_path: Option
             }
         };
 
-        let video_bytes = BASE64.decode(&padded_base64)
+        let video_bytes = BASE64
+            .decode(&padded_base64)
             .map_err(|e| format!("Failed to decode video base64: {}", e))?;
 
         fs::write(&temp_input_path, &video_bytes)
@@ -544,7 +539,9 @@ async fn generate_video_thumbnail(video_data: Option<String>, video_path: Option
     let ffmpeg_check = Command::new("ffmpeg").arg("-version").output();
 
     if ffmpeg_check.is_err() {
-        if cleanup_input { let _ = fs::remove_file(&input_path); }
+        if cleanup_input {
+            let _ = fs::remove_file(&input_path);
+        }
         return Err("FFmpeg is not installed or not in PATH".to_string());
     }
 
@@ -552,9 +549,12 @@ async fn generate_video_thumbnail(video_data: Option<String>, video_path: Option
     let timestamp_str = {
         let probe_output = Command::new("ffprobe")
             .args([
-                "-v", "error",
-                "-show_entries", "format=duration",
-                "-of", "default=noprint_wrappers=1:nokey=1",
+                "-v",
+                "error",
+                "-show_entries",
+                "format=duration",
+                "-of",
+                "default=noprint_wrappers=1:nokey=1",
                 input_path.to_str().unwrap(),
             ])
             .output();
@@ -564,28 +564,31 @@ async fn generate_video_thumbnail(video_data: Option<String>, video_path: Option
                 let output_str = String::from_utf8_lossy(&output.stdout);
                 if let Ok(duration) = output_str.trim().parse::<f64>() {
                     if duration > 10.0 {
-                         use std::time::{SystemTime, UNIX_EPOCH};
-                         let nanos = SystemTime::now()
+                        use std::time::{SystemTime, UNIX_EPOCH};
+                        let nanos = SystemTime::now()
                             .duration_since(UNIX_EPOCH)
                             .map(|d| d.as_nanos())
                             .unwrap_or(0);
-                         // Simple pseudo-random between 0.0 and 1.0
-                         let random_factor = (nanos % 1000) as f64 / 1000.0;
-                         let start = 10.0;
-                         let end = duration - 1.0;
-                         let target = if end > start {
-                             start + random_factor * (end - start)
-                         } else {
-                             start
-                         };
-                         println!("[VideoThumbnail] Video duration: {:.2}s. Extracting random frame at: {:.2}s", duration, target);
-                         format!("{:.2}", target)
+                        // Simple pseudo-random between 0.0 and 1.0
+                        let random_factor = (nanos % 1000) as f64 / 1000.0;
+                        let start = 10.0;
+                        let end = duration - 1.0;
+                        let target = if end > start {
+                            start + random_factor * (end - start)
+                        } else {
+                            start
+                        };
+                        println!("[VideoThumbnail] Video duration: {:.2}s. Extracting random frame at: {:.2}s", duration, target);
+                        format!("{:.2}", target)
                     } else {
                         println!("[VideoThumbnail] Video duration {:.2}s is too short for random seek. Using 1s.", duration);
                         "00:00:01".to_string()
                     }
                 } else {
-                    println!("[VideoThumbnail] Failed to parse duration: '{}'. Using 1s.", output_str);
+                    println!(
+                        "[VideoThumbnail] Failed to parse duration: '{}'. Using 1s.",
+                        output_str
+                    );
                     "00:00:01".to_string()
                 }
             }
@@ -648,11 +651,15 @@ async fn read_image_as_base64(image_path: String) -> Result<String, String> {
     }
 
     // Read the file
-    let image_bytes = fs::read(path)
-        .map_err(|e| format!("Failed to read image file: {}", e))?;
+    let image_bytes = fs::read(path).map_err(|e| format!("Failed to read image file: {}", e))?;
 
     // Determine MIME type from extension
-    let mime_type = match path.extension().and_then(|e| e.to_str()).map(|e| e.to_lowercase()).as_deref() {
+    let mime_type = match path
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.to_lowercase())
+        .as_deref()
+    {
         Some("png") => "image/png",
         Some("jpg") | Some("jpeg") => "image/jpeg",
         Some("gif") => "image/gif",
@@ -668,14 +675,8 @@ async fn read_image_as_base64(image_path: String) -> Result<String, String> {
 
 // Generate batch thumbnail
 #[tauri::command]
-async fn generate_batch_thumbnail(
-    background_url: String,
-    month: String,
-    background_transform: Option<serde_json::Value>,
-) -> Result<String, String> {
-    let transform = background_transform
-        .and_then(|v| serde_json::from_value::<image_gen::BackgroundTransform>(v).ok());
-    image_gen::generate_batch_thumbnail(&background_url, &month, transform).await
+async fn generate_batch_thumbnail(background_url: String, month: String) -> Result<String, String> {
+    image_gen::generate_batch_thumbnail(&background_url, &month).await
 }
 
 // Generate SSRM thumbnail
@@ -698,12 +699,8 @@ async fn generate_ssrm_thumbnail(
 async fn generate_playlist_thumbnail(
     background_url: String,
     month: String,
-    background_transform: Option<serde_json::Value>,
 ) -> Result<String, String> {
-    let transform = background_transform
-        .map(|v| serde_json::from_value::<image_gen::PlaylistBackgroundTransform>(v).ok())
-        .flatten();
-    image_gen::generate_playlist_thumbnail(&background_url, &month, transform).await
+    image_gen::generate_playlist_thumbnail(&background_url, &month).await
 }
 
 // Generate card
@@ -761,8 +758,7 @@ async fn save_file(path: String, data_base64: String) -> Result<bool, String> {
         .decode(cleaned_base64)
         .map_err(|e| format!("Failed to decode base64: {}", e))?;
 
-    fs::write(&path, bytes)
-        .map_err(|e| format!("Failed to write file: {}", e))?;
+    fs::write(&path, bytes).map_err(|e| format!("Failed to write file: {}", e))?;
 
     Ok(true)
 }
@@ -772,6 +768,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_process::init())
         .setup(|app| {
             #[cfg(desktop)]
             app.handle()
@@ -790,8 +787,6 @@ pub fn run() {
             check_ffmpeg,
             install_ffmpeg,
             reinstall_ffmpeg,
-            force_check_update,
-            update_application,
             generate_video_thumbnail,
             read_image_as_base64,
             generate_batch_thumbnail,

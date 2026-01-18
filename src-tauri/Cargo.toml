@@ -30,6 +30,7 @@ resvg = "0.37"
 usvg = "0.37"
 tiny-skia = "0.11"
 tauri-plugin-dialog = "2"
+tauri-plugin-process = "2"
 
 [target.'cfg(any(target_os = "macos", windows, target_os = "linux"))'.dependencies]
 tauri-plugin-updater = "2.9.0"

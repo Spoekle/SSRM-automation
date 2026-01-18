@@ -121,7 +121,7 @@ const MapForm: React.FC<MapFormProps> = ({
     <AnimatePresence>
       {true && (
         <motion.div
-          className={`fixed top-17 left-0 right-0 bottom-13 z-40 rounded-br-3xl backdrop-blur-sm flex justify-center items-center ${isOverlayVisible ? "opacity-100" : "opacity-0"
+          className={`fixed top-17 left-0 right-0 bottom-13 z-40 backdrop-blur-sm flex justify-center items-center ${isOverlayVisible ? "opacity-100" : "opacity-0"
             } bg-neutral-900/30`}
           initial={{ opacity: 0 }}
           animate={{ opacity: isOverlayVisible ? 1 : 0 }}
@@ -269,7 +269,7 @@ const MapForm: React.FC<MapFormProps> = ({
               <motion.button
                 type="button"
                 onClick={getMapInfo}
-                className='bg-gradient-to-r from-blue-500 to-cyan-600 text-white px-5 py-2 text-sm rounded-lg shadow-lg shadow-blue-500/20 font-semibold flex items-center gap-2'
+                className='bg-blue-500 hover:bg-blue-600 text-white px-5 py-2 text-sm rounded-lg shadow-lg shadow-blue-500/20 font-semibold flex items-center gap-2'
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >

@@ -1,17 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FaChevronUp, FaChevronDown, FaTimes, FaMusic, FaMapMarkerAlt, FaClock, FaPlay, FaPause, FaExternalLinkAlt } from 'react-icons/fa';
+import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
+import { FaChevronUp, FaChevronDown, FaMusic, FaClock, FaPlay, FaPause, FaExternalLinkAlt, FaTimes } from 'react-icons/fa';
 import { useMapInfo } from '../hooks';
+import { useConfirmationModal } from '../contexts/ConfirmationModalContext';
 
 const GlobalLoadedMap: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const { mapInfo } = useMapInfo();
+  const [isAnimating, setIsAnimating] = useState(false);
+  const { mapInfo, clearMapInfo } = useMapInfo();
   const [audioPlaying, setAudioPlaying] = useState(false);
   const [audioProgress, setAudioProgress] = useState(0);
-  const [audioDuration, setAudioDuration] = useState(0);
   const [isHovering, setIsHovering] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { showConfirmation } = useConfirmationModal();
   const songSubName = mapInfo?.metadata.songSubName ? ` ${mapInfo.metadata.songSubName}` : '';
 
   useEffect(() => {
@@ -30,25 +32,17 @@ const GlobalLoadedMap: React.FC = () => {
     if (mapInfo && mapInfo.versions[0].previewURL) {
       if (audioRef.current) {
         audioRef.current.pause();
-        audioRef.current.removeEventListener('loadedmetadata', handleLoadedMetadata);
         audioRef.current.removeEventListener('ended', handleAudioEnded);
       }
 
       audioRef.current = new Audio(mapInfo.versions[0].previewURL);
       audioRef.current.volume = 0.2;
-      audioRef.current.addEventListener('loadedmetadata', handleLoadedMetadata);
       audioRef.current.addEventListener('ended', handleAudioEnded);
 
       setAudioPlaying(false);
       setAudioProgress(0);
     }
   }, [mapInfo]);
-
-  const handleLoadedMetadata = () => {
-    if (audioRef.current) {
-      setAudioDuration(audioRef.current.duration);
-    }
-  };
 
   const handleAudioEnded = () => {
     setAudioPlaying(false);
@@ -79,7 +73,8 @@ const GlobalLoadedMap: React.FC = () => {
     }
   };
 
-  const toggleSongPreview = () => {
+  const toggleSongPreview = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!audioRef.current || !mapInfo) return;
 
     if (audioPlaying) {
@@ -102,115 +97,227 @@ const GlobalLoadedMap: React.FC = () => {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
+  const handleClearMap = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    showConfirmation({
+      title: "Clear Map",
+      message: "Are you sure you want to clear the loaded map?",
+      onConfirm: () => {
+        if (audioRef.current) {
+          audioRef.current.pause();
+        }
+        clearMapInfo();
+        localStorage.removeItem("mapId");
+        localStorage.removeItem("starRatings");
+        localStorage.removeItem("oldStarRatings");
+      }
+    });
+  };
+
+  const handleCollapse = () => {
+    setIsAnimating(true);
+    // Small delay to let content fade out first
+    setTimeout(() => {
+      setIsCollapsed(true);
+      setTimeout(() => setIsAnimating(false), 300);
+    }, 50);
+  };
+
+  const handleExpand = () => {
+    setIsAnimating(true);
+    setIsCollapsed(false);
+    setTimeout(() => setIsAnimating(false), 300);
+  };
+
+  if (!mapInfo) return null;
+
+  // Show content only when expanded and not animating
+  const showContent = !isCollapsed && !isAnimating;
 
   return (
-    !mapInfo ? null :
-      <AnimatePresence>
+    <LayoutGroup>
+      <motion.div
+        className="fixed bottom-4 left-4 z-60 select-none"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, type: "spring" }}
+      >
+        {/* Container that expands/collapses */}
         <motion.div
-          className="z-50 fixed bottom-0 left-10 flex flex-col select-none"
-          initial={{ y: 50 }}
-          animate={{ y: isCollapsed ? 50 : 0 }}
-          transition={{ duration: 0.3, type: "spring" }}
+          layout
+          className={`relative overflow-hidden ${isCollapsed
+              ? ''
+              : 'bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md rounded-xl shadow-xl border border-neutral-200/50 dark:border-neutral-700/50 w-[290px]'
+            }`}
+          transition={{ type: "spring", stiffness: 400, damping: 30 }}
         >
-          <motion.button
-            className="bg-gradient-to-b from-blue-500 to-blue-600 w-12 h-5 ml-3 rounded-t-md flex items-center justify-center cursor-pointer shadow-lg"
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            whileHover={{ width: 44 }}
-            whileTap={{ scale: 0.9 }}
-          >
-            {isCollapsed ?
-              <FaChevronUp size={10} color="white" /> :
-              <FaChevronDown size={10} color="white" />
-            }
-          </motion.button>
-          <motion.div
-            className="bg-neutral-300/80 dark:bg-neutral-800/80 backdrop-blur-md p-3 rounded-t-lg flex items-center space-x-2 w-[360px] h-[59px] border border-neutral-200/30 dark:border-neutral-700/30"
-            layout
-          >
+          {/* Header - hidden during animation */}
+          {showContent && (
             <motion.div
-              className="relative group"
-              whileHover={{ scale: 1.1 }}
-              onMouseEnter={() => setIsHovering(true)}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.1 }}
+              className="flex items-center justify-end px-1 py-1 border-b border-neutral-200/50 dark:border-neutral-700/50 bg-neutral-50/50 dark:bg-neutral-800/50"
+            >
+              <div className="flex items-center gap-1">
+                <motion.button
+                  className="p-1.5 rounded-lg hover:bg-neutral-200/50 dark:hover:bg-neutral-700/50 text-neutral-500 dark:text-neutral-400 transition-colors"
+                  onClick={handleCollapse}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  title="Minimize"
+                >
+                  <FaChevronDown size={12} />
+                </motion.button>
+                <motion.button
+                  className="p-1 rounded-lg hover:bg-neutral-200/50 dark:hover:bg-red-700/50 text-neutral-500 dark:text-neutral-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                  onClick={handleClearMap}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  title="Clear map"
+                >
+                  <FaTimes size={12} />
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Content area */}
+          <motion.div
+            layout
+            className={isCollapsed ? '' : 'p-1 flex items-center gap-3'}
+            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+          >
+            {/* Cover art - always visible, animates position */}
+            <motion.div
+              layout
+              layoutId="loaded-map-cover"
+              className={`relative shrink-0 ${isCollapsed ? 'cursor-pointer group' : ''}`}
+              onMouseEnter={() => !isCollapsed && setIsHovering(true)}
               onMouseLeave={() => setIsHovering(false)}
+              onClick={() => isCollapsed && handleExpand()}
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
             >
               <motion.img
+                layout
                 src={mapInfo.versions[0].coverURL}
                 alt="Map cover"
-                className={`min-h-12 min-w-12 max-h-12 object-cover rounded-lg transition-all duration-300 select-none ${audioPlaying ? 'blur-[1px] brightness-75' : ''
+                className={`object-cover ${isCollapsed
+                    ? 'w-14 h-14 rounded-xl shadow-lg ring-2 ring-white/20 dark:ring-neutral-700/50'
+                    : `w-14 h-14 rounded-lg shadow-md ${audioPlaying ? 'brightness-75' : ''}`
                   }`}
-                transition={{ type: "spring", stiffness: 300 }}
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
               />
 
-              {/* Progress Circle */}
-              {audioPlaying && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <svg className="w-10 h-10 transform -rotate-90 drop-shadow-lg" viewBox="0 0 36 36">
-                    <path
-                      className="text-black/40"
+              {/* Collapsed hover overlay */}
+              {isCollapsed && (
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 rounded-xl transition-colors flex items-center justify-center">
+                  <FaChevronUp className="text-white opacity-0 group-hover:opacity-100 transition-opacity" size={16} />
+                </div>
+              )}
+
+              {/* Progress circle - only when expanded and playing */}
+              {!isCollapsed && audioPlaying && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <svg className="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
+                    <circle
+                      className="text-black/30"
                       stroke="currentColor"
                       strokeWidth="3"
                       fill="none"
-                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      cx="18"
+                      cy="18"
+                      r="15"
                     />
-                    <path
-                      className="text-white drop-shadow-md"
+                    <circle
+                      className="text-white"
                       stroke="currentColor"
                       strokeWidth="3"
-                      strokeDasharray={`${audioProgress}, 100`}
+                      strokeDasharray={`${audioProgress * 0.94} 100`}
                       strokeLinecap="round"
                       fill="none"
-                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      cx="18"
+                      cy="18"
+                      r="15"
                     />
                   </svg>
                 </div>
               )}
 
-              <motion.div
-                className="absolute inset-0 bg-black/0 hover:bg-black/50 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 hover:cursor-pointer transition-opacity"
-                whileHover={{ scale: 1.05 }}
-                onClick={toggleSongPreview}
-                title={audioPlaying ? 'Pause Song Preview' : 'Play Song Preview'}
-              >
-                {isHovering && audioPlaying ? (
-                  <FaPause className="text-white" size={16} />
-                ) : (
-                  <FaPlay className="text-white" size={16} />
-                )}
-              </motion.div>
+              {/* Play/Pause button - only when expanded */}
+              {!isCollapsed && (
+                <button
+                  className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/40 rounded-lg transition-colors"
+                  onClick={toggleSongPreview}
+                  title={audioPlaying ? 'Pause preview' : 'Play preview'}
+                >
+                  {(isHovering || audioPlaying) && (
+                    <div className="w-8 h-8 flex items-center justify-center shadow-md">
+                      {audioPlaying ? (
+                        <FaPause className="text-white" size={20} />
+                      ) : (
+                        <FaPlay className="text-white" size={20} />
+                      )}
+                    </div>
+                  )}
+                </button>
+              )}
             </motion.div>
 
-            <div className="flex-grow overflow-hidden">
-              <h3 className="font-bold text-sm text-neutral-800 dark:text-neutral-200 truncate" title={`${mapInfo.metadata.songName}${songSubName}`}>
-                {mapInfo.metadata.songName}{songSubName}
-              </h3>
-              <div className="flex items-center text-xs text-neutral-600 dark:text-neutral-400 truncate">
-                <FaMusic className="mr-1" size={10} />
-                <span className="truncate" title={mapInfo.metadata.songAuthorName}>{mapInfo.metadata.songAuthorName}</span>
-                <span className="mx-1">•</span>
-                <span className="truncate" title={mapInfo.metadata.levelAuthorName}>{mapInfo.metadata.levelAuthorName}</span>
-              </div>
-              <div className="flex items-center space-x-1 text-xs text-neutral-500 dark:text-neutral-500">
-                <div className="flex items-center">
-                  <FaClock className="mr-1" size={10} />
-                  <span>{formatDuration(mapInfo.metadata.duration)}</span>
+            {/* Song info - hidden during animation */}
+            {showContent && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.1 }}
+                className="flex-1 min-w-0 overflow-hidden"
+              >
+                <h3
+                  className="font-semibold text-sm text-neutral-800 dark:text-neutral-200 truncate"
+                  title={`${mapInfo.metadata.songName}${songSubName}`}
+                >
+                  {mapInfo.metadata.songName}{songSubName}
+                </h3>
+                <div className="flex items-center gap-1 text-xs text-neutral-600 dark:text-neutral-400 mt-0.5 overflow-hidden">
+                  <FaMusic size={9} className="shrink-0" />
+                  <span className="truncate" title={mapInfo.metadata.songAuthorName}>
+                    {mapInfo.metadata.songAuthorName}
+                  </span>
                 </div>
-                <span>•</span>
-                <span>{mapInfo.metadata.bpm} BPM</span>
-              </div>
-            </div>
+                <div className="flex items-center gap-2 text-xs text-neutral-500 mt-1">
+                  <span className="font-mono bg-neutral-200/50 dark:bg-neutral-700/50 px-1.5 py-0.5 rounded text-[10px]">
+                    {mapInfo.id}
+                  </span>
+                  <span>•</span>
+                  <div className="flex items-center gap-1">
+                    <FaClock size={9} />
+                    <span>{formatDuration(mapInfo.metadata.duration)}</span>
+                  </div>
+                  <span>•</span>
+                  <span>{mapInfo.metadata.bpm} BPM</span>
+                </div>
+              </motion.div>
+            )}
 
-            <motion.button
-              className="font-bold text-sm text-neutral-800 dark:text-neutral-200 hover:text-neutral-800 dark:hover:text-neutral-200 p-1"
-              whileHover={{ scale: 1.2 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => window.open(`https://beatsaver.com/maps/${mapInfo.id}`, '_blank')}
-              title="Open map on BeatSaver"
-            >
-              <FaExternalLinkAlt size={14} />
-            </motion.button>
+            {/* External link - hidden during animation */}
+            {showContent && (
+              <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.15 }}
+                className="shrink-0 p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 transition-colors"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => window.open(`https://beatsaver.com/maps/${mapInfo.id}`, '_blank')}
+                title="Open on BeatSaver"
+              >
+                <FaExternalLinkAlt size={14} />
+              </motion.button>
+            )}
           </motion.div>
         </motion.div>
-      </AnimatePresence>
+      </motion.div>
+    </LayoutGroup>
   );
 };
 

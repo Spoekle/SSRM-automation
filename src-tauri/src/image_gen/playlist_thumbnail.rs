@@ -4,14 +4,6 @@
 use crate::image_gen::utils::*;
 use skia_safe::{Color4f, FontStyle, Paint, Rect};
 
-/// Background transform options for playlist thumbnails
-#[derive(Debug, Clone, serde::Deserialize)]
-pub struct PlaylistBackgroundTransform {
-    pub scale: Option<f32>,
-    pub x: Option<f32>,
-    pub y: Option<f32>,
-}
-
 /// Calculate crop dimensions to maintain 1:1 (square) aspect ratio
 fn calculate_square_crop_dimensions(width: i32, height: i32) -> CropDimensions {
     if width > height {
@@ -36,46 +28,32 @@ fn calculate_square_crop_dimensions(width: i32, height: i32) -> CropDimensions {
 }
 
 /// Generate a playlist thumbnail
+/// Images are automatically cropped to 1:1 square centered (zoom to cover, not stretch)
 pub async fn generate_playlist_thumbnail(
     background_url: &str,
     month: &str,
-    background_transform: Option<PlaylistBackgroundTransform>,
 ) -> Result<String, String> {
     // Fetch image bytes asynchronously
     let bytes = fetch_image_bytes(background_url).await?;
 
     // Do all rendering synchronously
-    render_playlist_thumbnail(&bytes, month, background_transform)
+    render_playlist_thumbnail(&bytes, month)
 }
 
 /// Synchronous rendering for playlist thumbnail
-fn render_playlist_thumbnail(
-    image_bytes: &[u8],
-    month: &str,
-    background_transform: Option<PlaylistBackgroundTransform>,
-) -> Result<String, String> {
+fn render_playlist_thumbnail(image_bytes: &[u8], month: &str) -> Result<String, String> {
     let size = 512;
 
     let mut surface = create_surface(size, size)?;
     let background = decode_image(image_bytes)?;
 
-    // Calculate crop dimensions for 1:1 (square)
+    // Calculate crop dimensions for 1:1 square (centered, zoom to cover)
     let crop = calculate_square_crop_dimensions(background.width(), background.height());
 
     {
         let canvas = surface.canvas();
-        canvas.save();
 
-        // Apply transform
-        if let Some(transform) = background_transform {
-            let scale = transform.scale.unwrap_or(1.0);
-            let tx = transform.x.unwrap_or(0.0);
-            let ty = transform.y.unwrap_or(0.0);
-            canvas.translate((tx, ty));
-            canvas.scale((scale, scale));
-        }
-
-        // Draw background (cropped to square)
+        // Draw background with centered crop
         let src_rect = Rect::from_xywh(crop.sx, crop.sy, crop.sw, crop.sh);
         let dst_rect = Rect::from_xywh(0.0, 0.0, size as f32, size as f32);
         canvas.draw_image_rect(
@@ -84,7 +62,6 @@ fn render_playlist_thumbnail(
             dst_rect,
             &Paint::default(),
         );
-        canvas.restore();
 
         // Draw SSRM logo at top (scaled down for 512x512)
         if let Ok(logo) = load_logo() {

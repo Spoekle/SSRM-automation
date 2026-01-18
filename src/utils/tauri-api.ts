@@ -3,88 +3,81 @@ import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { open, save } from '@tauri-apps/plugin-dialog';
 
-// ... (rest of imports/constants) ...
-
-// Native dialog helpers
-// Native dialog helpers
 export const nativeDialog = {
-  // @deprecated Use selectFile('video') instead
   selectVideoFile: async (): Promise<string | null> => {
     return nativeDialog.selectFile('video');
   },
 
   selectFile: async (type: 'image' | 'video' | 'any' = 'any'): Promise<string | null> => {
     try {
-        let filters = [];
-        if (type === 'video') {
-            filters = [{ name: 'Video', extensions: ['mp4', 'mkv', 'avi', 'mov'] }];
-        } else if (type === 'image') {
-            filters = [{ name: 'Image', extensions: ['png', 'jpg', 'jpeg', 'webp'] }];
-        } else {
-             filters = [{ name: 'Media', extensions: ['png', 'jpg', 'jpeg', 'webp', 'mp4', 'mkv', 'avi', 'mov'] }];
-        }
+      let filters = [];
+      if (type === 'video') {
+        filters = [{ name: 'Video', extensions: ['mp4', 'mkv', 'avi', 'mov'] }];
+      } else if (type === 'image') {
+        filters = [{ name: 'Image', extensions: ['png', 'jpg', 'jpeg', 'webp'] }];
+      } else {
+        filters = [{ name: 'Media', extensions: ['png', 'jpg', 'jpeg', 'webp', 'mp4', 'mkv', 'avi', 'mov'] }];
+      }
 
-        const file = await open({
-           multiple: false,
-           filters: filters
-        });
-        // Handle Tauri v2 return type (can be null, string, or string[] depending on options)
-        // With multiple: false, it returns string | null on desktop
-        return file ? (typeof file === 'string' ? file : (file as any).path) : null;
+      const file = await open({
+        multiple: false,
+        filters: filters
+      });
+      return file ? (typeof file === 'string' ? file : (file as any).path) : null;
     } catch (e) {
-        console.error('Dialog error:', e);
-        return null;
+      console.error('Dialog error:', e);
+      return null;
     }
   },
 
   saveImage: async (base64Data: string, defaultName: string): Promise<boolean> => {
-      try {
-          console.log('[saveImage] Opening save dialog for:', defaultName);
-          const path = await save({
-              defaultPath: defaultName,
-              filters: [{ name: 'Image', extensions: ['png', 'jpg'] }]
-          });
+    try {
+      console.log('[saveImage] Opening save dialog for:', defaultName);
+      const path = await save({
+        defaultPath: defaultName,
+        filters: [{ name: 'Image', extensions: ['png', 'jpg'] }]
+      });
 
-          if (!path) {
-              console.log('[saveImage] User cancelled save dialog');
-              return false;
-          }
-
-          console.log('[saveImage] Saving to path:', path);
-          console.log('[saveImage] Data length:', base64Data.length);
-
-          await invoke('save_file', { path, dataBase64: base64Data });
-          console.log('[saveImage] File saved successfully');
-          return true;
-      } catch (e) {
-          console.error('[saveImage] Save error:', e);
-          return false;
+      if (!path) {
+        console.log('[saveImage] User cancelled save dialog');
+        return false;
       }
+
+      console.log('[saveImage] Saving to path:', path);
+      console.log('[saveImage] Data length:', base64Data.length);
+
+      await invoke('save_file', { path, dataBase64: base64Data });
+      console.log('[saveImage] File saved successfully');
+      return true;
+    } catch (e) {
+      console.error('[saveImage] Save error:', e);
+      return false;
+    }
   },
 
   saveFile: async (base64Data: string, defaultName: string, filters: { name: string; extensions: string[] }[]): Promise<boolean> => {
-      try {
-          console.log('[saveFile] Opening save dialog for:', defaultName);
-          const path = await save({
-              defaultPath: defaultName,
-              filters: filters
-          });
+    try {
+      console.log('[saveFile] Opening save dialog for:', defaultName);
+      const path = await save({
+        defaultPath: defaultName,
+        filters: filters
+      });
 
-          if (!path) {
-              console.log('[saveFile] User cancelled save dialog');
-              return false;
-          }
-
-          console.log('[saveFile] Saving to path:', path);
-          console.log('[saveFile] Data length:', base64Data.length);
-
-          await invoke('save_file', { path, dataBase64: base64Data });
-          console.log('[saveFile] File saved successfully');
-          return true;
-      } catch (e) {
-           console.error('[saveFile] Save error:', e);
-           return false;
+      if (!path) {
+        console.log('[saveFile] User cancelled save dialog');
+        return false;
       }
+
+      console.log('[saveFile] Saving to path:', path);
+      console.log('[saveFile] Data length:', base64Data.length);
+
+      await invoke('save_file', { path, dataBase64: base64Data });
+      console.log('[saveFile] File saved successfully');
+      return true;
+    } catch (e) {
+      console.error('[saveFile] Save error:', e);
+      return false;
+    }
   }
 };
 
@@ -136,12 +129,12 @@ export const ipcRenderer = {
 
           // Check if argument is object with videoPath/video_path
           if (arg && typeof arg === 'object') {
-              const vPath = (arg as any).videoPath || (arg as any).video_path;
-              if (vPath) {
-                  log.info(`ipcRenderer passing videoPath to Rust: ${vPath}`);
-                  // Use camelCase keys for Tauri (auto-converts to snake_case in Rust)
-                  return await invoke('generate_video_thumbnail', { videoPath: vPath, videoData: null });
-              }
+            const vPath = (arg as any).videoPath || (arg as any).video_path;
+            if (vPath) {
+              log.info(`ipcRenderer passing videoPath to Rust: ${vPath}`);
+              // Use camelCase keys for Tauri (auto-converts to snake_case in Rust)
+              return await invoke('generate_video_thumbnail', { videoPath: vPath, videoData: null });
+            }
           }
 
           // Fallback to data-based (legacy or small files)
@@ -149,8 +142,8 @@ export const ipcRenderer = {
           const dataStr = typeof arg === 'string' ? arg : null;
 
           if (!dataStr) {
-              log.error('generate-video-thumbnail: Invalid argument', arg);
-              throw new Error('Invalid argument for generate-video-thumbnail');
+            log.error('generate-video-thumbnail: Invalid argument', arg);
+            throw new Error('Invalid argument for generate-video-thumbnail');
           }
 
           log.info(`ipcRenderer passing videoData (base64) to Rust. Length: ${dataStr.length}`);
@@ -158,11 +151,10 @@ export const ipcRenderer = {
           return await invoke('generate_video_thumbnail', { videoData: dataStr, videoPath: null });
         }
         case 'generate-batch-thumbnail': {
-          const [backgroundUrl, month, backgroundTransform] = args;
+          const [backgroundUrl, month] = args;
           return await invoke('generate_batch_thumbnail', {
             backgroundUrl,
             month,
-            backgroundTransform: backgroundTransform || null,
           });
         }
         case 'generate-ssrm-thumbnail': {
@@ -175,11 +167,10 @@ export const ipcRenderer = {
           });
         }
         case 'generate-playlist-thumbnail': {
-          const [bgUrl, mon, bgTransform] = args;
+          const [bgUrl, mon] = args;
           return await invoke('generate_playlist_thumbnail', {
             backgroundUrl: bgUrl,
             month: mon,
-            backgroundTransform: bgTransform || null,
           });
         }
         case 'generate-card': {

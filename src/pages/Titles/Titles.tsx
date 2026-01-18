@@ -84,7 +84,7 @@ const Titles: React.FC = () => {
             <h1 className='text-2xl font-bold'>Titles</h1>
           </div>
           <p className='text-sm mb-3 text-neutral-600 dark:text-neutral-400'>
-            Generate your title and description for Beat Saber videos!
+            Generate the title and description for SSRM videos!
           </p>
           <motion.button
             className='group relative inline-flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-semibold text-neutral-700 dark:text-neutral-200 bg-white/50 dark:bg-neutral-800/50 backdrop-blur-md border border-neutral-200/50 dark:border-neutral-700/50 rounded-xl shadow-sm hover:bg-white/80 dark:hover:bg-neutral-800 hover:shadow-md transition-all mx-auto'
@@ -108,7 +108,7 @@ const Titles: React.FC = () => {
               whileHover={{ y: -5, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)" }}
               transition={{ type: "spring", stiffness: 400 }}
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 opacity-0 group-hover:opacity-10 dark:group-hover:opacity-20 rounded-xl transition-opacity duration-300" />
+              <div className="absolute inset-0 bg-blue-500 opacity-0 group-hover:opacity-10 dark:group-hover:opacity-20 rounded-xl transition-opacity duration-300" />
 
               <div className="flex justify-between items-center mb-3 relative z-10">
                 <h1 className='text-lg font-bold flex items-center gap-2'>
@@ -135,7 +135,7 @@ const Titles: React.FC = () => {
               whileHover={{ y: -5, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)" }}
               transition={{ type: "spring", stiffness: 400 }}
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 opacity-0 group-hover:opacity-10 dark:group-hover:opacity-20 rounded-xl transition-opacity duration-300" />
+              <div className="absolute inset-0 bg-purple-500 opacity-0 group-hover:opacity-10 dark:group-hover:opacity-20 rounded-xl transition-opacity duration-300" />
 
               <div className="flex justify-between items-center mb-3 relative z-10">
                 <h1 className='text-lg font-bold flex items-center gap-2'>
