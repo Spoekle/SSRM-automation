@@ -151,9 +151,18 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
 
         const result = await checkForUpdate();
 
-        if (!result.available || !result.update) {
+        if (!result.available) {
           setUpdateProgress("No update available");
           setIsUpdating(false);
+          return;
+        }
+
+        // If update is available but no automatic download (prerelease without signed build)
+        if (!result.update) {
+          setUpdateProgress(`v${result.version} available - opening downloads...`);
+          setIsUpdating(false);
+          // Open GitHub releases page for manual download
+          window.open('https://github.com/Spoekle/SSRM-automation/releases', '_blank');
           return;
         }
 
