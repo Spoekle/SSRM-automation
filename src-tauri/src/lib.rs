@@ -446,6 +446,18 @@ async fn reinstall_ffmpeg(app_handle: tauri::AppHandle) -> Result<bool, String> 
     install_ffmpeg(app_handle).await
 }
 
+// Force check update - placeholder
+#[tauri::command]
+async fn force_check_update() -> Result<bool, String> {
+    Ok(true)
+}
+
+// Update application - placeholder
+#[tauri::command]
+async fn update_application() -> Result<String, String> {
+    Err("Update not yet implemented in Tauri version".to_string())
+}
+
 // Generate a thumbnail from video data by extracting a frame using FFmpeg
 // Accepts base64-encoded video data, saves to temp, extracts frame, returns base64 image
 // Generate a thumbnail from video data by extracting a frame using FFmpeg
@@ -768,7 +780,6 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_process::init())
         .setup(|app| {
             #[cfg(desktop)]
             app.handle()
@@ -787,6 +798,8 @@ pub fn run() {
             check_ffmpeg,
             install_ffmpeg,
             reinstall_ffmpeg,
+            force_check_update,
+            update_application,
             generate_video_thumbnail,
             read_image_as_base64,
             generate_batch_thumbnail,

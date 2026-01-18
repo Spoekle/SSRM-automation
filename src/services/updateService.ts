@@ -23,6 +23,7 @@ export interface UpdateCheckResult {
     notes?: string;
     date?: string;
     update?: Update;
+    isPrerelease?: boolean;
 }
 
 interface GitHubRelease {
@@ -65,9 +66,14 @@ function isNewerVersion(v1: string, v2: string): boolean {
     const clean1 = v1.replace(/^v/, '');
     const clean2 = v2.replace(/^v/, '');
 
-    const parts1 = clean1.split(/[-.]/).map(p => parseInt(p) || 0);
-    const parts2 = clean2.split(/[-.]/).map(p => parseInt(p) || 0);
+    // Split into parts, handling prerelease tags
+    const [version1, prerelease1] = clean1.split('-');
+    const [version2, prerelease2] = clean2.split('-');
 
+    const parts1 = version1.split('.').map(p => parseInt(p) || 0);
+    const parts2 = version2.split('.').map(p => parseInt(p) || 0);
+
+    // Compare major.minor.patch
     for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
         const p1 = parts1[i] || 0;
         const p2 = parts2[i] || 0;
@@ -75,12 +81,18 @@ function isNewerVersion(v1: string, v2: string): boolean {
         if (p2 < p1) return false;
     }
 
-    // If numeric parts are equal, check for prerelease tags
-    // A version without prerelease is newer than one with prerelease
-    const hasPrerelease1 = clean1.includes('-');
-    const hasPrerelease2 = clean2.includes('-');
+    // If main version is equal, compare prerelease
+    // No prerelease > prerelease (stable is newer)
+    if (!prerelease2 && prerelease1) return true;
+    if (prerelease2 && !prerelease1) return false;
 
-    if (!hasPrerelease2 && hasPrerelease1) return true;
+    // Both have prerelease, compare them
+    if (prerelease1 && prerelease2) {
+        // Extract prerelease numbers (e.g., beta.2 -> 2)
+        const num1 = parseInt(prerelease1.replace(/\D/g, '')) || 0;
+        const num2 = parseInt(prerelease2.replace(/\D/g, '')) || 0;
+        return num2 > num1;
+    }
 
     return false;
 }
@@ -128,19 +140,33 @@ async function fetchLatestGitHubRelease(includePrerelease: boolean): Promise<Git
 
 /**
  * Check if an update is available
- * Uses different logic for stable vs dev branch
+ * For dev branch: checks GitHub API for prereleases
+ * For stable: uses default updater endpoint from tauri.conf.json
  */
 export async function checkForUpdate(): Promise<UpdateCheckResult> {
     try {
         const useDevChannel = isDevBranch();
         console.log(`[UpdateService] Checking for updates (dev channel: ${useDevChannel})`);
 
+        // First, always try the standard check (uses tauri.conf.json endpoints)
+        const standardUpdate = await check();
+
         if (useDevChannel) {
-            // Dev branch: check GitHub API for latest release including prereleases
+            // Dev branch: also check GitHub API for prereleases
             const latestRelease = await fetchLatestGitHubRelease(true);
 
             if (!latestRelease) {
-                console.log('[UpdateService] No releases found on GitHub');
+                // Fall back to standard update if GitHub API fails
+                if (standardUpdate) {
+                    return {
+                        available: true,
+                        version: standardUpdate.version,
+                        notes: standardUpdate.body ?? undefined,
+                        date: standardUpdate.date ?? undefined,
+                        update: standardUpdate,
+                        isPrerelease: false,
+                    };
+                }
                 return { available: false };
             }
 
@@ -149,38 +175,60 @@ export async function checkForUpdate(): Promise<UpdateCheckResult> {
 
             console.log(`[UpdateService] Current: ${currentVersion}, Latest (including beta): ${latestVersion}`);
 
+            // Check if the GitHub release is newer than current
             if (isNewerVersion(currentVersion, latestVersion)) {
-                // Use the standard updater but with custom endpoint
-                // The updater will download from the latest.json in that specific release
-                const update = await check({
-                    endpoints: [
-                        `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases/download/${latestRelease.tag_name}/latest.json`
-                    ]
-                });
-
-                if (update) {
+                // For prereleases, we need to check if we got an update from standard check
+                // and if the prerelease is actually newer
+                if (standardUpdate) {
+                    // Compare standard update version with GitHub prerelease
+                    if (isNewerVersion(standardUpdate.version, latestVersion)) {
+                        // Prerelease is newer, but we can't use custom endpoints at runtime
+                        // Return info about the prerelease for display, but use standard update mechanism
+                        console.log(`[UpdateService] Prerelease ${latestVersion} available, but using standard updater`);
+                        return {
+                            available: true,
+                            version: latestVersion,
+                            notes: latestRelease.body,
+                            date: latestRelease.published_at,
+                            update: standardUpdate, // Use the standard update object
+                            isPrerelease: latestRelease.prerelease,
+                        };
+                    }
+                    // Standard update is same or newer
                     return {
                         available: true,
-                        version: update.version,
-                        notes: update.body ?? latestRelease.body,
-                        date: update.date ?? latestRelease.published_at,
-                        update,
+                        version: standardUpdate.version,
+                        notes: standardUpdate.body ?? undefined,
+                        date: standardUpdate.date ?? undefined,
+                        update: standardUpdate,
+                        isPrerelease: false,
                     };
                 }
-            }
 
-            return { available: false };
-        } else {
-            // Stable branch: use the default updater (points to /releases/latest/)
-            const update = await check();
-
-            if (update) {
+                // No standard update available, inform user about prerelease
+                // They'll need to download manually from GitHub
                 return {
                     available: true,
-                    version: update.version,
-                    notes: update.body ?? undefined,
-                    date: update.date ?? undefined,
-                    update,
+                    version: latestVersion,
+                    notes: latestRelease.body,
+                    date: latestRelease.published_at,
+                    update: undefined, // No automatic update available
+                    isPrerelease: latestRelease.prerelease,
+                };
+            }
+
+            // Current version is up to date
+            return { available: false };
+        } else {
+            // Stable branch: use the default updater only
+            if (standardUpdate) {
+                return {
+                    available: true,
+                    version: standardUpdate.version,
+                    notes: standardUpdate.body ?? undefined,
+                    date: standardUpdate.date ?? undefined,
+                    update: standardUpdate,
+                    isPrerelease: false,
                 };
             }
 
@@ -259,4 +307,12 @@ export async function checkAndInstallUpdate(
     }
 
     return false;
+}
+
+/**
+ * Open the GitHub releases page for manual download
+ * Used when automatic update isn't available for prereleases
+ */
+export function openReleasesPage(): void {
+    window.open(`https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases`, '_blank');
 }
