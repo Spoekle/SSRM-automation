@@ -73,5 +73,5 @@ jobs:
 
             See the [releases page](https://github.com/Spoekle/SSRM-automation/releases) for more information.
           releaseDraft: false
-          prerelease: ${{ contains(github.ref_name, '-alpha') || contains(github.ref_name, '-beta') || contains(github.ref_name, '-rc') }}
+          prerelease: false
           args: ${{ matrix.args }}
