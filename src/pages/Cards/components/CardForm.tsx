@@ -383,7 +383,7 @@ const CardForm: React.FC<CardFormProps> = ({
     <AnimatePresence>
       {true && (
         <motion.div
-          className={`fixed top-17 left-0 right-0 bottom-13 z-40 rounded-br-3xl backdrop-blur-sm flex justify-center items-center ${isOverlayVisible ? "opacity-100" : "opacity-0"
+          className={`fixed top-17 left-0 right-0 bottom-13 z-40 backdrop-blur-sm flex justify-center items-center ${isOverlayVisible ? "opacity-100" : "opacity-0"
             } bg-neutral-900/30`}
           initial={{ opacity: 0 }}
           animate={{ opacity: isOverlayVisible ? 1 : 0 }}
@@ -602,7 +602,7 @@ const CardForm: React.FC<CardFormProps> = ({
                     </div>
 
                     {/* Map List */}
-                    <div className='grid grid-cols-1 lg:grid-cols-2 gap-3 max-h-[400px] overflow-y-auto custom-scrollbar pr-2'>
+                    <div className='grid grid-cols-1 lg:grid-cols-2 gap-3'>
                       {getSortedMaps().map((mapData) => {
                         const originalIndex = parsedMaps.findIndex(m => m.songHash === mapData.songHash);
 
@@ -613,16 +613,16 @@ const CardForm: React.FC<CardFormProps> = ({
                               e.preventDefault();
                               toggleMapSelection(originalIndex);
                             }}
-                            className={`p-3 rounded-lg border transition-all select-none hover:cursor-pointer flex items-center gap-3 group ${mapData.selected
+                            className={`px-2 py-1 rounded-lg border transition-all select-none hover:cursor-pointer flex items-center gap-3 group ${mapData.selected
                               ? 'bg-blue-50/80 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800'
                               : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 hover:border-blue-300 dark:hover:border-blue-700'
                               }`}
                             initial={{ opacity: 0, y: 5 }}
                             animate={{ opacity: 1, y: 0 }}
                           >
-                            <div className={`w-5 h-5 rounded flex items-center justify-center border ${mapData.selected ? 'bg-blue-500 border-blue-600 text-white' : 'bg-neutral-100 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-600 text-transparent group-hover:border-blue-400'
+                            <div className={`w-4 h-4 rounded flex items-center justify-center border ${mapData.selected ? 'bg-blue-500 border-blue-600 text-white' : 'bg-neutral-100 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-600 text-transparent group-hover:border-blue-400'
                               }`}>
-                              <FaCheck size={10} />
+                              <FaCheck size={8} />
                             </div>
 
                             <div className='flex-1 min-w-0'>
@@ -631,32 +631,37 @@ const CardForm: React.FC<CardFormProps> = ({
                                   <p className='text-sm font-semibold text-neutral-900 dark:text-neutral-100 truncate'>
                                     {mapData.songName}
                                   </p>
-                                  <div className="flex items-center text-xs text-neutral-500 dark:text-neutral-400 gap-2">
-                                    <span className="truncate max-w-[120px]">{mapData.songSubName}</span>
-                                    <span>•</span>
-                                    <span className="truncate">by {mapData.levelAuthorName}</span>
+                                  <div className="flex-col items-center text-xs text-neutral-500 dark:text-neutral-400 gap-2">
+                                    <p className="truncate">{mapData.songSubName}</p>
+                                    <p className="truncate">by {mapData.levelAuthorName}</p>
                                   </div>
                                 </div>
 
-                                <div className='flex items-center gap-1 ml-2'>
-                                  {Object.entries(mapData.starRatings).map(([diff, stars]) => {
-                                    if (!stars || stars === 'Unranked') return null;
-                                    const colors = {
-                                      ES: 'bg-green-500',
-                                      NOR: 'bg-blue-500',
-                                      HARD: 'bg-orange-500',
-                                      EX: 'bg-red-500',
-                                      EXP: 'bg-purple-500'
-                                    };
-                                    return (
-                                      <span
-                                        key={diff}
-                                        className={`px-1.5 py-0.5 text-[10px] font-bold text-white rounded ${colors[diff as keyof typeof colors]} shadow-sm`}
-                                      >
-                                        {stars}
-                                      </span>
-                                    );
-                                  })}
+                                <div className='flex items-center ml-2'>
+                                  {(() => {
+                                    const validEntries = Object.entries(mapData.starRatings)
+                                      .filter(([, stars]) => stars && stars !== 'Unranked');
+
+                                    return validEntries.map(([diff, stars], idx) => {
+                                      const isFirst = idx === 0;
+                                      const isLast = idx === validEntries.length - 1;
+                                      const colors = {
+                                        ES: 'bg-green-500/50',
+                                        NOR: 'bg-blue-500/50',
+                                        HARD: 'bg-orange-500/50',
+                                        EX: 'bg-red-500/50',
+                                        EXP: 'bg-purple-500/50'
+                                      };
+                                      return (
+                                        <span
+                                          key={diff}
+                                          className={`px-1.5 py-1 text-[10px] font-bold text-white ${isFirst ? 'rounded-l' : ''} ${isLast ? 'rounded-r' : ''} ${colors[diff as keyof typeof colors]} shadow-sm`}
+                                        >
+                                          {stars} ★
+                                        </span>
+                                      );
+                                    });
+                                  })()}
                                 </div>
                               </div>
                             </div>
@@ -685,7 +690,7 @@ const CardForm: React.FC<CardFormProps> = ({
                   disabled={parsedMaps.filter(map => map.selected).length === 0}
                   className={`px-6 py-2.5 text-sm rounded-lg shadow-lg font-semibold flex items-center gap-2 ${parsedMaps.filter(map => map.selected).length === 0
                     ? 'bg-neutral-300 text-neutral-500 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-blue-500/20'
+                    : 'bg-blue-500 hover:bg-blue-600 text-white shadow-blue-500/20'
                     }`}
                   whileHover={parsedMaps.filter(map => map.selected).length > 0 ? { scale: 1.02 } : {}}
                   whileTap={parsedMaps.filter(map => map.selected).length > 0 ? { scale: 0.98 } : {}}

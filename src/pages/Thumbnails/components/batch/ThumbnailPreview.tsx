@@ -29,7 +29,7 @@ const ThumbnailPreview: React.FC<ThumbnailPreviewProps> = ({ setThumbnailPreview
     <AnimatePresence>
       {true && (
         <motion.div
-          className={`fixed inset-0 backdrop-blur-md rounded-3xl flex items-center justify-center z-50 ${
+          className={`fixed inset-0 backdrop-blur-md flex items-center justify-center z-70 ${
             isOverlayVisible ? "opacity-100" : "opacity-0"
           }`}
           onClick={handleClose}

@@ -266,8 +266,7 @@ pub fn decode_image(bytes: &[u8]) -> Result<Image, String> {
 }
 
 /// Embedded SSRM logo as PNG bytes (compile-time embedded)
-/// This is the logo from assets/thumbnails/SSRB_Logo.png
-static SSRM_LOGO_PNG: &[u8] = include_bytes!("../../icons/SSRB_Logo.png");
+static SSRM_LOGO_PNG: &[u8] = include_bytes!("../../../assets/thumbnails/SSRB_Logo.png");
 
 /// Load the embedded SSRM logo
 pub fn load_logo() -> Result<Image, String> {

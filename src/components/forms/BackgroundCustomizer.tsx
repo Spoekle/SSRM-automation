@@ -220,7 +220,7 @@ const BackgroundCustomizer: React.FC<BackgroundCustomizerProps> = ({
         <div className="space-y-4">
             <style>{sliderStyles}</style>
             {/* Preview */}
-            <div className={`p-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50/50 dark:bg-neutral-800/50 backdrop-blur-sm`}>
+            <div className="p-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50/50 dark:bg-neutral-800/50 backdrop-blur-sm">
                 <div className="flex justify-center">
                     <div
                         ref={previewRef}
@@ -228,35 +228,20 @@ const BackgroundCustomizer: React.FC<BackgroundCustomizerProps> = ({
                         onMouseDown={handleMouseDown}
                         onWheel={handleWheel}
                     >
-                        {/* Full background image - shows entire image */}
-                        <div
-                            className="absolute inset-0 bg-contain bg-center bg-no-repeat transition-transform duration-75"
+                        {/* Background image - uses object-fit cover to simulate Rust's crop behavior */}
+                        <img
+                            src={backgroundImage}
+                            alt="Background preview"
+                            className="absolute inset-0 w-full h-full transition-transform duration-75"
                             style={{
-                                backgroundImage: `url('${backgroundImage}')`,
-                                transform: `translate(${backgroundX * previewScale.x}px, ${backgroundY * previewScale.y}px) scale(${backgroundScale})`,
+                                objectFit: 'cover',
+                                transform: `scale(${backgroundScale})`,
                                 transformOrigin: 'center',
+                                objectPosition: `calc(50% + ${backgroundX}px) calc(50% + ${backgroundY}px)`,
                                 cursor: isDragging ? 'grabbing' : 'grab'
                             }}
+                            draggable={false}
                         />
-
-                        {/* Crop area overlay to show what will be used in final thumbnail */}
-                        <div className="absolute inset-0 pointer-events-none">
-                            <div className="relative w-full h-full">
-                                {/* Semi-transparent overlay on areas that will be cropped out */}
-                                <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px]"></div>
-                                {/* Clear area showing the crop region */}
-                                <div
-                                    className={`absolute bg-transparent border-2 ${colors.border} border-dashed shadow-sm`}
-                                    style={config.cropStyle}
-                                >
-                                    {/* Corner indicators */}
-                                    <div className={`absolute -top-1.5 -left-1.5 w-3 h-3 ${colors.dot} rounded-full ring-2 ring-white dark:ring-neutral-900`}></div>
-                                    <div className={`absolute -top-1.5 -right-1.5 w-3 h-3 ${colors.dot} rounded-full ring-2 ring-white dark:ring-neutral-900`}></div>
-                                    <div className={`absolute -bottom-1.5 -left-1.5 w-3 h-3 ${colors.dot} rounded-full ring-2 ring-white dark:ring-neutral-900`}></div>
-                                    <div className={`absolute -bottom-1.5 -right-1.5 w-3 h-3 ${colors.dot} rounded-full ring-2 ring-white dark:ring-neutral-900`}></div>
-                                </div>
-                            </div>
-                        </div>
 
                         {/* Logo Overlay */}
                         {showLogo && (
@@ -288,7 +273,7 @@ const BackgroundCustomizer: React.FC<BackgroundCustomizerProps> = ({
                 <div className="text-center mt-3 flex justify-between items-center text-xs text-neutral-500 dark:text-neutral-400 px-1">
                     <div className="flex items-center gap-1.5">
                         <span className={`inline-block w-2 h-2 ${colors.dot} rounded-full ring-1 ring-neutral-200 dark:ring-neutral-700`}></span>
-                        {config.cropDescription}
+                        Preview shows exactly what will be generated
                     </div>
                     {config.previewSizeText && (
                         <span>{config.previewSizeText}</span>
@@ -375,7 +360,7 @@ const BackgroundCustomizer: React.FC<BackgroundCustomizerProps> = ({
                 <motion.button
                     type="button"
                     onClick={resetPosition}
-                    className={`w-full py-2 px-4 rounded-xl border border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 text-xs font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800/50 hover:border-neutral-400 dark:hover:border-neutral-500 transition-all flex items-center justify-center gap-2 group`}
+                    className="w-full py-2 px-4 rounded-xl border border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 text-xs font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800/50 hover:border-neutral-400 dark:hover:border-neutral-500 transition-all flex items-center justify-center gap-2 group"
                     whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.99 }}
                 >
@@ -388,3 +373,4 @@ const BackgroundCustomizer: React.FC<BackgroundCustomizerProps> = ({
 };
 
 export default BackgroundCustomizer;
+

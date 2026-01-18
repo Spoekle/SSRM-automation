@@ -139,12 +139,13 @@ button {
 }
 
 .btn-primary {
-  background: var(--gradient-primary);
+  background: hsl(217 91% 60%);
   color: white;
   box-shadow: 0 2px 8px hsl(var(--color-primary) / 0.3);
 }
 
 .btn-primary:hover {
+  background: hsl(217 91% 55%);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px hsl(var(--color-primary) / 0.4);
 }
@@ -175,12 +176,12 @@ button {
 }
 
 .btn-danger {
-  background: var(--gradient-danger);
+  background: hsl(0 84% 60%);
   color: white;
 }
 
 .btn-danger:hover {
-  opacity: 0.9;
+  background: hsl(0 84% 55%);
   transform: translateY(-1px);
 }
 
@@ -449,42 +450,47 @@ button {
 
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: #888 #333;
+  scrollbar-color: rgba(128, 128, 128, 0.5) transparent;
 }
 
 /* Custom Scrollbar Styling */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.05);
+  background: rgba(0, 0, 0, 0.1);
   border-radius: 10px;
   margin: 4px 0;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.3);
   border-radius: 10px;
-  transition: all 0.2s ease;
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.5);
+  background-clip: content-box;
 }
 
 /* Dark mode scrollbar */
 .dark .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.3);
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
 
 .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.5);
+  background-clip: content-box;
 }
 
 /* Make scrollbars invisible until hover */

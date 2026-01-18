@@ -2,12 +2,11 @@ import React, { FormEvent, useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaTimes, FaImage, FaCloudUploadAlt, FaList, FaCheck, FaCog, FaSync, FaSpinner } from 'react-icons/fa';
+import { FaTimes, FaImage, FaCloudUploadAlt, FaList, FaCheck, FaSync, FaSpinner } from 'react-icons/fa';
 import log from '../../../../utils/log';
 import { ipcRenderer } from '../../../../utils/tauri-api';
 import PlaylistThumbnailInfoSection from './PlaylistThumbnailInfoSection';
-import NativeFileUpload from '../../../Thumbnails/components/common/NativeFileUpload';
-import BackgroundCustomizer from '../../../../components/forms/BackgroundCustomizer';
+import { NativeFileUpload } from '../../../../components/forms';
 
 interface PlaylistThumbnailFormProps {
   setPlaylistThumbnailFormModal: (show: boolean) => void;
@@ -30,9 +29,6 @@ const PlaylistThumbnailForm: React.FC<PlaylistThumbnailFormProps> = ({
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [isOverlayVisible, setIsOverlayVisible] = useState(false);
-  const [backgroundScale, setBackgroundScale] = useState<number>(1);
-  const [backgroundX, setBackgroundX] = useState<number>(0);
-  const [backgroundY, setBackgroundY] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -45,9 +41,6 @@ const PlaylistThumbnailForm: React.FC<PlaylistThumbnailFormProps> = ({
     const generatePreview = async () => {
       if (!customBackgroundPath) {
         setPreviewSrc(null);
-        setBackgroundScale(1);
-        setBackgroundX(0);
-        setBackgroundY(0);
         setIsLoading(false);
         return;
       }
@@ -140,11 +133,7 @@ const PlaylistThumbnailForm: React.FC<PlaylistThumbnailFormProps> = ({
       setProgress('Generating thumbnail...', 70, true);
       let image;
       try {
-        image = await ipcRenderer.invoke('generate-playlist-thumbnail', backgroundImage, month, {
-          scale: backgroundScale,
-          x: backgroundX,
-          y: backgroundY
-        }) as string;
+        image = await ipcRenderer.invoke('generate-playlist-thumbnail', backgroundImage, month) as string;
       } catch (error) {
         log.error('Error generating playlist thumbnail:', error);
         createAlert('Error generating thumbnail', 'error');
@@ -168,7 +157,7 @@ const PlaylistThumbnailForm: React.FC<PlaylistThumbnailFormProps> = ({
     <AnimatePresence>
       {true && (
         <motion.div
-          className={`fixed top-17 left-0 right-0 bottom-13 z-40 rounded-br-3xl backdrop-blur-sm flex justify-center items-center ${isOverlayVisible ? "opacity-100" : "opacity-0"
+          className={`fixed top-17 left-0 right-0 bottom-13 z-40 backdrop-blur-sm flex justify-center items-center ${isOverlayVisible ? "opacity-100" : "opacity-0"
             } bg-neutral-900/30`}
           initial={{ opacity: 0 }}
           animate={{ opacity: isOverlayVisible ? 1 : 0 }}
@@ -194,7 +183,7 @@ const PlaylistThumbnailForm: React.FC<PlaylistThumbnailFormProps> = ({
                   className="text-lg font-bold flex items-center gap-2 text-neutral-800 dark:text-neutral-100"
                   whileHover={{ scale: 1.01 }}
                 >
-                  <FaImage className="text-orange-500" />
+                  <FaImage className="text-amber-500" />
                   Playlist Thumbnail Settings
                 </motion.h2>
               </div>
@@ -213,7 +202,7 @@ const PlaylistThumbnailForm: React.FC<PlaylistThumbnailFormProps> = ({
                 {/* Background Image - File upload comes first */}
                 <div className='bg-neutral-50/50 dark:bg-neutral-800/30 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700/50 shadow-sm'>
                   <h2 className='text-sm font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-4 flex items-center gap-2'>
-                    <FaCloudUploadAlt className="text-orange-500" /> Background Image
+                    <FaCloudUploadAlt className="text-amber-500" /> Background Image
                   </h2>
                   <NativeFileUpload
                     accepts="any"
@@ -227,7 +216,7 @@ const PlaylistThumbnailForm: React.FC<PlaylistThumbnailFormProps> = ({
                 {/* Playlist Details */}
                 <div className='bg-neutral-50/50 dark:bg-neutral-800/30 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700/50 shadow-sm'>
                   <h2 className='text-sm font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-4 flex items-center gap-2'>
-                    <FaList className="text-orange-500" /> Playlist Details
+                    <FaList className="text-amber-500" /> Playlist Details
                   </h2>
                   <PlaylistThumbnailInfoSection
                     month={month}
@@ -235,12 +224,12 @@ const PlaylistThumbnailForm: React.FC<PlaylistThumbnailFormProps> = ({
                   />
                 </div>
 
-                {/* Background Customizer */}
+                {/* Preview Section */}
                 {customBackgroundPath && (
                   <div className='bg-neutral-50/50 dark:bg-neutral-800/30 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700/50 shadow-sm'>
                     <div className='flex items-center justify-between mb-4 pb-2 border-b border-neutral-200 dark:border-neutral-700/50'>
                       <h2 className='text-sm font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 flex items-center gap-2'>
-                        <FaCog className="text-orange-500" /> Background Customizer
+                        <FaImage className="text-amber-500" /> Preview
                       </h2>
                       {previewSrc && previewSrc.startsWith('data:') && (
                         <button
@@ -254,19 +243,20 @@ const PlaylistThumbnailForm: React.FC<PlaylistThumbnailFormProps> = ({
                         </button>
                       )}
                     </div>
-                    <BackgroundCustomizer
-                      previewSrc={previewSrc || ''}
-                      month={month}
-                      backgroundScale={backgroundScale}
-                      setBackgroundScale={setBackgroundScale}
-                      backgroundX={backgroundX}
-                      setBackgroundX={setBackgroundX}
-                      backgroundY={backgroundY}
-                      setBackgroundY={setBackgroundY}
-                      aspectRatio="1:1"
-                      accentColor="orange"
-                      positionRange={200}
-                    />
+                    {previewSrc && (
+                      <div className="flex justify-center">
+                        <div className="relative w-48 h-48 bg-neutral-200 dark:bg-neutral-700 rounded-lg overflow-hidden shadow-inner ring-1 ring-neutral-900/5 dark:ring-white/10">
+                          <img
+                            src={previewSrc}
+                            alt="Background preview"
+                            className="absolute inset-0 w-full h-full object-cover"
+                          />
+                        </div>
+                      </div>
+                    )}
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2 text-center">
+                      Image will be auto-cropped to 1:1 square (centered)
+                    </p>
                   </div>
                 )}
               </form>
@@ -284,7 +274,7 @@ const PlaylistThumbnailForm: React.FC<PlaylistThumbnailFormProps> = ({
               <motion.button
                 type="button"
                 onClick={generateThumbnail}
-                className='bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-2.5 text-sm rounded-lg shadow-lg shadow-orange-500/20 font-semibold flex items-center gap-2'
+                className='bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 text-sm rounded-lg shadow-lg shadow-amber-500/20 font-semibold flex items-center gap-2'
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >

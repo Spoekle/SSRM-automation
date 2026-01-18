@@ -393,7 +393,7 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
     <AnimatePresence>
       {true && (
         <motion.div
-          className={`fixed top-17 left-0 right-0 bottom-13 z-40 rounded-br-3xl backdrop-blur-sm flex justify-center items-center ${isOverlayVisible ? "opacity-100" : "opacity-0"
+          className={`fixed top-17 left-0 right-0 bottom-13 z-40 backdrop-blur-sm flex justify-center items-center ${isOverlayVisible ? "opacity-100" : "opacity-0"
             } bg-neutral-900/30`}
           initial={{ opacity: 0 }}
           animate={{ opacity: isOverlayVisible ? 1 : 0 }}
@@ -718,7 +718,7 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
                   disabled={parsedReweights.filter(r => r.selected).length === 0}
                   className={`px-4 py-2 text-sm rounded-lg shadow-lg font-semibold flex items-center gap-2 ${parsedReweights.filter(r => r.selected).length === 0
                     ? 'bg-neutral-300 text-neutral-500 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-purple-500/20'
+                    : 'bg-purple-500 hover:bg-purple-600 text-white shadow-purple-500/20'
                     }`}
                   whileHover={parsedReweights.filter(r => r.selected).length > 0 ? { scale: 1.02 } : {}}
                   whileTap={parsedReweights.filter(r => r.selected).length > 0 ? { scale: 0.98 } : {}}

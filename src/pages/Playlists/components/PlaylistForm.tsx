@@ -86,7 +86,7 @@ const PlaylistForm: React.FC<PlaylistFormProps> = ({
     <AnimatePresence>
       {true && (
         <motion.div
-          className={`fixed top-17 left-0 right-0 bottom-13 z-40 rounded-br-3xl backdrop-blur-sm flex justify-center items-center ${isOverlayVisible ? "opacity-100" : "opacity-0"
+          className={`fixed top-17 left-0 right-0 bottom-13 z-40 backdrop-blur-sm flex justify-center items-center ${isOverlayVisible ? "opacity-100" : "opacity-0"
             } bg-neutral-900/30`}
           initial={{ opacity: 0 }}
           animate={{ opacity: isOverlayVisible ? 1 : 0 }}
@@ -112,7 +112,7 @@ const PlaylistForm: React.FC<PlaylistFormProps> = ({
                   className="text-lg font-bold flex items-center gap-2 text-neutral-800 dark:text-neutral-100"
                   whileHover={{ scale: 1.01 }}
                 >
-                  <FaList className="text-purple-500" />
+                  <FaList className="text-amber-500" />
                   Playlist Processor
                 </motion.h2>
               </div>
@@ -131,14 +131,14 @@ const PlaylistForm: React.FC<PlaylistFormProps> = ({
                 {/* File Upload Section */}
                 <div className='bg-neutral-50/50 dark:bg-neutral-800/30 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700/50 shadow-sm'>
                   <h2 className='text-sm font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-4 flex items-center gap-2'>
-                    <FaCloudUploadAlt className="text-purple-500" /> Upload JSON File
+                    <FaCloudUploadAlt className="text-amber-500" /> Upload JSON File
                   </h2>
                   <p className='text-sm text-neutral-600 dark:text-neutral-400 mb-4'>
                     Upload a JSON file containing map data to extract unique song hashes.
                   </p>
-                  <label className='flex items-center justify-center w-full h-24 px-4 transition bg-white/50 dark:bg-neutral-900/50 border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-xl appearance-none cursor-pointer hover:border-purple-500 dark:hover:border-purple-400 focus:outline-none'>
+                  <label className='flex items-center justify-center w-full h-24 px-4 transition bg-white/50 dark:bg-neutral-900/50 border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-xl appearance-none cursor-pointer hover:border-amber-500 dark:hover:border-amber-400 focus:outline-none'>
                     <div className="flex flex-col items-center space-y-2">
-                      <FaCloudUploadAlt className="text-purple-500 text-3xl" />
+                      <FaCloudUploadAlt className="text-amber-500 text-3xl" />
                       <span className="font-medium text-neutral-600 dark:text-neutral-300">
                         Select JSON File
                       </span>

@@ -144,7 +144,7 @@ const Thumbnails: React.FC = () => {
               whileHover={{ y: -5, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)" }}
               transition={{ type: "spring", stiffness: 400 }}
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 opacity-0 group-hover:opacity-10 dark:group-hover:opacity-20 rounded-xl transition-opacity duration-300" />
+              <div className="absolute inset-0 bg-purple-500 opacity-0 group-hover:opacity-10 dark:group-hover:opacity-20 rounded-xl transition-opacity duration-300" />
               <motion.div
                 className='flex justify-center rounded-lg shadow-inner overflow-hidden relative z-10'
                 initial={{ scale: 0.8, opacity: 0 }}

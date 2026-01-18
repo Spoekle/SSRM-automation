@@ -7,7 +7,7 @@ import log from '../../../../utils/log';
 import { ipcRenderer, nativeDialog } from '../../../../utils/tauri-api';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import MapInfoSection from './MapInfoSection';
-import NativeFileUpload from '../common/NativeFileUpload';
+import { NativeFileUpload } from '../../../../components/forms';
 import { notifyMapInfoUpdated } from '../../../../utils/mapEvents';
 import { fetchMapData } from '../../../../api/beatsaver';
 import { storage, STORAGE_KEYS } from '../../../../utils/storage';
@@ -178,7 +178,7 @@ const SSRMThumbnailForm: React.FC<ThumbnailFormProps> = ({
     <AnimatePresence>
       {true && (
         <motion.div
-          className={`fixed top-17 left-0 right-0 bottom-13 z-40 rounded-br-3xl backdrop-blur-sm flex justify-center items-center ${isOverlayVisible ? "opacity-100" : "opacity-0"
+          className={`fixed top-17 left-0 right-0 bottom-13 z-40 backdrop-blur-sm flex justify-center items-center ${isOverlayVisible ? "opacity-100" : "opacity-0"
             } bg-neutral-900/30`}
           initial={{ opacity: 0 }}
           animate={{ opacity: isOverlayVisible ? 1 : 0 }}

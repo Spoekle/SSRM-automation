@@ -57,7 +57,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ visible, progress, process, o
               </div>
               <div className="relative h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                 <motion.div
-                  className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full"
+                  className="absolute top-0 left-0 h-full bg-blue-500 rounded-full"
                   style={{ width: `${progress}%` }}
                   transition={{ type: "tween", ease: "easeInOut" }}
                 />
