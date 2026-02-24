@@ -106,7 +106,7 @@
     "electron-debug": "^3.2.0",
     "electron-log": "^4.4.8",
     "electron-updater": "^6.3.9",
-    "express": "^4.21.2",
+    "express": "^4.22.1",
     "file-saver": "^2.0.5",
     "framer-motion": "^12.5.0",
     "fs": "^0.0.1-security",
