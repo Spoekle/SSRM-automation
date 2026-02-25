@@ -193,7 +193,7 @@ export default function Footer({
                 className="z-20 relative rounded-full shadow-sm mr-3"
                 animate={{ y: [0, -3, 0] }}
                 transition={{
-                  y: { repeat: Infinity, repeatDelay: 2, duration: 1 },
+                  y: { repeat: Infinity, repeatDelay: 1.5, duration: 1 },
                 }}
               >
                 <div className="relative">
@@ -205,7 +205,7 @@ export default function Footer({
                   >
                     <button
                       type="button"
-                      className="flex items-center bg-blue-500 dark:bg-blue-600 text-[10px] font-bold uppercase tracking-wide text-white px-2.5 py-1 rounded-full hover:bg-blue-600 transition"
+                      className="flex items-center bg-blue-500 text-[10px] font-bold uppercase tracking-wide text-white px-2.5 py-1 rounded-sm hover:bg-blue-600 transition"
                     >
                       {getUpdateButtonText()}
                     </button>
