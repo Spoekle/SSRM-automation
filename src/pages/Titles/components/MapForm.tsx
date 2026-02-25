@@ -4,7 +4,7 @@ import Switch from '@mui/material/Switch';
 import axios from 'axios';
 import log from '../../../utils/log';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaTimes, FaMapMarkedAlt, FaGamepad, FaCheck, FaStar, FaSync } from 'react-icons/fa';
+import { FaTimes, FaMapMarkedAlt, FaGamepad, FaCheck, FaSync, FaDownload } from 'react-icons/fa';
 import { notifyMapInfoUpdated } from '../../../utils/mapEvents';
 
 const difficultyToAbbreviated = (difficulty: string): string => {
@@ -183,11 +183,11 @@ const MapForm: React.FC<MapFormProps> = ({
                         type="button"
                         onClick={fetchMapInfo}
                         disabled={isFetching}
-                        className="absolute right-1 bg-blue-500 text-white px-2.5 py-1 text-xs font-medium rounded-md flex items-center gap-1.5 shadow-sm hover:bg-blue-600 transition-colors"
+                        className="absolute right-3.5 bg-blue-500 text-white px-2.5 py-1 text-xs font-medium rounded-md flex items-center gap-1.5 shadow-sm hover:bg-blue-600 transition-colors"
                         whileHover={!isFetching ? { scale: 1.05 } : {}}
                         whileTap={!isFetching ? { scale: 0.95 } : {}}
                       >
-                        {isFetching ? <FaSync className="animate-spin" /> : <FaStar />}
+                        {isFetching ? <FaSync className="animate-spin" /> : <FaDownload />}
                         <span className="hidden sm:inline">{isFetching ? 'Fetching...' : 'Fetch Info'}</span>
                       </motion.button>
                     </div>
@@ -241,15 +241,13 @@ const MapForm: React.FC<MapFormProps> = ({
                         onChange={(e) => setPlayer(e.target.value)}
                         value={player}
                       >
-                        <option value="praunt">praunt</option>
+                        <option value="Praunt">Praunt</option>
                         <option value="olliemine">olliemine</option>
                         <option value="voltage">voltage</option>
                         <option value="RaccoonVR">RaccoonVR</option>
                         <option value="BigOlDumplin">BigOlDumplin</option>
                         <option value="yabje">yabje</option>
                         <option value="Mr_bjo">Mr_bjo</option>
-                        <option value="Gumball">Gumball</option>
-                        <option value="Dack">Dack</option>
                       </select>
                     </div>
                   </div>
@@ -274,7 +272,7 @@ const MapForm: React.FC<MapFormProps> = ({
                 whileTap={{ scale: 0.98 }}
               >
                 <FaCheck />
-                Update Map Info
+                Generate
               </motion.button>
             </div>
           </motion.div>

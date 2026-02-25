@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import log from '../../../../utils/log';
-import { FaStar, FaSync } from 'react-icons/fa';
+import { FaDownload, FaStar, FaSync } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import { getStarRating } from '../../../../api/scoresaber';
 import { fetchMapData } from '../../../../api/beatsaver';
 import { storage, STORAGE_KEYS } from '../../../../utils/storage';
-import { handleError } from '../../../../utils/errorHandler';
 import type { StarRatings } from '../../../../types';
 
 
@@ -78,11 +77,11 @@ const MapInfoSection: React.FC<MapInfoSectionProps> = ({
             type="button"
             onClick={fetchStarRatings}
             disabled={isFetching}
-            className="absolute right-1 bg-orange-500 text-white px-2.5 py-1 text-xs font-medium rounded-md flex items-center gap-1.5 shadow-sm hover:bg-orange-600 transition-colors"
+            className="absolute right-3.5 bg-orange-500 text-white px-2.5 py-1 text-xs font-medium rounded-md flex items-center gap-1.5 shadow-sm hover:bg-orange-600 transition-colors"
             whileHover={!isFetching ? { scale: 1.05 } : {}}
             whileTap={!isFetching ? { scale: 0.95 } : {}}
           >
-            {isFetching ? <FaSync className="animate-spin" /> : <FaStar />}
+            {isFetching ? <FaSync className="animate-spin" /> : <FaDownload />}
             <span className="hidden sm:inline">{isFetching ? 'Fetching...' : 'Fetch'}</span>
           </motion.button>
         </div>

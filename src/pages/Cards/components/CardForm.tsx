@@ -1,7 +1,7 @@
 import React, { FormEvent, ChangeEvent, useState } from 'react';
 import ReactDOM from 'react-dom';
 import Switch from '@mui/material/Switch';
-import { FaTimes, FaCloudUploadAlt, FaLayerGroup, FaStar, FaToggleOn, FaCheck, FaSync, FaSort, FaList, FaCheckSquare, FaSquare } from 'react-icons/fa';
+import { FaTimes, FaCloudUploadAlt, FaLayerGroup, FaStar, FaToggleOn, FaCheck, FaSync, FaSort, FaList, FaCheckSquare, FaSquare, FaDownload } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import log from '../../../utils/log';
 import JSZip from 'jszip';
@@ -477,12 +477,12 @@ const CardForm: React.FC<CardFormProps> = ({
                             type="button"
                             onClick={fetchStarRatings}
                             disabled={isFetching}
-                            className="absolute right-1 bg-blue-500 text-white px-3 py-1.5 text-xs font-medium rounded-md flex items-center gap-1.5 shadow-sm hover:bg-blue-600 transition-colors"
+                            className="absolute right-3.5 bg-blue-500 text-white px-3 py-1.5 text-xs font-medium rounded-md flex items-center gap-1.5 shadow-sm hover:bg-blue-600 transition-colors"
                             whileHover={!isFetching ? { scale: 1.05 } : {}}
                             whileTap={!isFetching ? { scale: 0.95 } : {}}
                           >
-                            {isFetching ? <FaSync className="animate-spin" /> : <FaStar />}
-                            <span className="hidden sm:inline">{isFetching ? 'Fetching...' : 'Fetch Ratings'}</span>
+                            {isFetching ? <FaSync className="animate-spin" /> : <FaDownload />}
+                            <span className="hidden sm:inline">{isFetching ? 'Fetching...' : 'Fetch'}</span>
                           </motion.button>
                         </div>
                         {songName && (

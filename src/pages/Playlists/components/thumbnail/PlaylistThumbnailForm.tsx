@@ -274,7 +274,7 @@ const PlaylistThumbnailForm: React.FC<PlaylistThumbnailFormProps> = ({
               <motion.button
                 type="button"
                 onClick={generateThumbnail}
-                className='bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 text-sm rounded-lg shadow-lg shadow-amber-500/20 font-semibold flex items-center gap-2'
+                className='bg-blue-500 hover:bg-blue-600 text-white px-6 py-2.5 text-sm rounded-lg shadow-lg shadow-blue-500/20 font-semibold flex items-center gap-2'
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
