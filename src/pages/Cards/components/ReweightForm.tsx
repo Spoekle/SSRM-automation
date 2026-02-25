@@ -2,9 +2,8 @@ import React, { FormEvent, ChangeEvent, useState } from 'react';
 import ReactDOM from 'react-dom';
 import JSZip from 'jszip';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaTimes, FaCloudUploadAlt, FaExchangeAlt, FaMapMarkedAlt, FaCheck, FaStar, FaSync, FaSort, FaList, FaCheckSquare, FaSquare, FaArrowUp, FaArrowDown, FaEquals } from "react-icons/fa";
+import { FaTimes, FaCloudUploadAlt, FaExchangeAlt, FaMapMarkedAlt, FaCheck, FaStar, FaSync, FaSort, FaList, FaCheckSquare, FaSquare, FaArrowUp, FaArrowDown, FaEquals, FaDownload } from "react-icons/fa";
 import log from '../../../utils/log';
-import { notifyMapInfoUpdated } from '../../../utils/mapEvents';
 import { getStarRating } from '../../../api/scoresaber';
 import { fetchMapData, fetchMapDataByHashWithRetry } from '../../../api/beatsaver';
 import { storage, STORAGE_KEYS } from '../../../utils/storage';
@@ -492,11 +491,11 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
                               type="button"
                               onClick={fetchStarRatings}
                               disabled={isFetching}
-                              className="absolute right-1 bg-purple-500 text-white px-2.5 py-1 text-xs font-medium rounded-md flex items-center gap-1.5 shadow-sm hover:bg-purple-600 transition-colors"
+                              className="absolute right-3.5 bg-purple-500 text-white px-2.5 py-1 text-xs font-medium rounded-md flex items-center gap-1.5 shadow-sm hover:bg-purple-600 transition-colors"
                               whileHover={!isFetching ? { scale: 1.05 } : {}}
                               whileTap={!isFetching ? { scale: 0.95 } : {}}
                             >
-                              {isFetching ? <FaSync className="animate-spin" /> : <FaStar />}
+                              {isFetching ? <FaSync className="animate-spin" /> : <FaDownload />}
                               <span className="hidden sm:inline">{isFetching ? 'Fetching...' : 'Fetch'}</span>
                             </motion.button>
                           </div>
