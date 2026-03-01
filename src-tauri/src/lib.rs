@@ -1,8 +1,19 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use serde::{Deserialize, Serialize};
+use std::process::Command;
 use tauri::{Emitter, Manager};
 
 mod image_gen;
+
+fn no_window_cmd(program: &str) -> Command {
+    let mut cmd = Command::new(program);
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x08000000);
+    }
+    cmd
+}
 #[derive(Serialize, Deserialize)]
 pub struct ApiCheckResult {
     available: bool,
@@ -87,8 +98,6 @@ async fn splash_complete() -> Result<bool, String> {
 // Open the bundled fonts folder in file explorer
 #[tauri::command]
 async fn open_fonts_folder(app_handle: tauri::AppHandle) -> Result<bool, String> {
-    use std::process::Command;
-
     // Get the resource directory where fonts are bundled
     let resource_path = app_handle
         .path()
@@ -105,7 +114,7 @@ async fn open_fonts_folder(app_handle: tauri::AppHandle) -> Result<bool, String>
     // Open the folder in file explorer (Windows)
     #[cfg(target_os = "windows")]
     {
-        Command::new("explorer")
+        no_window_cmd("explorer")
             .arg(fonts_path)
             .spawn()
             .map_err(|e| format!("Failed to open folder: {}", e))?;
@@ -114,7 +123,7 @@ async fn open_fonts_folder(app_handle: tauri::AppHandle) -> Result<bool, String>
     // macOS
     #[cfg(target_os = "macos")]
     {
-        Command::new("open")
+        no_window_cmd("open")
             .arg(fonts_path)
             .spawn()
             .map_err(|e| format!("Failed to open folder: {}", e))?;
@@ -123,7 +132,7 @@ async fn open_fonts_folder(app_handle: tauri::AppHandle) -> Result<bool, String>
     // Linux
     #[cfg(target_os = "linux")]
     {
-        Command::new("xdg-open")
+        no_window_cmd("xdg-open")
             .arg(fonts_path)
             .spawn()
             .map_err(|e| format!("Failed to open folder: {}", e))?;
@@ -310,9 +319,7 @@ async fn install_fonts(app_handle: tauri::AppHandle) -> Result<bool, String> {
 // Check if FFmpeg is installed
 #[tauri::command]
 async fn check_ffmpeg() -> Result<bool, String> {
-    use std::process::Command;
-
-    let result = Command::new("ffmpeg").arg("-version").output();
+    let result = no_window_cmd("ffmpeg").arg("-version").output();
 
     match result {
         Ok(output) => Ok(output.status.success()),
@@ -323,8 +330,6 @@ async fn check_ffmpeg() -> Result<bool, String> {
 // Install FFmpeg using platform-specific package manager
 #[tauri::command]
 async fn install_ffmpeg(app_handle: tauri::AppHandle) -> Result<bool, String> {
-    use std::process::Command;
-
     let _ = app_handle.emit(
         "ffmpeg-install-progress",
         "Beginning FFmpeg installation...",
@@ -338,7 +343,7 @@ async fn install_ffmpeg(app_handle: tauri::AppHandle) -> Result<bool, String> {
         );
 
         // Check if chocolatey is installed, if not install it first
-        let choco_check = Command::new("powershell")
+        let choco_check = no_window_cmd("powershell")
             .args([
                 "-NoProfile",
                 "-Command",
@@ -354,7 +359,7 @@ async fn install_ffmpeg(app_handle: tauri::AppHandle) -> Result<bool, String> {
                 "Chocolatey not found. Installing Chocolatey first...",
             );
 
-            let install_choco = Command::new("powershell")
+            let install_choco = no_window_cmd("powershell")
                 .args([
                     "-NoProfile",
                     "-ExecutionPolicy", "Bypass",
@@ -374,7 +379,7 @@ async fn install_ffmpeg(app_handle: tauri::AppHandle) -> Result<bool, String> {
             "Installing FFmpeg via Chocolatey...",
         );
 
-        let result = Command::new("powershell")
+        let result = no_window_cmd("powershell")
             .args([
                 "-NoProfile",
                 "-ExecutionPolicy", "Bypass",
@@ -402,7 +407,7 @@ async fn install_ffmpeg(app_handle: tauri::AppHandle) -> Result<bool, String> {
             "Platform: macOS. Using Homebrew...",
         );
 
-        let result = Command::new("brew").args(["install", "ffmpeg"]).output();
+        let result = no_window_cmd("brew").args(["install", "ffmpeg"]).output();
 
         match result {
             Ok(output) if output.status.success() => {
@@ -420,7 +425,7 @@ async fn install_ffmpeg(app_handle: tauri::AppHandle) -> Result<bool, String> {
     {
         let _ = app_handle.emit("ffmpeg-install-progress", "Platform: Linux. Using apt...");
 
-        let result = Command::new("bash")
+        let result = no_window_cmd("bash")
             .args([
                 "-c",
                 "sudo apt-get update && sudo apt-get install -y ffmpeg",
@@ -542,7 +547,6 @@ async fn generate_video_thumbnail(
     use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
     use std::fs;
     use std::path::{Path, PathBuf};
-    use std::process::Command;
 
     println!(
         "[Debugging IPC] Received args: video_data is_some={}, video_path={:?}",
@@ -620,7 +624,7 @@ async fn generate_video_thumbnail(
     }
 
     // Check FFmpeg exists
-    let ffmpeg_check = Command::new("ffmpeg").arg("-version").output();
+    let ffmpeg_check = no_window_cmd("ffmpeg").arg("-version").output();
 
     if ffmpeg_check.is_err() {
         if cleanup_input {
@@ -631,7 +635,7 @@ async fn generate_video_thumbnail(
 
     // Extract frame
     let timestamp_str = {
-        let probe_output = Command::new("ffprobe")
+        let probe_output = no_window_cmd("ffprobe")
             .args([
                 "-v",
                 "error",
@@ -683,7 +687,7 @@ async fn generate_video_thumbnail(
         }
     };
 
-    let result = Command::new("ffmpeg")
+    let result = no_window_cmd("ffmpeg")
         .args([
             "-y",
             "-i",
