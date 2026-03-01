@@ -46,6 +46,33 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Extract changelog
+        id: changelog
+        shell: bash
+        run: |
+          TAG="${{ github.ref_name }}"
+          # Extract the section for this version from CHANGELOG.md
+          CHANGELOG=$(awk "/^## \\[${TAG}\\]/{found=1; next} /^## \\[/{if(found) exit} found" CHANGELOG.md)
+          if [ -z "$CHANGELOG" ]; then
+            CHANGELOG="No changelog entry found for ${TAG}."
+          fi
+          # Use EOF delimiter for multiline output
+          echo "body<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Detect prerelease
+        id: prerelease
+        shell: bash
+        run: |
+          TAG="${{ github.ref_name }}"
+          if [[ "$TAG" == *"-alpha"* ]] || [[ "$TAG" == *"-beta"* ]] || [[ "$TAG" == *"-rc"* ]]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+          fi
+          echo "Tag: $TAG, Prerelease: $(grep is_prerelease $GITHUB_OUTPUT | cut -d= -f2)"
+
       - name: Generate GitHub Token
         id: generate_token
         uses: actions/create-github-app-token@v1
@@ -57,13 +84,13 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'SSRM Automation ${{ github.ref_name }}'
           releaseBody: |
             ## SSRM Automation ${{ github.ref_name }}
+
+            ${{ steps.changelog.outputs.body }}
 
             ### Installation
             Download the appropriate file for your platform:
@@ -73,5 +100,5 @@ jobs:
 
             See the [releases page](https://github.com/Spoekle/SSRM-automation/releases) for more information.
           releaseDraft: false
-          prerelease: false
+          prerelease: ${{ steps.prerelease.outputs.is_prerelease }}
           args: ${{ matrix.args }}
