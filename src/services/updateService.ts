@@ -61,6 +61,15 @@ async function getCurrentVersion(): Promise<string> {
     }
 }
 
+function normalizeVersion(version: string): string {
+    const clean = version.replace(/^v/, '');
+    const match = clean.match(/^(\d+\.\d+\.\d+)-(\d+)$/);
+    if (match) {
+        return `${match[1]}-beta.${match[2]}`;
+    }
+    return clean;
+}
+
 function getAssetMatcher(): (name: string) => boolean {
     const ua = navigator.userAgent.toLowerCase();
     if (ua.includes('win')) {
@@ -110,13 +119,16 @@ export async function checkForUpdate(): Promise<UpdateCheckResult> {
         const releaseVersion = release.tag_name.replace(/^v/, '');
         const updateIsBeta = isBetaVersion(releaseVersion);
 
+        const normalizedRelease = normalizeVersion(releaseVersion);
+        const normalizedCurrent = normalizeVersion(currentVersion);
+
         console.log(
-            `[UpdateService] Found release: ${releaseVersion} (beta: ${updateIsBeta})`
+            `[UpdateService] Found release: ${releaseVersion} (beta: ${updateIsBeta}), comparing ${normalizedCurrent} vs ${normalizedRelease}`
         );
 
-        if (compareVersions(releaseVersion, currentVersion) <= 0) {
+        if (compareVersions(normalizedRelease, normalizedCurrent) <= 0) {
             console.log(
-                `[UpdateService] Release ${releaseVersion} is not newer than current ${currentVersion}`
+                `[UpdateService] Release ${normalizedRelease} is not newer than current ${normalizedCurrent}`
             );
             return { available: false };
         }

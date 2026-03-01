@@ -7,11 +7,13 @@ export interface VersionInfo {
   prerelease: string | null;
 }
 
-/**
- * Parse a version string into its components
- */
 export const parseVersion = (version: string): VersionInfo => {
-  const cleanVersion = version.replace(/^v/, '');
+  let cleanVersion = version.replace(/^v/, '');
+  const msiMatch = cleanVersion.match(/^(\d+\.\d+\.\d+)-(\d+)$/);
+  if (msiMatch) {
+    cleanVersion = `${msiMatch[1]}-beta.${msiMatch[2]}`;
+  }
+
   const [basePart, prereleasePart] = cleanVersion.split('-');
   const versionParts = basePart.split('.').map(Number);
 
@@ -23,10 +25,6 @@ export const parseVersion = (version: string): VersionInfo => {
   };
 };
 
-/**
- * Compare base versions (major.minor.patch)
- * Returns: 1 if v1 > v2, -1 if v1 < v2, 0 if equal
- */
 export const compareBaseVersions = (v1: string | VersionInfo, v2: string | VersionInfo): number => {
   const ver1 = typeof v1 === 'string' ? parseVersion(v1) : v1;
   const ver2 = typeof v2 === 'string' ? parseVersion(v2) : v2;
@@ -43,36 +41,26 @@ export const compareBaseVersions = (v1: string | VersionInfo, v2: string | Versi
   return 0;
 };
 
-/**
- * Compare full versions including prerelease tags
- * Returns: 1 if v1 > v2, -1 if v1 < v2, 0 if equal
- */
 export const compareVersions = (v1: string, v2: string): number => {
   const ver1 = parseVersion(v1);
   const ver2 = parseVersion(v2);
 
-  // First compare base versions
   const baseComparison = compareBaseVersions(ver1, ver2);
   if (baseComparison !== 0) return baseComparison;
 
-  // If base versions are equal, compare prerelease
-  // No prerelease > any prerelease
   if (!ver1.prerelease && ver2.prerelease) return 1;
   if (ver1.prerelease && !ver2.prerelease) return -1;
   if (!ver1.prerelease && !ver2.prerelease) return 0;
 
-  // Compare prerelease versions
   const ver1PreType = ver1.prerelease?.split('.')[0] || '';
   const ver2PreType = ver2.prerelease?.split('.')[0] || '';
 
-  // rc > beta > alpha
   if (ver1PreType !== ver2PreType) {
     if (ver1PreType === 'rc' && (ver2PreType === 'beta' || ver2PreType === 'alpha')) return 1;
     if (ver1PreType === 'beta' && ver2PreType === 'alpha') return 1;
     return -1;
   }
 
-  // Same prerelease type, compare numbers
   const ver1PreNum = parseInt(ver1.prerelease?.split('.')[1] || '0', 10);
   const ver2PreNum = parseInt(ver2.prerelease?.split('.')[1] || '0', 10);
 
@@ -82,26 +70,17 @@ export const compareVersions = (v1: string, v2: string): number => {
   return 0;
 };
 
-/**
- * Helper to create consistent log messages for version comparisons
- */
 const logVersionDecision = (message: string, result: boolean, details?: string): void => {
   const status = result ? '✅ UPDATE NEEDED' : '❌ NO UPDATE';
   const detailsMsg = details ? ` (${details})` : '';
   log.info(`${status}: ${message}${detailsMsg}`);
 };
 
-/**
- * Pretty-print a version comparison for logging
- */
 const formatVersionComparison = (v1: string, v2: string, compResult: number): string => {
   const symbol = compResult > 0 ? '>' : compResult < 0 ? '<' : '=';
   return `${v1} ${symbol} ${v2}`;
 };
 
-/**
- * Check if a version is a prerelease (beta, alpha, rc)
- */
 const isPrerelease = (version: string | VersionInfo): boolean => {
   if (typeof version === 'string') {
     return version.includes('-');
@@ -109,14 +88,6 @@ const isPrerelease = (version: string | VersionInfo): boolean => {
   return !!version.prerelease;
 };
 
-/**
- * Determines the best version to update to based on current version and branch preference
- * Returns an object with:
- * - shouldUpdate: boolean - whether an update is needed
- * - updateToVersion: string | null - the version to update to, or null if no update needed
- * - useStable: boolean - whether to use the stable version
- * - reason: string - human-readable explanation for the decision
- */
 export const determineBestUpdateVersion = (
   currentVersion: string,
   latestStableVersion: string | null,
@@ -128,12 +99,10 @@ export const determineBestUpdateVersion = (
   useStable: boolean;
   reason: string;
 } => {
-  // Create a divider in logs to easily identify each check
   log.info('='.repeat(80));
   log.info(`VERSION CHECK | Current=${currentVersion} | Branch=${isDevBranch ? 'DEV' : 'STABLE'}`);
   log.info(`Available versions: Stable=${latestStableVersion || 'N/A'}, Beta=${latestBetaVersion || 'N/A'}`);
 
-  // Early returns for invalid inputs
   if (!currentVersion) {
     const reason = 'Current version is empty or undefined';
     logVersionDecision(reason, false);
@@ -146,11 +115,9 @@ export const determineBestUpdateVersion = (
     return { shouldUpdate: false, updateToVersion: null, useStable: false, reason };
   }
 
-  // Parse versions
   const current = parseVersion(currentVersion);
   const isCurrentBeta = isPrerelease(current);
 
-  // Current is STABLE, available is ONLY BETA
   if (!isCurrentBeta && latestBetaVersion && !latestStableVersion) {
     if (!isDevBranch) {
       const reason = 'User is on stable branch but only beta is available';
@@ -171,7 +138,6 @@ export const determineBestUpdateVersion = (
     };
   }
 
-  // Current is ANY, available is ONLY STABLE
   if (latestStableVersion && !latestBetaVersion) {
     const stableComparison = compareVersions(latestStableVersion, currentVersion);
     const shouldUpdate = stableComparison > 0;
@@ -186,7 +152,6 @@ export const determineBestUpdateVersion = (
     };
   }
 
-  // At this point, both stable and beta versions are available
   if (latestStableVersion && latestBetaVersion) {
     const stableVer = parseVersion(latestStableVersion);
     const betaVer = parseVersion(latestBetaVersion);
@@ -194,7 +159,6 @@ export const determineBestUpdateVersion = (
 
     log.info(`Comparing base versions: Stable ${formatVersionComparison(latestStableVersion, latestBetaVersion, stableVsBetaBase)} Beta`);
 
-    // CASE 1: Current is STABLE, user is on STABLE branch
     if (!isCurrentBeta && !isDevBranch) {
       const stableComparison = compareVersions(latestStableVersion, currentVersion);
       const shouldUpdate = stableComparison > 0;
@@ -209,14 +173,12 @@ export const determineBestUpdateVersion = (
       };
     }
 
-    // CASE 2: Current is STABLE, user is on DEV branch
     if (!isCurrentBeta && isDevBranch) {
       const stableComparison = compareVersions(latestStableVersion, currentVersion);
       const betaComparison = compareVersions(latestBetaVersion, currentVersion);
 
       log.info(`Stable user on dev branch - Stable: ${formatVersionComparison(latestStableVersion, currentVersion, stableComparison)}, Beta: ${formatVersionComparison(latestBetaVersion, currentVersion, betaComparison)}`);
 
-      // If beta has newer base version than stable, prefer beta
       if (stableVsBetaBase < 0) {
         const shouldUpdate = betaComparison > 0;
         const reason = `Stable user on dev branch - beta has newer base version (${latestBetaVersion} > ${latestStableVersion})`;
@@ -230,7 +192,6 @@ export const determineBestUpdateVersion = (
         };
       }
 
-      // If both are newer, prefer stable for reliability
       if (stableComparison > 0 && betaComparison > 0) {
         const reason = `Stable user on dev branch - both updates available, preferring stable for reliability`;
         logVersionDecision(reason, true);
@@ -243,7 +204,6 @@ export const determineBestUpdateVersion = (
         };
       }
 
-      // If only one is newer, use that one
       if (stableComparison > 0) {
         const reason = `Stable user on dev branch - only stable is newer`;
         logVersionDecision(reason, true);
@@ -273,9 +233,7 @@ export const determineBestUpdateVersion = (
       return { shouldUpdate: false, updateToVersion: null, useStable: false, reason };
     }
 
-    // CASE 3: Current is BETA
     if (isCurrentBeta) {
-      // If stable has same or higher base version than current beta, suggest stable
       const stableVsCurrentBase = compareBaseVersions(stableVer, current);
 
       log.info(`Beta user - comparing base versions: Stable ${formatVersionComparison(latestStableVersion, currentVersion, stableVsCurrentBase)} Current`);
@@ -292,7 +250,6 @@ export const determineBestUpdateVersion = (
         };
       }
 
-      // For dev branch users, check if newer beta is available
       if (isDevBranch) {
         const betaComparison = compareVersions(latestBetaVersion, currentVersion);
         const shouldUpdate = betaComparison > 0;
@@ -307,14 +264,12 @@ export const determineBestUpdateVersion = (
         };
       }
 
-      // Beta user on stable branch with no suitable update
       const reason = `Beta user - no appropriate update available`;
       logVersionDecision(reason, false);
       return { shouldUpdate: false, updateToVersion: null, useStable: false, reason };
     }
   }
 
-  // Default case - should never reach here unless there's a logic error
   const reason = `No update needed (default case)`;
   logVersionDecision(reason, false);
   return { shouldUpdate: false, updateToVersion: null, useStable: false, reason };
