@@ -87,8 +87,10 @@ export default function App() {
   };
 
   useEffect(() => {
-    // Fetch the app version from Tauri
-    getVersion().then((v) => setAppVersion(v)).catch(() => setAppVersion('0.0.0'));
+    getVersion().then((v) => {
+      const msiMatch = v.match(/^(\d+\.\d+\.\d+)-(\d+)$/);
+      setAppVersion(msiMatch ? `${msiMatch[1]}-beta.${msiMatch[2]}` : v);
+    }).catch(() => setAppVersion('0.0.0'));
 
     const checkDevBranch = localStorage.getItem('useDevelopmentBranch') === 'true';
 
