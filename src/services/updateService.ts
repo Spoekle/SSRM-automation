@@ -1,14 +1,22 @@
 /**
- * Update Service for Tauri v2
- * Uses the official @tauri-apps/plugin-updater for checking and installing updates
- * 
+ * Update Service for SSRM Automation
+ * Uses GitHub Releases API to check for updates and downloads the correct
+ * platform-specific installer from the release assets.
+ *
  * Update Channels:
- * - Stable users: only see releases without -alpha, -beta, -rc in version
- * - Dev branch users: see all releases including beta versions
+ * - Stable users: only see releases where the tag does NOT contain -alpha, -beta, -rc
+ * - Dev branch users: see all releases including pre-release versions
  */
 
-import { check, Update } from '@tauri-apps/plugin-updater';
-import { relaunch } from '@tauri-apps/plugin-process';
+import { invoke } from '@tauri-apps/api/core';
+import { getVersion } from '@tauri-apps/api/app';
+import { platform } from '@tauri-apps/plugin-os';
+import { compareVersions } from '../helpers/versionHelpers';
+
+const GITHUB_RELEASES_URL =
+    'https://api.github.com/repos/Spoekle/SSRM-automation/releases';
+
+// --- Types ---
 
 export interface UpdateProgress {
     event: 'Started' | 'Progress' | 'Finished';
@@ -17,14 +25,37 @@ export interface UpdateProgress {
     chunkLength?: number;
 }
 
+export interface ReleaseInfo {
+    version: string;
+    notes: string | null;
+    date: string | null;
+    downloadUrl: string;
+    isBetaVersion: boolean;
+}
+
 export interface UpdateCheckResult {
     available: boolean;
     version?: string;
     notes?: string;
     date?: string;
-    update?: Update;
+    release?: ReleaseInfo;
     isBetaVersion?: boolean;
 }
+
+interface GitHubAsset {
+    name: string;
+    browser_download_url: string;
+}
+
+interface GitHubRelease {
+    tag_name: string;
+    body: string | null;
+    published_at: string | null;
+    prerelease: boolean;
+    assets: GitHubAsset[];
+}
+
+// --- Helpers ---
 
 /**
  * Check if on development branch (for beta updates)
@@ -42,11 +73,10 @@ function isBetaVersion(version: string): boolean {
 }
 
 /**
- * Get the current app version from tauri config
+ * Get the current app version from Tauri
  */
 async function getCurrentVersion(): Promise<string> {
     try {
-        const { getVersion } = await import('@tauri-apps/api/app');
         return await getVersion();
     } catch {
         return '0.0.0';
@@ -54,84 +84,109 @@ async function getCurrentVersion(): Promise<string> {
 }
 
 /**
- * Compare semver versions
- * Returns true if v2 is newer than v1
+ * Determine which asset file pattern to look for based on the current OS.
+ * Returns a function that matches asset names.
  */
-function isNewerVersion(v1: string, v2: string): boolean {
-    const clean1 = v1.replace(/^v/, '');
-    const clean2 = v2.replace(/^v/, '');
-
-    const [version1, prerelease1] = clean1.split('-');
-    const [version2, prerelease2] = clean2.split('-');
-
-    const parts1 = version1.split('.').map(p => parseInt(p) || 0);
-    const parts2 = version2.split('.').map(p => parseInt(p) || 0);
-
-    // Compare major.minor.patch
-    for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
-        const p1 = parts1[i] || 0;
-        const p2 = parts2[i] || 0;
-        if (p2 > p1) return true;
-        if (p2 < p1) return false;
+function getAssetMatcher(): (name: string) => boolean {
+    const os = platform();
+    switch (os) {
+        case 'windows':
+            return (name: string) => name.endsWith('_x64-setup.exe') && !name.endsWith('.sig');
+        case 'macos':
+            return (name: string) => name.endsWith('_universal.dmg') && !name.endsWith('.sig');
+        case 'linux':
+            return (name: string) => name.endsWith('_amd64.AppImage') && !name.endsWith('.sig');
+        default:
+            console.warn(`[UpdateService] Unknown platform: ${os}, falling back to exe`);
+            return (name: string) => name.endsWith('.exe') && !name.endsWith('.sig');
     }
-
-    // Same base version - compare prerelease
-    if (!prerelease2 && prerelease1) return true; // stable > prerelease
-    if (prerelease2 && !prerelease1) return false; // prerelease < stable
-
-    // Both have prerelease, compare numbers
-    if (prerelease1 && prerelease2) {
-        const num1 = parseInt(prerelease1.replace(/\D/g, '')) || 0;
-        const num2 = parseInt(prerelease2.replace(/\D/g, '')) || 0;
-        return num2 > num1;
-    }
-
-    return false;
 }
 
 /**
- * Check if an update is available
- * - Stable users: only get updates that don't have -beta/-alpha/-rc
- * - Dev branch users: get all updates including beta versions
+ * Fetch all releases from GitHub and find the appropriate one
+ */
+async function fetchTargetRelease(useDevChannel: boolean): Promise<GitHubRelease | null> {
+    const response = await fetch(GITHUB_RELEASES_URL, {
+        headers: { Accept: 'application/vnd.github.v3+json' },
+    });
+
+    if (!response.ok) {
+        throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
+    }
+
+    const releases: GitHubRelease[] = await response.json();
+
+    if (useDevChannel) {
+        // Dev users get the very latest release (stable or beta), whichever is newest
+        return releases[0] ?? null;
+    }
+
+    // Stable users: find first release whose tag has no prerelease suffix
+    return releases.find((r) => !isBetaVersion(r.tag_name)) ?? null;
+}
+
+// --- Public API ---
+
+/**
+ * Check if an update is available.
+ * - Stable users: only get updates for non-prerelease tags
+ * - Dev branch users: get the latest release regardless
  */
 export async function checkForUpdate(): Promise<UpdateCheckResult> {
     try {
         const useDevChannel = isDevBranch();
         const currentVersion = await getCurrentVersion();
-        console.log(`[UpdateService] Current version: ${currentVersion}, Dev channel: ${useDevChannel}`);
+        console.log(
+            `[UpdateService] Current version: ${currentVersion}, Dev channel: ${useDevChannel}`
+        );
 
-        // Check for updates using the standard updater
-        const update = await check();
+        const release = await fetchTargetRelease(useDevChannel);
 
-        if (!update) {
-            console.log('[UpdateService] No update available');
+        if (!release) {
+            console.log('[UpdateService] No suitable release found');
             return { available: false };
         }
 
-        const updateVersion = update.version;
-        const updateIsBeta = isBetaVersion(updateVersion);
+        const releaseVersion = release.tag_name.replace(/^v/, '');
+        const updateIsBeta = isBetaVersion(releaseVersion);
 
-        console.log(`[UpdateService] Found update: ${updateVersion} (beta: ${updateIsBeta})`);
+        console.log(
+            `[UpdateService] Found release: ${releaseVersion} (beta: ${updateIsBeta})`
+        );
 
-        // Verify it's actually newer
-        if (!isNewerVersion(currentVersion, updateVersion)) {
-            console.log(`[UpdateService] Update ${updateVersion} is not newer than current ${currentVersion}`);
+        // Check if the release is actually newer
+        if (compareVersions(releaseVersion, currentVersion) <= 0) {
+            console.log(
+                `[UpdateService] Release ${releaseVersion} is not newer than current ${currentVersion}`
+            );
             return { available: false };
         }
 
-        // If the update is a beta version and user is NOT on dev branch, skip it
-        if (updateIsBeta && !useDevChannel) {
-            console.log(`[UpdateService] Skipping beta update ${updateVersion} for stable user`);
+        // Find the correct asset for this platform
+        const matcher = getAssetMatcher();
+        const asset = release.assets.find((a) => matcher(a.name));
+
+        if (!asset) {
+            console.warn(
+                `[UpdateService] No matching asset found for this platform in release ${releaseVersion}`
+            );
             return { available: false };
         }
 
-        // Update is available and appropriate for user's channel
+        const releaseInfo: ReleaseInfo = {
+            version: releaseVersion,
+            notes: release.body,
+            date: release.published_at,
+            downloadUrl: asset.browser_download_url,
+            isBetaVersion: updateIsBeta,
+        };
+
         return {
             available: true,
-            version: updateVersion,
-            notes: update.body ?? undefined,
-            date: update.date ?? undefined,
-            update,
+            version: releaseVersion,
+            notes: release.body ?? undefined,
+            date: release.published_at ?? undefined,
+            release: releaseInfo,
             isBetaVersion: updateIsBeta,
         };
     } catch (error) {
@@ -141,50 +196,34 @@ export async function checkForUpdate(): Promise<UpdateCheckResult> {
 }
 
 /**
- * Download and install an update, then restart the application
+ * Download and install an update.
+ * Downloads the installer via the Rust backend and then launches it.
  */
 export async function downloadAndInstallUpdate(
-    update: Update,
+    release: ReleaseInfo,
     onProgress?: (progress: UpdateProgress) => void
 ): Promise<void> {
     try {
-        let downloaded = 0;
-        let contentLength = 0;
+        onProgress?.({ event: 'Started' });
+        console.log(
+            `[UpdateService] Downloading update from: ${release.downloadUrl}`
+        );
 
-        await update.downloadAndInstall((event) => {
-            switch (event.event) {
-                case 'Started':
-                    contentLength = event.data.contentLength ?? 0;
-                    onProgress?.({
-                        event: 'Started',
-                        contentLength,
-                    });
-                    console.log(`[UpdateService] Started downloading ${contentLength} bytes`);
-                    break;
-
-                case 'Progress':
-                    downloaded += event.data.chunkLength;
-                    onProgress?.({
-                        event: 'Progress',
-                        downloaded,
-                        contentLength,
-                        chunkLength: event.data.chunkLength,
-                    });
-                    break;
-
-                case 'Finished':
-                    onProgress?.({
-                        event: 'Finished',
-                        downloaded,
-                        contentLength,
-                    });
-                    console.log('[UpdateService] Download finished');
-                    break;
-            }
+        onProgress?.({
+            event: 'Progress',
+            downloaded: 0,
+            contentLength: 100,
+            chunkLength: 50,
         });
 
-        console.log('[UpdateService] Update installed, restarting...');
-        await relaunch();
+        // Invoke the Rust command to download and run the installer
+        await invoke('download_and_run_update', {
+            downloadUrl: release.downloadUrl,
+        });
+
+        onProgress?.({ event: 'Finished', downloaded: 100, contentLength: 100 });
+        console.log('[UpdateService] Update downloaded and installer launched');
+        // The Rust side will exit the app after launching the installer
     } catch (error) {
         console.error('[UpdateService] Error installing update:', error);
         throw error;
@@ -199,8 +238,8 @@ export async function checkAndInstallUpdate(
 ): Promise<boolean> {
     const result = await checkForUpdate();
 
-    if (result.available && result.update) {
-        await downloadAndInstallUpdate(result.update, onProgress);
+    if (result.available && result.release) {
+        await downloadAndInstallUpdate(result.release, onProgress);
         return true;
     }
 
