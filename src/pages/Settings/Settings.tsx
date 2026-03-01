@@ -151,7 +151,7 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
 
         const result = await checkForUpdate();
 
-        if (!result.available || !result.update) {
+        if (!result.available || !result.release) {
           setUpdateProgress("No update available");
           setIsUpdating(false);
           return;
@@ -160,12 +160,12 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
         const betaLabel = result.isBetaVersion ? ' (beta)' : '';
         setUpdateProgress(`Downloading v${result.version}${betaLabel}...`);
 
-        await downloadAndInstallUpdate(result.update, (progress: UpdateProgress) => {
+        await downloadAndInstallUpdate(result.release, (progress: UpdateProgress) => {
           if (progress.event === 'Progress' && progress.contentLength) {
             const percent = Math.round((progress.downloaded! / progress.contentLength) * 100);
             setUpdateProgress(`Downloading... ${percent}%`);
           } else if (progress.event === 'Finished') {
-            setUpdateProgress("Installing update...");
+            setUpdateProgress("Launching installer...");
           }
         });
 
