@@ -488,6 +488,7 @@ async fn download_and_run_update(
         .map_err(|e| format!("Failed to create installer file: {}", e))?;
     file.write_all(&bytes)
         .map_err(|e| format!("Failed to write installer file: {}", e))?;
+    drop(file);
 
     println!(
         "[Update] Download complete ({} bytes). Launching installer...",
