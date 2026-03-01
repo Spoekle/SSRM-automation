@@ -446,22 +446,93 @@ async fn reinstall_ffmpeg(app_handle: tauri::AppHandle) -> Result<bool, String> 
     install_ffmpeg(app_handle).await
 }
 
-// Force check update - placeholder
+// Download an update installer from a URL and launch it
 #[tauri::command]
-async fn force_check_update() -> Result<bool, String> {
-    Ok(true)
+async fn download_and_run_update(
+    download_url: String,
+    app_handle: tauri::AppHandle,
+) -> Result<String, String> {
+    use reqwest::Client;
+    use std::io::Write;
+
+    println!("[Update] Starting download from: {}", download_url);
+
+    let file_name = download_url.split('/').last().unwrap_or("update_installer");
+
+    let temp_dir = std::env::temp_dir();
+    let installer_path = temp_dir.join(file_name);
+
+    println!("[Update] Downloading to: {:?}", installer_path);
+
+    let client = Client::new();
+    let response = client
+        .get(&download_url)
+        .header("Accept", "application/octet-stream")
+        .send()
+        .await
+        .map_err(|e| format!("Failed to download update: {}", e))?;
+
+    if !response.status().is_success() {
+        return Err(format!(
+            "Download failed with status: {}",
+            response.status()
+        ));
+    }
+
+    let bytes = response
+        .bytes()
+        .await
+        .map_err(|e| format!("Failed to read download bytes: {}", e))?;
+
+    let mut file = std::fs::File::create(&installer_path)
+        .map_err(|e| format!("Failed to create installer file: {}", e))?;
+    file.write_all(&bytes)
+        .map_err(|e| format!("Failed to write installer file: {}", e))?;
+
+    println!(
+        "[Update] Download complete ({} bytes). Launching installer...",
+        bytes.len()
+    );
+
+    #[cfg(target_os = "windows")]
+    {
+        use std::process::Command;
+        Command::new(&installer_path)
+            .spawn()
+            .map_err(|e| format!("Failed to launch installer: {}", e))?;
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        use std::process::Command;
+        Command::new("open")
+            .arg(&installer_path)
+            .spawn()
+            .map_err(|e| format!("Failed to open dmg: {}", e))?;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        use std::process::Command;
+        let mut perms = std::fs::metadata(&installer_path)
+            .map_err(|e| format!("Failed to get file metadata: {}", e))?
+            .permissions();
+        perms.set_mode(0o755);
+        std::fs::set_permissions(&installer_path, perms)
+            .map_err(|e| format!("Failed to set permissions: {}", e))?;
+
+        Command::new(&installer_path)
+            .spawn()
+            .map_err(|e| format!("Failed to launch AppImage: {}", e))?;
+    }
+
+    println!("[Update] Installer launched. Exiting application...");
+    app_handle.exit(0);
+
+    Ok("Update installer launched".to_string())
 }
 
-// Update application - placeholder
-#[tauri::command]
-async fn update_application() -> Result<String, String> {
-    Err("Update not yet implemented in Tauri version".to_string())
-}
-
-// Generate a thumbnail from video data by extracting a frame using FFmpeg
-// Accepts base64-encoded video data, saves to temp, extracts frame, returns base64 image
-// Generate a thumbnail from video data by extracting a frame using FFmpeg
-// Accepts base64-encoded video data OR a direct file path
 #[tauri::command]
 async fn generate_video_thumbnail(
     video_data: Option<String>,
@@ -515,8 +586,8 @@ async fn generate_video_thumbnail(
             .chars()
             .filter(|c| !c.is_whitespace())
             .map(|c| match c {
-                '-' => '+', // URL-safe to standard
-                '_' => '/', // URL-safe to standard
+                '-' => '+',
+                '_' => '/',
                 other => other,
             })
             .collect();
@@ -581,7 +652,7 @@ async fn generate_video_thumbnail(
                             .duration_since(UNIX_EPOCH)
                             .map(|d| d.as_nanos())
                             .unwrap_or(0);
-                        // Simple pseudo-random between 0.0 and 1.0
+
                         let random_factor = (nanos % 1000) as f64 / 1000.0;
                         let start = 10.0;
                         let end = duration - 1.0;
@@ -780,12 +851,6 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .setup(|app| {
-            #[cfg(desktop)]
-            app.handle()
-                .plugin(tauri_plugin_updater::Builder::new().build())?;
-            Ok(())
-        })
         .invoke_handler(tauri::generate_handler![
             check_scoresaber,
             fetch_scoresaber,
@@ -798,8 +863,7 @@ pub fn run() {
             check_ffmpeg,
             install_ffmpeg,
             reinstall_ffmpeg,
-            force_check_update,
-            update_application,
+            download_and_run_update,
             generate_video_thumbnail,
             read_image_as_base64,
             generate_batch_thumbnail,
