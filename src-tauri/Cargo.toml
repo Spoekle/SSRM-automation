@@ -1,6 +1,6 @@
 [package]
 name = "ssrm-automation"
-version = "3.0.0-beta.6"
+version = "3.0.0-6"
 description = "Generate Beatsaber titles and thumbnails in a single click!"
 authors = ["Spoekle"]
 edition = "2021"
