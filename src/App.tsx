@@ -1,6 +1,7 @@
 import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { getVersion } from '@tauri-apps/api/app';
 import Home from './pages/Home';
 import Titles from './pages/Titles/Titles';
 import MapCard from './pages/Cards/MapCard';
@@ -24,7 +25,7 @@ const log = {
 };
 
 export default function App() {
-  const appVersion = '3.0.0-beta.1';
+  const [appVersion, setAppVersion] = useState('');
   const [latestVersion, setLatestVersion] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isDevBranch, setIsDevBranch] = useState(() => {
@@ -86,6 +87,9 @@ export default function App() {
   };
 
   useEffect(() => {
+    // Fetch the app version from Tauri
+    getVersion().then((v) => setAppVersion(v)).catch(() => setAppVersion('0.0.0'));
+
     const checkDevBranch = localStorage.getItem('useDevelopmentBranch') === 'true';
 
     if (checkDevBranch !== isDevBranch) {

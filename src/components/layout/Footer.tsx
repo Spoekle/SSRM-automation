@@ -197,19 +197,15 @@ export default function Footer({
                 }}
               >
                 <div className="relative">
-                  <motion.div
+                  <motion.button
                     onClick={openUpdateTab}
-                    className="relative z-10 rounded-full transition rainbow-shadow"
+                    type="button"
+                    className="z-10 flex items-center bg-blue-500 text-[10px] font-bold uppercase tracking-wide text-white px-2.5 py-1 rounded-sm hover:bg-blue-600 transition"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    <button
-                      type="button"
-                      className="flex items-center bg-blue-500 text-[10px] font-bold uppercase tracking-wide text-white px-2.5 py-1 rounded-sm hover:bg-blue-600 transition"
-                    >
-                      {getUpdateButtonText()}
-                    </button>
-                  </motion.div>
+                    {getUpdateButtonText()}
+                  </motion.button>
                 </div>
               </motion.div>
             )}
