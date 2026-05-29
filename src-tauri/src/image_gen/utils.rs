@@ -75,13 +75,11 @@ const ALLER_ITALIC: &[u8] = include_bytes!("../../fonts/Aller_It.ttf");
 
 // Embed Heebo fonts
 const HEEBO_THIN: &[u8] = include_bytes!("../../fonts/Heebo/Heebo-Thin.ttf");
-const HEEBO_EXTRALIGHT: &[u8] = include_bytes!("../../fonts/Heebo/Heebo-ExtraLight.ttf");
 const HEEBO_LIGHT: &[u8] = include_bytes!("../../fonts/Heebo/Heebo-Light.ttf");
 const HEEBO_REGULAR: &[u8] = include_bytes!("../../fonts/Heebo/Heebo-Regular.ttf");
 const HEEBO_MEDIUM: &[u8] = include_bytes!("../../fonts/Heebo/Heebo-Medium.ttf");
 const HEEBO_SEMIBOLD: &[u8] = include_bytes!("../../fonts/Heebo/Heebo-SemiBold.ttf");
 const HEEBO_BOLD: &[u8] = include_bytes!("../../fonts/Heebo/Heebo-Bold.ttf");
-const HEEBO_EXTRABOLD: &[u8] = include_bytes!("../../fonts/Heebo/Heebo-ExtraBold.ttf");
 const HEEBO_BLACK: &[u8] = include_bytes!("../../fonts/Heebo/Heebo-Black.ttf");
 
 /// Load embedded font from bytes
