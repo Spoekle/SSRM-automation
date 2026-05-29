@@ -110,8 +110,6 @@ function Navbar() {
           <motion.img
             src={logo}
             className="h-8 mr-2 hover:cursor-pointer"
-            whileHover={{ rotate: 10, scale: 1.1 }}
-            transition={{ type: 'spring', stiffness: 300 }}
           />
           <motion.div
             whileHover={{ scale: 1.05 }}
