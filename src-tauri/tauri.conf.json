@@ -23,7 +23,8 @@
         "decorations": false,
         "center": true,
         "visible": true,
-        "transparent": false
+        "transparent": false,
+        "fullscreen": false
       }
     ],
     "security": {

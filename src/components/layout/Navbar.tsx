@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import {
   FaTimes,
   FaMinus,
@@ -11,6 +11,7 @@ import {
   FaExchangeAlt,
   FaImages,
   FaStar,
+  FaRegSquare,
 } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import { getCurrentWindow } from '@tauri-apps/api/window';
@@ -37,6 +38,15 @@ function Navbar() {
       await appWindow.minimize();
     } catch (error) {
       console.error('Failed to minimize window:', error);
+    }
+  };
+
+  const maximizeWindow = async () => {
+    try {
+      const appWindow = getCurrentWindow();
+      await appWindow.toggleMaximize();
+    } catch (error) {
+      console.error('Failed to maximize window:', error);
     }
   };
 
@@ -105,18 +115,20 @@ function Navbar() {
       onMouseDown={handleDragStart}
       className="glass-subtle items-center justify-center text-neutral-950 dark:text-neutral-200 shadow-md select-none cursor-default relative z-50"
     >
-      <div className="mx-4 flex text-center justify-between">
+      <div className="relative mx-4 my-2 flex text-center">
         <div className="flex text-center items-center text-lg">
-          <motion.img
-            src={logo}
-            className="h-8 mr-2 hover:cursor-pointer"
-          />
           <motion.div
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="flex items-center cursor-pointer"
+            className="flex items-center"
           >
-            <Link to="/">
+            <Link to="/" className="flex items-center cursor-pointer">
+              <img
+                src={logo}
+                className="h-10 mr-2"
+              />
+
+              <div>
               <h1 className="ml-1 text-lg text-left font-bold items-center">
                 SSRM
               </h1>
@@ -126,10 +138,11 @@ function Navbar() {
               <p className="ml-1 -mt-1 text-xs text-left font-medium text-neutral-500 dark:text-neutral-500">
                 by Spoekle
               </p>
+              </div>
             </Link>
           </motion.div>
         </div>
-        <div className="mx-2 my-2 flex text-center items-center">
+        <div className="absolute left-1/2 -translate-x-1/2 flex text-center items-center">
           <div
             className="text-center items-center text-md relative"
             ref={navRef}
@@ -155,23 +168,33 @@ function Navbar() {
               scale: 1.1,
             }}
             whileTap={{ scale: 0.9 }}
-            className="p-2 rounded-lg hover:bg-neutral-400/20 dark:hover:bg-neutral-700/50 transition-all duration-200"
+          className="px-3 py-1 rounded-md hover:bg-neutral-400/20 dark:hover:bg-neutral-700/50 transition-all duration-200"
             title="Minimize"
           >
             <FaMinus className="text-neutral-500 dark:text-neutral-400" />
           </motion.button>
+        <motion.button
+          onClick={maximizeWindow}
+          whileHover={{
+            scale: 1.1,
+          }}
+          whileTap={{ scale: 0.9 }}
+          className="px-3 py-1 rounded-md hover:bg-neutral-400/20 dark:hover:bg-neutral-700/50 transition-all duration-200"
+          title="Maximize"
+        >
+          <FaRegSquare className="text-neutral-500 dark:text-neutral-400" />
+        </motion.button>
           <motion.button
             onClick={closeWindow}
             whileHover={{
               scale: 1.1,
             }}
             whileTap={{ scale: 0.9 }}
-            className="p-2 rounded-lg hover:bg-red-500/20 transition-all duration-200 group"
+          className="px-3 py-1 rounded-md hover:bg-red-500/20 transition-all duration-200 group"
             title="Close"
           >
             <FaTimes className="text-neutral-500 dark:text-neutral-400 group-hover:text-red-500 transition-colors" />
           </motion.button>
-        </div>
       </div>
     </div>
   );
