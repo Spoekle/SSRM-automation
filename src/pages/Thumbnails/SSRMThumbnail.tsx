@@ -3,22 +3,14 @@ import { FaDownload, FaImage, FaSearch, FaStar } from 'react-icons/fa';
 import SSRMThumbnailForm from './components/ssrm/SSRMThumbnailForm';
 import ThumbnailPreview from './components/batch/ThumbnailPreview';
 import { motion } from 'framer-motion';
-import AlertSystem from '../../components/AlertSystem';
-import ProgressBar from '../../components/ProgressBar';
-import { useAlerts } from '../../utils/alertSystem';
+import { useNotifications } from '../../contexts/NotificationContext';
+import { useTasks } from '../../contexts/TaskContext';
 import { nativeDialog } from '../../utils/tauri-api';
 
 import { useMapInfo, useStarRatings } from '../../hooks';
 
-interface Progress {
-    process: string;
-    progress: number;
-    visible: boolean;
-}
-
 const SSRMThumbnail: React.FC = () => {
     const [mapId, setMapId] = useState<string>('');
-    const [progress, setProgress] = useState<Progress>({ process: "", progress: 0, visible: false });
     const { mapInfo, setMapInfo } = useMapInfo();
     const { starRatings, setStarRatings } = useStarRatings();
 
@@ -27,7 +19,9 @@ const SSRMThumbnail: React.FC = () => {
     const [thumbnailFormModal, setThumbnailFormModal] = useState<boolean>(false);
     const [thumbnailPreviewModal, setThumbnailPreviewModal] = useState<boolean>(false);
     const cancelGenerationRef = useRef(false);
-    const { alerts, createAlert } = useAlerts();
+    const { createAlert } = useNotifications();
+    const { addTask, updateTask, completeTask, cancelTask } = useTasks();
+    const taskIdRef = useRef<string | null>(null);
 
     useEffect(() => {
         const storedMapId = localStorage.getItem('mapId');
@@ -66,22 +60,29 @@ const SSRMThumbnail: React.FC = () => {
 
     const handleCancelGeneration = () => {
         cancelGenerationRef.current = true;
-        setProgress({ process: "Cancelling...", progress: 100, visible: true });
-        setTimeout(() => {
-            setProgress({ process: "", progress: 0, visible: false });
-            createAlert("Operation cancelled by user", "info");
-        }, 500);
+        if (taskIdRef.current) {
+            cancelTask(taskIdRef.current);
+            taskIdRef.current = null;
+        }
+        createAlert("Operation cancelled by user", "info");
+    };
+
+    const progressAdapter = (process: string, progress: number, visible: boolean) => {
+        if (visible && !taskIdRef.current) {
+            taskIdRef.current = addTask("Generating SSRM Thumbnail", handleCancelGeneration);
+        }
+        if (taskIdRef.current) {
+            if (!visible) {
+                completeTask(taskIdRef.current);
+                taskIdRef.current = null;
+            } else {
+                updateTask(taskIdRef.current, { process, progress });
+            }
+        }
     };
 
     return (
         <div className='w-full min-h-full relative p-4 pt-6 overflow-x-hidden custom-scrollbar'>
-            <ProgressBar
-                visible={progress.visible}
-                progress={progress.progress}
-                process={progress.process}
-                onCancel={handleCancelGeneration}
-            />
-
             <motion.div
                 className='flex flex-col items-center max-w-3xl mx-auto'
                 initial="hidden"
@@ -177,8 +178,6 @@ const SSRMThumbnail: React.FC = () => {
                 )}
             </motion.div>
 
-            <AlertSystem alerts={alerts} position="top-right" />
-
             {thumbnailFormModal && (
                 <SSRMThumbnailForm
                     mapId={mapId}
@@ -191,7 +190,7 @@ const SSRMThumbnail: React.FC = () => {
                     chosenDiff={chosenDiff}
                     setChosenDiff={setChosenDiff}
                     createAlert={createAlert}
-                    progress={(process: string, progress: number, visible: boolean) => setProgress({ process, progress, visible })}
+                    progress={progressAdapter}
                     cancelGenerationRef={cancelGenerationRef}
                 />
             )}
