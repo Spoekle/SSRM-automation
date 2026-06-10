@@ -1,6 +1,6 @@
 import React, { FormEvent, ChangeEvent, useState } from 'react';
 import ReactDOM from 'react-dom';
-import Switch from '@mui/material/Switch';
+import Switch from '../../../components/ui/Switch';
 import { FaTimes, FaCloudUploadAlt, FaLayerGroup, FaStar, FaToggleOn, FaCheck, FaSync, FaSort, FaList, FaCheckSquare, FaSquare, FaDownload } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import log from '../../../utils/log';

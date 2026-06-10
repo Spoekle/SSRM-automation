@@ -1,6 +1,5 @@
 import React, { FormEvent, useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
-import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes, FaImage, FaCloudUploadAlt, FaList, FaCheck, FaSync, FaSpinner } from 'react-icons/fa';
 import log from '../../../../utils/log';

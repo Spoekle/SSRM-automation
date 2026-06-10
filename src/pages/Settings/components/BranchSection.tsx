@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import Switch from '@mui/material/Switch';
+import Switch from '../../../components/ui/Switch';
 
 interface BranchSectionProps {
     isDevMode: boolean;

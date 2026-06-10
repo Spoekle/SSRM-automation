@@ -6,3 +6,4 @@ export { Card } from './Card';
 export { Input } from './Input';
 export { Badge } from './Badge';
 export { Skeleton, SkeletonCard, SkeletonListItem } from './Skeleton';
+export { Switch } from './Switch';
