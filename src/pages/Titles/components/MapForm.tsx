@@ -1,11 +1,10 @@
 import React, { FormEvent, useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
-import Switch from '@mui/material/Switch';
-import axios from 'axios';
 import log from '../../../utils/log';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes, FaMapMarkedAlt, FaGamepad, FaCheck, FaSync, FaDownload } from 'react-icons/fa';
 import { notifyMapInfoUpdated } from '../../../utils/mapEvents';
+import Switch from '../../../components/ui/Switch';
 
 const difficultyToAbbreviated = (difficulty: string): string => {
   switch (difficulty) {
@@ -81,8 +80,11 @@ const MapForm: React.FC<MapFormProps> = ({
   const getMapInfo = async (event: FormEvent) => {
     event.preventDefault();
     try {
-      const response = await axios.get(`https://api.beatsaver.com/maps/id/${mapId}`);
-      const data = response.data;
+      const response = await fetch(`https://api.beatsaver.com/maps/id/${mapId}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
       setMapInfo(data);
       localStorage.setItem('mapId', `${mapId}`);
       localStorage.setItem('mapInfo', JSON.stringify(data));
@@ -104,8 +106,11 @@ const MapForm: React.FC<MapFormProps> = ({
 
     setIsFetching(true);
     try {
-      const response = await axios.get(`https://api.beatsaver.com/maps/id/${mapId}`);
-      const data = response.data;
+      const response = await fetch(`https://api.beatsaver.com/maps/id/${mapId}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
       setSongName(data.metadata.songName);
       if (createAlert) createAlert("Map info loaded!", "success");
     } catch (error) {
@@ -205,6 +210,7 @@ const MapForm: React.FC<MapFormProps> = ({
                   <div className='flex items-center mt-2'>
                     <label className='text-xs mr-3 text-neutral-700 dark:text-neutral-200 font-medium'>Use Subname:</label>
                     <Switch checked={useSubname} onChange={handleSwitch} size="small" />
+
                   </div>
                 </div>
 
