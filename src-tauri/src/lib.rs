@@ -20,11 +20,34 @@ pub struct ApiCheckResult {
     message: String,
 }
 
+#[derive(Deserialize)]
+struct ScoreSaberChecks {
+    database: String,
+    redis: String,
+}
+
+#[derive(Deserialize)]
+struct ScoreSaberHealthResponse {
+    status: String,
+    checks: ScoreSaberChecks,
+}
+
 // Check if ScoreSaber API is available
 #[tauri::command]
 async fn check_scoresaber() -> Result<bool, String> {
-    match reqwest::get("https://scoresaber.com/api/").await {
-        Ok(response) => Ok(response.status().is_success()),
+    match reqwest::get("https://scoresaber.com/api/v2/health").await {
+        Ok(response) => {
+            if response.status().is_success() {
+                match response.json::<ScoreSaberHealthResponse>().await {
+                    Ok(health) => Ok(health.status == "ok"
+                        && health.checks.database == "ok"
+                        && health.checks.redis == "ok"),
+                    Err(_) => Ok(false),
+                }
+            } else {
+                Ok(false)
+            }
+        }
         Err(_) => Ok(false),
     }
 }
