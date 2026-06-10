@@ -17,6 +17,8 @@ import { motion } from 'framer-motion';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import logo from '../../../assets/icons/icon.png';
 import DropdownMenu from '../ui/DropdownMenu';
+import NotificationDropdown from './NotificationDropdown';
+import TaskDropdown from './TaskDropdown';
 
 function Navbar() {
   const navRef = useRef<HTMLDivElement>(null);
@@ -129,15 +131,15 @@ function Navbar() {
               />
 
               <div>
-              <h1 className="ml-1 text-lg text-left font-bold items-center">
-                SSRM
-              </h1>
-              <p className="ml-1 -mt-2 text-sm text-left font-semibold text-neutral-600 dark:text-neutral-400">
-                Automation
-              </p>
-              <p className="ml-1 -mt-1 text-xs text-left font-medium text-neutral-500 dark:text-neutral-500">
-                by Spoekle
-              </p>
+                <h1 className="ml-1 text-lg text-left font-bold items-center">
+                  SSRM
+                </h1>
+                <p className="ml-1 -mt-2 text-sm text-left font-semibold text-neutral-600 dark:text-neutral-400">
+                  Automation
+                </p>
+                <p className="ml-1 -mt-1 text-xs text-left font-medium text-neutral-500 dark:text-neutral-500">
+                  by Spoekle
+                </p>
               </div>
             </Link>
           </motion.div>
@@ -161,18 +163,23 @@ function Navbar() {
             </div>
           </div>
         </div>
-        <div className="text-center items-center text-lg flex space-x-1">
-          <motion.button
-            onClick={minimizeWindow}
-            whileHover={{
-              scale: 1.1,
-            }}
-            whileTap={{ scale: 0.9 }}
+        <div className="absolute right-0 -bottom-2 flex space-x-2 text-center items-center bg-neutral-200/80 dark:bg-neutral-800/80 backdrop-blur-sm rounded-t-lg px-1 py-0.5 shadow-inner border border-neutral-300/50 dark:border-neutral-700/50">
+          <TaskDropdown />
+          <NotificationDropdown />
+        </div>
+      </div>
+      <div className="absolute top-0 right-0 text-center items-center text-lg flex space-x-1">
+        <motion.button
+          onClick={minimizeWindow}
+          whileHover={{
+            scale: 1.1,
+          }}
+          whileTap={{ scale: 0.9 }}
           className="px-3 py-1 rounded-md hover:bg-neutral-400/20 dark:hover:bg-neutral-700/50 transition-all duration-200"
-            title="Minimize"
-          >
-            <FaMinus className="text-neutral-500 dark:text-neutral-400" />
-          </motion.button>
+          title="Minimize"
+        >
+          <FaMinus className="text-neutral-500 dark:text-neutral-400" />
+        </motion.button>
         <motion.button
           onClick={maximizeWindow}
           whileHover={{
@@ -184,17 +191,17 @@ function Navbar() {
         >
           <FaRegSquare className="text-neutral-500 dark:text-neutral-400" />
         </motion.button>
-          <motion.button
-            onClick={closeWindow}
-            whileHover={{
-              scale: 1.1,
-            }}
-            whileTap={{ scale: 0.9 }}
+        <motion.button
+          onClick={closeWindow}
+          whileHover={{
+            scale: 1.1,
+          }}
+          whileTap={{ scale: 0.9 }}
           className="px-3 py-1 rounded-md hover:bg-red-500/20 transition-all duration-200 group"
-            title="Close"
-          >
-            <FaTimes className="text-neutral-500 dark:text-neutral-400 group-hover:text-red-500 transition-colors" />
-          </motion.button>
+          title="Close"
+        >
+          <FaTimes className="text-neutral-500 dark:text-neutral-400 group-hover:text-red-500 transition-colors" />
+        </motion.button>
       </div>
     </div>
   );

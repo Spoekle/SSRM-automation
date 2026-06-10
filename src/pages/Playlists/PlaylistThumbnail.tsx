@@ -1,24 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { FaImage, FaDownload } from 'react-icons/fa';
 import PlaylistThumbnailForm from './components/thumbnail/PlaylistThumbnailForm';
 import { motion } from 'framer-motion';
-import AlertSystem from '../../components/AlertSystem';
-import ProgressBar from '../../components/ProgressBar';
-import { useAlerts } from '../../utils/alertSystem';
+import { useNotifications } from '../../contexts/NotificationContext';
+import { useTasks } from '../../contexts/TaskContext';
 import { nativeDialog } from '../../utils/tauri-api';
 
-interface Progress {
-    process: string;
-    progress: number;
-    visible: boolean;
-}
-
 const PlaylistThumbnail: React.FC = () => {
-    const [progress, setProgress] = useState<Progress>({ process: "", progress: 0, visible: false });
     const [playlistThumbnailFormModal, setPlaylistThumbnailFormModal] = useState<boolean>(false);
     const [chosenMonth, setChosenMonth] = useState<string>('');
     const [imageSrc, setImageSrc] = useState<string>('');
-    const { alerts, createAlert } = useAlerts();
+    const { createAlert } = useNotifications();
+    const { addTask, updateTask, completeTask, cancelTask } = useTasks();
+    const taskIdRef = useRef<string | null>(null);
 
     const fadeIn = {
         hidden: { opacity: 0, y: 20 },
@@ -34,22 +28,29 @@ const PlaylistThumbnail: React.FC = () => {
     };
 
     const handleCancelOperation = () => {
-        setProgress({ process: "Cancelling...", progress: 100, visible: true });
-        setTimeout(() => {
-            setProgress({ process: "", progress: 0, visible: false });
-            createAlert("Operation cancelled by user", "info");
-        }, 500);
+        if (taskIdRef.current) {
+            cancelTask(taskIdRef.current);
+            taskIdRef.current = null;
+        }
+        createAlert("Operation cancelled by user", "info");
+    };
+
+    const progressAdapter = (process: string, progress: number, visible: boolean) => {
+        if (visible && !taskIdRef.current) {
+            taskIdRef.current = addTask("Generating Playlist Thumbnail", handleCancelOperation);
+        }
+        if (taskIdRef.current) {
+            if (!visible) {
+                completeTask(taskIdRef.current);
+                taskIdRef.current = null;
+            } else {
+                updateTask(taskIdRef.current, { process, progress });
+            }
+        }
     };
 
     return (
         <div className='w-full min-h-full relative p-4 pt-6 overflow-x-hidden custom-scrollbar'>
-            <ProgressBar
-                visible={progress.visible}
-                progress={progress.progress}
-                process={progress.process}
-                onCancel={handleCancelOperation}
-            />
-
             <motion.div
                 className='flex flex-col items-center max-w-3xl mx-auto'
                 initial="hidden"
@@ -126,8 +127,6 @@ const PlaylistThumbnail: React.FC = () => {
                 )}
             </motion.div>
 
-            <AlertSystem alerts={alerts} position="top-right" />
-
             {playlistThumbnailFormModal && (
                 <PlaylistThumbnailForm
                     setPlaylistThumbnailFormModal={setPlaylistThumbnailFormModal}
@@ -135,7 +134,7 @@ const PlaylistThumbnail: React.FC = () => {
                     setMonth={setChosenMonth}
                     setImageSrc={setImageSrc}
                     createAlert={createAlert}
-                    progress={(process: string, progress: number, visible: boolean) => setProgress({ process, progress, visible })}
+                    progress={progressAdapter}
                 />
             )}
         </div>

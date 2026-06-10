@@ -3,22 +3,16 @@ import { FaList, FaCloudUploadAlt, FaCopy } from 'react-icons/fa';
 import log from '../../utils/log';
 import PlaylistForm from './components/PlaylistForm';
 import { motion } from 'framer-motion';
-import AlertSystem from '../../components/AlertSystem';
-import ProgressBar from '../../components/ProgressBar';
-import { useAlerts } from '../../utils/alertSystem';
-
-interface Progress {
-    process: string;
-    progress: number;
-    visible: boolean;
-}
+import { useNotifications } from '../../contexts/NotificationContext';
+import { useTasks } from '../../contexts/TaskContext';
 
 const Playlist: React.FC = () => {
-    const [progress, setProgress] = useState<Progress>({ process: "", progress: 0, visible: false });
     const [playlistFormModal, setPlaylistFormModal] = useState<boolean>(false);
     const [songHashes, setSongHashes] = useState<string[]>([]);
     const [outputText, setOutputText] = useState<string>('');
-    const { alerts, createAlert } = useAlerts();
+    const { createAlert } = useNotifications();
+    const { addTask, updateTask, completeTask, cancelTask } = useTasks();
+    const taskIdRef = React.useRef<string | null>(null);
 
     const fadeIn = {
         hidden: { opacity: 0, y: 20 },
@@ -34,11 +28,25 @@ const Playlist: React.FC = () => {
     };
 
     const handleCancelOperation = () => {
-        setProgress({ process: "Cancelling...", progress: 100, visible: true });
-        setTimeout(() => {
-            setProgress({ process: "", progress: 0, visible: false });
-            createAlert("Operation cancelled by user", "info");
-        }, 500);
+        if (taskIdRef.current) {
+            cancelTask(taskIdRef.current);
+            taskIdRef.current = null;
+        }
+        createAlert("Operation cancelled by user", "info");
+    };
+
+    const progressAdapter = (process: string, progress: number, visible: boolean) => {
+        if (visible && !taskIdRef.current) {
+            taskIdRef.current = addTask("Processing Playlist", handleCancelOperation);
+        }
+        if (taskIdRef.current) {
+            if (!visible) {
+                completeTask(taskIdRef.current);
+                taskIdRef.current = null;
+            } else {
+                updateTask(taskIdRef.current, { process, progress });
+            }
+        }
     };
 
     const copyToClipboard = async () => {
@@ -59,13 +67,6 @@ const Playlist: React.FC = () => {
 
     return (
         <div className='w-full min-h-full relative p-4 pt-6 overflow-x-hidden custom-scrollbar'>
-            <ProgressBar
-                visible={progress.visible}
-                progress={progress.progress}
-                process={progress.process}
-                onCancel={handleCancelOperation}
-            />
-
             <motion.div
                 className='flex flex-col items-center max-w-3xl mx-auto'
                 initial="hidden"
@@ -139,13 +140,11 @@ const Playlist: React.FC = () => {
                 )}
             </motion.div>
 
-            <AlertSystem alerts={alerts} position="top-right" />
-
             {playlistFormModal && (
                 <PlaylistForm
                     setPlaylistFormModal={setPlaylistFormModal}
                     createAlert={createAlert}
-                    progress={(process: string, progress: number, visible: boolean) => setProgress({ process, progress, visible })}
+                    progress={progressAdapter}
                     onProcessComplete={handleProcessComplete}
                 />
             )}

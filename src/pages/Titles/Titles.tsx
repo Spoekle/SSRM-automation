@@ -2,8 +2,7 @@ import MapForm from './components/MapForm';
 import React, { useState, useEffect } from 'react';
 import log from '../../utils/log';
 import { motion } from 'framer-motion';
-import AlertSystem from '../../components/AlertSystem';
-import { useAlerts } from '../../utils/alertSystem';
+import { useNotifications } from '../../contexts/NotificationContext';
 import { FaFileAlt, FaCopy, FaEdit } from 'react-icons/fa';
 
 import { useMapInfo } from '../../hooks';
@@ -33,7 +32,7 @@ const Titles: React.FC = () => {
   const [mapFormModal, setMapFormModal] = useState<boolean>(false);
   const [useSubname, setUseSubname] = useState<boolean>(false);
 
-  const { alerts, createAlert } = useAlerts();
+  const { createAlert } = useNotifications();
 
   useEffect(() => {
     const storedMapId = localStorage.getItem('mapId');
@@ -176,8 +175,6 @@ const Titles: React.FC = () => {
           </motion.div>
         )}
       </motion.div>
-
-      <AlertSystem alerts={alerts} position="top-right" />
 
       {mapFormModal && (
         <MapForm
