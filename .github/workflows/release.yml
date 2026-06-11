@@ -16,7 +16,7 @@ jobs:
             echo "::error::PRs to main are only allowed from the dev branch. Got: ${{ github.head_ref }}"
             exit 1
           fi
-          echo "✅ PR from dev to main — allowed."
+          echo "PR from dev to main — allowed."
   build:
     # Skip if the PR validation gate failed (only applies to PRs targeting main)
     needs: [validate-pr]
@@ -46,18 +46,18 @@ jobs:
           # Read version from package.json (single source of truth)
           VERSION=$(jq -r '.version' package.json)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "📦 Package version: $VERSION"
+          echo "Package version: $VERSION"
           # Convert to MSI-compatible format for Tauri/Cargo
           # "3.0.0-beta.8" → "3.0.0-8", "3.0.0" → "3.0.0"
           TAURI_VERSION=$(echo "$VERSION" | sed -E 's/-[a-zA-Z]+\./\-/')
           echo "tauri_version=$TAURI_VERSION" >> $GITHUB_OUTPUT
-          echo "🔧 Tauri/Cargo version: $TAURI_VERSION"
+          echo "Tauri/Cargo version: $TAURI_VERSION"
           # Update tauri.conf.json
           jq --arg v "$TAURI_VERSION" '.version = $v' src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
-          echo "✅ Updated tauri.conf.json"
+          echo "Updated tauri.conf.json"
           # Update Cargo.toml
-          sed -i "s/^version = .*/version = \"$TAURI_VERSION\"/" src-tauri/Cargo.toml
-          echo "✅ Updated Cargo.toml"
+          sed -i.bak "s/^version = .*/version = \"$TAURI_VERSION\"/" src-tauri/Cargo.toml && rm -f src-tauri/Cargo.toml.bak
+          echo "Updated Cargo.toml"
       - name: Determine release type
         id: release_type
         shell: bash
@@ -67,15 +67,15 @@ jobs:
           if [[ "$EVENT" == "pull_request" ]]; then
             echo "is_release=false" >> $GITHUB_OUTPUT
             echo "prerelease=false" >> $GITHUB_OUTPUT
-            echo "📋 PR build — no release will be created"
+            echo "PR build — no release will be created"
           elif [[ "$REF" == "refs/heads/main" ]]; then
             echo "is_release=true" >> $GITHUB_OUTPUT
             echo "prerelease=false" >> $GITHUB_OUTPUT
-            echo "🚀 Stable release (main branch push)"
+            echo "Stable release (main branch push)"
           elif [[ "$REF" == "refs/heads/dev" ]]; then
             echo "is_release=true" >> $GITHUB_OUTPUT
             echo "prerelease=true" >> $GITHUB_OUTPUT
-            echo "🧪 Pre-release (dev branch push)"
+            echo "Pre-release (dev branch push)"
           fi
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -134,4 +134,4 @@ jobs:
             echo "::error::Build failed or was cancelled"
             exit 1
           fi
-          echo "✅ All platform builds passed"
+          echo "All platform builds passed"
