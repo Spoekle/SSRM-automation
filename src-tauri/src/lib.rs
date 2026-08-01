@@ -6,7 +6,7 @@ use tauri::{Emitter, Manager};
 mod image_gen;
 
 fn no_window_cmd(program: &str) -> Command {
-    let mut cmd = Command::new(program);
+    let cmd = Command::new(program);
     #[cfg(target_os = "windows")]
     {
         use std::os::windows::process::CommandExt;
@@ -69,6 +69,26 @@ async fn fetch_scoresaber(hash: String, difficulty: String) -> Result<serde_json
                     .map_err(|e| format!("Failed to parse response: {}", e))
             } else if response.status().as_u16() == 404 {
                 Err("ScoreSaber data not found, difficulty may not exist".to_string())
+            } else {
+                Err(format!("API error: {}", response.status()))
+            }
+        }
+        Err(e) => Err(format!("Request failed: {}", e)),
+    }
+}
+
+// Fetch ScoreSaber map data by hash
+#[tauri::command]
+async fn fetch_scoresaber_map_by_hash(hash: String) -> Result<serde_json::Value, String> {
+    let url = format!("https://scoresaber.com/api/v2/maps/hash/{}", hash);
+
+    match reqwest::get(&url).await {
+        Ok(response) => {
+            if response.status().is_success() {
+                response
+                    .json::<serde_json::Value>()
+                    .await
+                    .map_err(|e| format!("Failed to parse response: {}", e))
             } else {
                 Err(format!("API error: {}", response.status()))
             }
@@ -882,6 +902,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             check_scoresaber,
             fetch_scoresaber,
+            fetch_scoresaber_map_by_hash,
             check_beatsaver,
             fetch_beatsaver,
             load_fonts,

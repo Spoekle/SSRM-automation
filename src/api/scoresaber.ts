@@ -90,3 +90,50 @@ export async function getStarRatingForDifficulty(
   }
   return '';
 }
+
+/**
+ * Fetch full ScoreSaber leaderboard info object for a hash and difficulty
+ */
+export async function fetchScoreSaberLeaderboardInfo(
+  hash: string,
+  difficulty: string | number
+): Promise<any | null> {
+  const diffStr = difficulty.toString();
+  try {
+    const data = await invoke<any>('fetch_scoresaber', { hash, difficulty: diffStr });
+    if (data) return data;
+  } catch {
+    try {
+      const response = await fetch(
+        `https://scoresaber.com/api/leaderboard/by-hash/${hash}/info?difficulty=${diffStr}`
+      );
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (e) {
+      log.error(`Error fetching ScoreSaber leaderboard info for ${hash}/${diffStr}:`, e);
+    }
+  }
+  return null;
+}
+
+/**
+ * Fetch full ScoreSaber map object by hash (/api/v2/maps/hash/{hash})
+ */
+export async function fetchScoreSaberMapByHash(hash: string): Promise<any | null> {
+  try {
+    const data = await invoke<any>('fetch_scoresaber_map_by_hash', { hash });
+    if (data) return data;
+  } catch {
+    try {
+      const response = await fetch(`https://scoresaber.com/api/v2/maps/hash/${hash}`);
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (e) {
+      log.error(`Error fetching ScoreSaber map for hash ${hash}:`, e);
+    }
+  }
+  return null;
+}
+
