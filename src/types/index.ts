@@ -79,6 +79,34 @@ export interface ReweightJson {
   new_stars: number;
 }
 
+export interface ParsedReweightData {
+  songHash: string;
+  songName: string;
+  songSubName: string;
+  levelAuthorName: string;
+  difficulty: number;
+  difficultyName: string;
+  oldStars: number;
+  newStars: number;
+  change: number;
+  changeType: 'buff' | 'nerf' | 'same';
+  id?: number;
+  selected?: boolean;
+}
+
+export interface ParsedQualifiedData {
+  id?: number;
+  songHash: string;
+  songName: string;
+  songSubName: string;
+  levelAuthorName: string;
+  difficulty: number;
+  difficultyName: string;
+  stars: number;
+  qualifiedDate?: string;
+  selected?: boolean;
+}
+
 // Alert types
 export type AlertType = 'success' | 'error' | 'alert' | 'info';
 
