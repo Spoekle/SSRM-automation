@@ -3940,7 +3940,7 @@ dependencies = [
 
 [[package]]
 name = "ssrm-automation"
-version = "3.0.0-8"
+version = "3.1.0-1"
 dependencies = [
  "base64 0.21.7",
  "image",
