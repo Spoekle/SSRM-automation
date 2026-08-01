@@ -77,6 +77,26 @@ async fn fetch_scoresaber(hash: String, difficulty: String) -> Result<serde_json
     }
 }
 
+// Fetch ScoreSaber map data by hash
+#[tauri::command]
+async fn fetch_scoresaber_map_by_hash(hash: String) -> Result<serde_json::Value, String> {
+    let url = format!("https://scoresaber.com/api/v2/maps/hash/{}", hash);
+
+    match reqwest::get(&url).await {
+        Ok(response) => {
+            if response.status().is_success() {
+                response
+                    .json::<serde_json::Value>()
+                    .await
+                    .map_err(|e| format!("Failed to parse response: {}", e))
+            } else {
+                Err(format!("API error: {}", response.status()))
+            }
+        }
+        Err(e) => Err(format!("Request failed: {}", e)),
+    }
+}
+
 // Check if BeatSaver API is available
 #[tauri::command]
 async fn check_beatsaver() -> Result<bool, String> {
@@ -882,6 +902,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             check_scoresaber,
             fetch_scoresaber,
+            fetch_scoresaber_map_by_hash,
             check_beatsaver,
             fetch_beatsaver,
             load_fonts,
