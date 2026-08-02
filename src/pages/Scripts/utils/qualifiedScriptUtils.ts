@@ -1,5 +1,5 @@
 import type { ParsedQualifiedData } from '../../../types';
-import { fetchScoreSaberMapByHash } from '../../../api/scoresaber';
+import { fetchQualifiedLeaderboards } from '../../../api/scoresaber';
 import { getDifficultyName, getDiffLabel, formatStars } from './reweightScriptUtils';
 
 export { getDifficultyName, getDiffLabel, formatStars };
@@ -57,76 +57,114 @@ export const sortByQualifiedDate = (
   });
 };
 
-const extractQualifiedDateFromMapData = (mapData: any, targetDifficulty?: number): string | undefined => {
-  if (!mapData) return undefined;
+export const deduplicateMaps = (maps: ParsedQualifiedData[]): ParsedQualifiedData[] => {
+  const mapDict = new Map<string, ParsedQualifiedData>();
 
-  const leaderboards = Array.isArray(mapData.leaderboards) ? mapData.leaderboards : [];
+  for (const m of sortByQualifiedDate(maps, true)) {
+    const key = (m.songHash || m.songName).toUpperCase();
+    const existing = mapDict.get(key);
 
-  let targetLb = leaderboards.find((lb: any) => lb.difficulty === targetDifficulty);
-
-  if (!targetLb) {
-    targetLb = leaderboards[0];
-  }
-
-  if (targetLb) {
-    const dateStr =
-      targetLb.realm?.qualifiedAt ||
-      targetLb.qualifiedAt ||
-      targetLb.realm?.rankedAt ||
-      targetLb.rankedAt ||
-      targetLb.createdAt;
-    if (dateStr) return dateStr;
-  }
-
-  for (const lb of leaderboards) {
-    const d = lb.realm?.qualifiedAt || lb.qualifiedAt || lb.realm?.rankedAt || lb.rankedAt;
-    if (d) return d;
-  }
-
-  return mapData.createdAt || undefined;
-};
-
-export const fetchQualifiedDatesFromScoreSaber = async (
-  maps: ParsedQualifiedData[],
-  onProgress?: (current: number, total: number) => void
-): Promise<ParsedQualifiedData[]> => {
-  const mapDataCache = new Map<string, any>();
-  const updatedMaps: ParsedQualifiedData[] = [];
-  const total = maps.length;
-
-  for (let i = 0; i < maps.length; i++) {
-    const map = maps[i];
-    if (onProgress) {
-      onProgress(i + 1, total);
-    }
-
-    const hash = map.songHash?.trim().toUpperCase();
-
-    if (hash) {
-      try {
-        let mapData = mapDataCache.get(hash);
-        if (!mapData) {
-          mapData = await fetchScoreSaberMapByHash(hash);
-          if (mapData) {
-            mapDataCache.set(hash, mapData);
-          }
-        }
-
-        if (mapData) {
-          const dateStr = extractQualifiedDateFromMapData(mapData, map.difficulty);
-          updatedMaps.push({
-            ...map,
-            qualifiedDate: dateStr || map.qualifiedDate,
-          });
-          continue;
-        }
-      } catch (e) {
-        console.error(`Failed to fetch ScoreSaber map data for hash ${hash} (${map.songName}):`, e);
+    if (!existing) {
+      mapDict.set(key, { ...m });
+    } else {
+      if (m.stars > existing.stars) {
+        existing.stars = m.stars;
+        existing.difficulty = m.difficulty;
+        existing.difficultyName = m.difficultyName;
+      }
+      if (!existing.qualifiedDate && m.qualifiedDate) {
+        existing.qualifiedDate = m.qualifiedDate;
       }
     }
-
-    updatedMaps.push(map);
   }
 
-  return sortByQualifiedDate(updatedMaps, true);
+  return sortByQualifiedDate(Array.from(mapDict.values()), true);
+};
+
+export const parseScoreSaberQualifiedLeaderboards = (leaderboards: any[]): ParsedQualifiedData[] => {
+  if (!Array.isArray(leaderboards)) return [];
+
+  return leaderboards.map(item => {
+    const diffNum = typeof item.difficulty === 'object' ? item.difficulty.difficulty : (item.difficulty ?? 0);
+    const dateStr = item.qualifiedDate || item.createdDate || item.rankedDate;
+
+    return {
+      id: item.id,
+      songHash: item.songHash || '',
+      songName: item.songName || 'Unknown Song',
+      songSubName: item.songSubName || '',
+      levelAuthorName: item.levelAuthorName || 'Unknown Author',
+      difficulty: diffNum,
+      difficultyName: getDifficultyName(diffNum),
+      stars: item.stars || 0,
+      qualifiedDate: dateStr,
+      selected: false,
+    };
+  });
+};
+
+export const fetchAllScoreSaberQualifiedMaps = async (
+  onProgress?: (page: number, totalPages: number) => void
+): Promise<ParsedQualifiedData[]> => {
+  const allLeaderboards: any[] = [];
+  let page = 1;
+  let totalPages = 1;
+
+  while (page <= totalPages) {
+    if (onProgress) onProgress(page, totalPages);
+    const data = await fetchQualifiedLeaderboards(page);
+
+    if (!data || !Array.isArray(data.leaderboards) || data.leaderboards.length === 0) {
+      break;
+    }
+
+    allLeaderboards.push(...data.leaderboards);
+
+    if (data.metadata && data.metadata.total && data.metadata.itemsPerPage) {
+      totalPages = Math.ceil(data.metadata.total / data.metadata.itemsPerPage);
+    } else {
+      break;
+    }
+
+    page++;
+  }
+
+  const parsed = parseScoreSaberQualifiedLeaderboards(allLeaderboards);
+  return deduplicateMaps(parsed);
+};
+
+export const mergeStarsFromJson = (
+  apiMaps: ParsedQualifiedData[],
+  jsonMaps: ParsedQualifiedData[]
+): ParsedQualifiedData[] => {
+  if (!jsonMaps || jsonMaps.length === 0) return deduplicateMaps(apiMaps);
+
+  const idStarsMap = new Map<number, number>();
+  const hashDiffStarsMap = new Map<string, number>();
+
+  for (const jm of jsonMaps) {
+    if (jm.id) {
+      idStarsMap.set(jm.id, jm.stars);
+    }
+    if (jm.songHash) {
+      hashDiffStarsMap.set(`${jm.songHash.toUpperCase()}_${jm.difficulty}`, jm.stars);
+    }
+  }
+
+  const merged = apiMaps.map(map => {
+    let stars = map.stars;
+
+    if (map.id && idStarsMap.has(map.id)) {
+      stars = idStarsMap.get(map.id)!;
+    } else if (map.songHash && hashDiffStarsMap.has(`${map.songHash.toUpperCase()}_${map.difficulty}`)) {
+      stars = hashDiffStarsMap.get(`${map.songHash.toUpperCase()}_${map.difficulty}`)!;
+    }
+
+    return {
+      ...map,
+      stars,
+    };
+  });
+
+  return deduplicateMaps(merged);
 };

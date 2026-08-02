@@ -15,6 +15,10 @@ export const useCombinedScript = (
     const hasQualified = qualifiedResult.sortedQualifiedMaps.length > 0;
     const hasReweights = reweightMaps.length > 0;
 
+    if (!hasQualified && !hasReweights) {
+      return '';
+    }
+
     const parts: string[] = [];
 
     if (hasQualified) {
@@ -33,7 +37,9 @@ export const useCombinedScript = (
       }
     }
 
-    parts.push(reweightResult.paragraphs.paragraph6);
+    if (reweightResult.paragraphs.paragraph6) {
+      parts.push(reweightResult.paragraphs.paragraph6);
+    }
 
     return parts.filter(p => p.trim().length > 0).join('\n\n');
   }, [qualifiedResult, reweightResult, reweightMaps.length]);

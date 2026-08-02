@@ -77,10 +77,10 @@ async fn fetch_scoresaber(hash: String, difficulty: String) -> Result<serde_json
     }
 }
 
-// Fetch ScoreSaber map data by hash
+// Fetch ScoreSaber qualified leaderboards by page
 #[tauri::command]
-async fn fetch_scoresaber_map_by_hash(hash: String) -> Result<serde_json::Value, String> {
-    let url = format!("https://scoresaber.com/api/v2/maps/hash/{}", hash);
+async fn fetch_scoresaber_qualified_leaderboards(page: u32) -> Result<serde_json::Value, String> {
+    let url = format!("https://scoresaber.com/api/leaderboards?qualified=true&page={}", page);
 
     match reqwest::get(&url).await {
         Ok(response) => {
@@ -902,7 +902,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             check_scoresaber,
             fetch_scoresaber,
-            fetch_scoresaber_map_by_hash,
+            fetch_scoresaber_qualified_leaderboards,
             check_beatsaver,
             fetch_beatsaver,
             load_fonts,
