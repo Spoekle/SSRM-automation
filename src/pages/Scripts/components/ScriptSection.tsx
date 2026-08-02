@@ -7,7 +7,6 @@ import {
   FaRedo,
   FaList,
   FaFileAlt,
-  FaCalendarAlt,
   FaSyncAlt,
   FaScroll
 } from 'react-icons/fa';
@@ -16,7 +15,12 @@ import { useNotifications } from '../../../contexts/NotificationContext';
 import log from '../../../utils/log';
 import type { ParsedReweightData, ParsedQualifiedData } from '../../../types';
 import { parseReweightJson } from '../utils/reweightScriptUtils';
-import { parseQualifiedJson, fetchQualifiedDatesFromScoreSaber } from '../utils/qualifiedScriptUtils';
+import {
+  parseQualifiedJson,
+  fetchAllScoreSaberQualifiedMaps,
+  mergeStarsFromJson,
+  deduplicateMaps
+} from '../utils/qualifiedScriptUtils';
 import { useCombinedScript } from '../hooks/useCombinedScript';
 import { SelectedMapsBreakdown } from './SelectedMapsBreakdown';
 
@@ -33,13 +37,14 @@ export const ScriptSection: React.FC<ScriptSectionProps> = ({ fadeIn }) => {
   const { createAlert } = useNotifications();
 
   const [qualifiedMaps, setQualifiedMaps] = useState<ParsedQualifiedData[]>([]);
+  const [rawApiQualifiedMaps, setRawApiQualifiedMaps] = useState<ParsedQualifiedData[]>([]);
+  const [jsonStarData, setJsonStarData] = useState<ParsedQualifiedData[]>([]);
   const [reweightMaps, setReweightMaps] = useState<ParsedReweightData[]>([]);
   const [month, setMonth] = useState<string>(() =>
     new Date().toLocaleString('default', { month: 'long' })
   );
   const [activeTab, setActiveTab] = useState<'full' | 'qualified' | 'reweight' | 'maps'>('full');
-  const [isFetchingDates, setIsFetchingDates] = useState<boolean>(false);
-  const [fetchProgress, setFetchProgress] = useState<{ current: number; total: number } | null>(null);
+  const [isFetchingMaps, setIsFetchingMaps] = useState<boolean>(false);
 
   useEffect(() => {
     loadSavedData();
@@ -49,11 +54,31 @@ export const ScriptSection: React.FC<ScriptSectionProps> = ({ fadeIn }) => {
     const savedQualified = storage.get<ParsedQualifiedData[]>(STORAGE_KEYS.QUALIFIED_MAPS_JSON);
     if (savedQualified && Array.isArray(savedQualified) && savedQualified.length > 0) {
       setQualifiedMaps(savedQualified);
+      setJsonStarData(savedQualified);
     }
 
     const savedReweights = storage.get<ParsedReweightData[]>(STORAGE_KEYS.REWEIGHT_MAPS_JSON);
     if (savedReweights && Array.isArray(savedReweights) && savedReweights.length > 0) {
       setReweightMaps(savedReweights);
+    }
+  };
+
+  const fetchScoreSaberMaps = async () => {
+    setIsFetchingMaps(true);
+
+    try {
+      const apiMaps = await fetchAllScoreSaberQualifiedMaps();
+
+      setRawApiQualifiedMaps(apiMaps);
+      const merged = mergeStarsFromJson(apiMaps, jsonStarData);
+      setQualifiedMaps(merged);
+      storage.set(STORAGE_KEYS.QUALIFIED_MAPS_JSON, merged);
+      createAlert(`Fetched ${merged.length} qualified maps from ScoreSaber API!`, 'success');
+    } catch (e) {
+      log.error('Error fetching qualified maps from ScoreSaber', e);
+      createAlert('Failed to fetch qualified maps from ScoreSaber API', 'error');
+    } finally {
+      setIsFetchingMaps(false);
     }
   };
 
@@ -67,18 +92,25 @@ export const ScriptSection: React.FC<ScriptSectionProps> = ({ fadeIn }) => {
       const parsed = parseQualifiedJson(json);
 
       if (parsed.length === 0) {
-        createAlert('No valid qualified map entries found in the uploaded JSON', 'error');
+        createAlert('No valid map entries found in uploaded JSON', 'error');
         return;
       }
 
-      setQualifiedMaps(parsed);
-      storage.set(STORAGE_KEYS.QUALIFIED_MAPS_JSON, parsed);
-      createAlert(`Loaded ${parsed.length} qualified maps! Fetching dates from ScoreSaber...`, 'info');
+      setJsonStarData(parsed);
 
-      fetchDates(parsed);
+      let updated: ParsedQualifiedData[];
+      if (rawApiQualifiedMaps.length > 0) {
+        updated = mergeStarsFromJson(rawApiQualifiedMaps, parsed);
+      } else {
+        updated = deduplicateMaps(parsed);
+      }
+
+      setQualifiedMaps(updated);
+      storage.set(STORAGE_KEYS.QUALIFIED_MAPS_JSON, updated);
+      createAlert(`Loaded ${parsed.length} qualified map entries from JSON!`, 'success');
     } catch (err) {
       log.error('Failed to parse qualified JSON file', err);
-      createAlert('Error parsing qualified JSON file. Please verify format.', 'error');
+      createAlert('Error parsing JSON file. Please verify format.', 'error');
     }
     e.target.value = '';
   };
@@ -109,36 +141,12 @@ export const ScriptSection: React.FC<ScriptSectionProps> = ({ fadeIn }) => {
     e.target.value = '';
   };
 
-  const fetchDates = async (mapsToFetch = qualifiedMaps) => {
-    if (mapsToFetch.length === 0) {
-      createAlert('No qualified maps loaded to fetch dates for', 'alert');
-      return;
-    }
-
-    setIsFetchingDates(true);
-    setFetchProgress({ current: 0, total: mapsToFetch.length });
-
-    try {
-      const updated = await fetchQualifiedDatesFromScoreSaber(mapsToFetch, (current, total) => {
-        setFetchProgress({ current, total });
-      });
-
-      setQualifiedMaps(updated);
-      storage.set(STORAGE_KEYS.QUALIFIED_MAPS_JSON, updated);
-      createAlert(`Successfully fetched and sorted ${updated.length} qualified maps by ScoreSaber date!`, 'success');
-    } catch (e) {
-      log.error('Error fetching dates from ScoreSaber', e);
-      createAlert('Failed to fetch some qualification dates from ScoreSaber', 'error');
-    } finally {
-      setIsFetchingDates(false);
-      setFetchProgress(null);
-    }
-  };
-
   const clearQualifiedData = () => {
     setQualifiedMaps([]);
+    setRawApiQualifiedMaps([]);
+    setJsonStarData([]);
     storage.remove(STORAGE_KEYS.QUALIFIED_MAPS_JSON);
-    createAlert('Cleared qualified maps data', 'info');
+    createAlert('Cleared qualified map data', 'info');
   };
 
   const clearReweightData = () => {
@@ -182,28 +190,38 @@ export const ScriptSection: React.FC<ScriptSectionProps> = ({ fadeIn }) => {
                 <span className="font-medium text-neutral-700 dark:text-neutral-300">
                   <strong className="text-teal-600 dark:text-teal-400">{qualifiedMaps.length}</strong> qualified maps
                 </span>
-                <label className="cursor-pointer text-teal-600 dark:text-teal-400 hover:text-teal-500 ml-1 p-0.5" title="Replace JSON">
+                <label className="cursor-pointer text-teal-600 dark:text-teal-400 hover:text-teal-500 ml-1 p-0.5" title="Upload Qualified JSON">
                   <FaUpload size={11} />
                   <input type="file" accept=".json" onChange={handleQualifiedUpload} className="hidden" />
                 </label>
                 <button
-                  onClick={() => fetchDates()}
-                  disabled={isFetchingDates}
-                  title="Fetch dates from ScoreSaber & sort"
+                  onClick={() => fetchScoreSaberMaps()}
+                  disabled={isFetchingMaps}
+                  title="Refetch qualified maps from ScoreSaber API"
                   className="text-teal-500 hover:text-teal-600 ml-1 disabled:opacity-50"
                 >
-                  <FaSyncAlt size={11} className={isFetchingDates ? 'animate-spin' : ''} />
+                  <FaSyncAlt size={11} className={isFetchingMaps ? 'animate-spin' : ''} />
                 </button>
                 <button onClick={clearQualifiedData} title="Clear data" className="text-neutral-400 hover:text-red-500 ml-1">
                   <FaTrash size={11} />
                 </button>
               </div>
             ) : (
-              <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white font-medium text-xs rounded-lg shadow-sm transition-all">
-                <FaUpload size={12} />
-                <span>Upload Qualified JSON</span>
-                <input type="file" accept=".json" onChange={handleQualifiedUpload} className="hidden" />
-              </label>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => fetchScoreSaberMaps()}
+                  disabled={isFetchingMaps}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white font-medium text-xs rounded-lg shadow-sm transition-all disabled:opacity-50"
+                >
+                  <FaSyncAlt size={12} className={isFetchingMaps ? 'animate-spin' : ''} />
+                  <span>Fetch Qualified Maps</span>
+                </button>
+                <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 bg-neutral-700 hover:bg-neutral-800 text-white font-medium text-xs rounded-lg shadow-sm transition-all" title="Upload Qualified JSON">
+                  <FaUpload size={12} />
+                  <span>Upload Qualified JSON</span>
+                  <input type="file" accept=".json" onChange={handleQualifiedUpload} className="hidden" />
+                </label>
+              </div>
             )}
 
             {reweightMaps.length > 0 ? (
@@ -245,18 +263,6 @@ export const ScriptSection: React.FC<ScriptSectionProps> = ({ fadeIn }) => {
             </select>
           </div>
         </div>
-
-        {isFetchingDates && fetchProgress && (
-          <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-1.5 overflow-hidden relative mt-2">
-            <div
-              className="bg-teal-500 h-full transition-all duration-200"
-              style={{ width: `${(fetchProgress.current / fetchProgress.total) * 100}%` }}
-            />
-            <span className="text-[10px] text-teal-600 dark:text-teal-400 font-semibold block text-right mt-1">
-              Fetching dates from ScoreSaber: {fetchProgress.current} / {fetchProgress.total}
-            </span>
-          </div>
-        )}
       </motion.div>
 
       <motion.div className="flex justify-between items-center w-full mb-3" variants={fadeIn} custom={2}>
@@ -280,7 +286,7 @@ export const ScriptSection: React.FC<ScriptSectionProps> = ({ fadeIn }) => {
                 : 'bg-white/40 dark:bg-neutral-800/40 text-neutral-600 dark:text-neutral-400 hover:bg-white/60 dark:hover:bg-neutral-800'
             }`}
           >
-            <FaCalendarAlt size={12} />
+            <FaFileAlt size={12} />
             Qualified Script
           </button>
           <button
@@ -327,7 +333,19 @@ export const ScriptSection: React.FC<ScriptSectionProps> = ({ fadeIn }) => {
           custom={3}
         >
           <div className="bg-white dark:bg-neutral-700 p-4 rounded-lg shadow-inner overflow-auto text-left relative z-10 font-mono text-xs leading-relaxed whitespace-pre-line text-neutral-800 dark:text-neutral-100 max-h-[45vh]">
-            {currentDisplayScript}
+            {currentDisplayScript ? (
+              currentDisplayScript
+            ) : (
+              <div className="flex flex-col items-center justify-center p-8 text-center text-neutral-400 dark:text-neutral-400 font-sans">
+                <p className="text-xs italic">
+                  {activeTab === 'reweight'
+                    ? 'No reweighted maps loaded.'
+                    : activeTab === 'qualified'
+                    ? 'No qualified maps loaded.'
+                    : 'No script generated yet.'}
+                </p>
+              </div>
+            )}
           </div>
         </motion.div>
       ) : (

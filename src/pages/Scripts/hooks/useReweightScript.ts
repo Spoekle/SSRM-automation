@@ -73,6 +73,28 @@ export const useReweightScript = (
       .sort((a, b) => Math.abs(a.change) - Math.abs(b.change));
   }, [buffedMaps, mentionedTop3DiffKeys]);
 
+  const paragraph6 = `This was it for the ScoreSaber ranked batch overview video for the ${month || 'May'} batch. We hope you enjoyed and any feedback for this video can be directly messaged to mr_bjo or yabje on discord! Thank you all for watching, good luck with playing all the new ranked maps and we’ll hope to see you all next month!`;
+
+  if (reweightMaps.length === 0) {
+    return {
+      nerfedMaps: [],
+      buffedMaps: [],
+      top3Nerfs: {},
+      top3Buffs: {},
+      highStarNerfs: [],
+      highStarBuffs: [],
+      fullScript: '',
+      paragraphs: {
+        paragraph1: '',
+        paragraph2: '',
+        paragraph3: '',
+        paragraph4: '',
+        paragraph5: '',
+        paragraph6
+      }
+    };
+  }
+
   const paragraph1 = `There were also a good number of reweighted maps from the previous batch. We will not be going over each one, but instead only look at the most buffed and nerfed maps as well as some high star maps. All the exact reweight data can be found on the ScoreSaber wiki.`;
 
   const n1 = top3Nerfs.first;
@@ -130,8 +152,6 @@ export const useReweightScript = (
     return lines.join('\n');
   };
   const paragraph5 = buildParagraph5();
-
-  const paragraph6 = `This was it for the ScoreSaber ranked batch overview video for the ${month || 'May'} batch. We hope you enjoyed and any feedback for this video can be directly messaged to mr_bjo or yabje on discord! Thank you all for watching, good luck with playing all the new ranked maps and we’ll hope to see you all next month!`;
 
   const fullScript = [
     paragraph1,

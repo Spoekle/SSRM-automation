@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import type { ParsedQualifiedData } from '../../../types';
 import {
-  sortByQualifiedDate,
+  deduplicateMaps,
   formatStars
 } from '../utils/qualifiedScriptUtils';
 
@@ -30,28 +30,7 @@ export const useQualifiedScript = (
   _month?: string
 ) => {
   const uniqueMapsWithHighestStars = useMemo(() => {
-    const sorted = sortByQualifiedDate(qualifiedMaps, true);
-    const mapDict = new Map<string, ParsedQualifiedData>();
-
-    for (const m of sorted) {
-      const key = (m.songHash || m.songName).toUpperCase();
-      const existing = mapDict.get(key);
-
-      if (!existing) {
-        mapDict.set(key, { ...m });
-      } else {
-        if (m.stars > existing.stars) {
-          existing.stars = m.stars;
-          existing.difficulty = m.difficulty;
-          existing.difficultyName = m.difficultyName;
-        }
-        if (!existing.qualifiedDate && m.qualifiedDate) {
-          existing.qualifiedDate = m.qualifiedDate;
-        }
-      }
-    }
-
-    return sortByQualifiedDate(Array.from(mapDict.values()), true);
+    return deduplicateMaps(qualifiedMaps);
   }, [qualifiedMaps]);
 
   const mapsListParagraph = useMemo(() => {
