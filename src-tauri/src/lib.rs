@@ -6,7 +6,7 @@ use tauri::{Emitter, Manager};
 mod image_gen;
 
 fn no_window_cmd(program: &str) -> Command {
-    let mut cmd = Command::new(program);
+    let cmd = Command::new(program);
     #[cfg(target_os = "windows")]
     {
         use std::os::windows::process::CommandExt;
