@@ -17,6 +17,7 @@ import './App.css';
 import { ConfirmationModalProvider } from './contexts/ConfirmationModalContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { TaskProvider } from './contexts/TaskContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 // Simple logger replacement for electron-log
 const log = {
@@ -123,38 +124,40 @@ export default function App() {
 
   return (
     <Router>
-      <NotificationProvider>
-        <TaskProvider>
-          <ConfirmationModalProvider>
-            <div className="flex flex-col h-screen overflow-hidden bg-neutral-100 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 transition-colors duration-200">
-              <Navbar />
+      <ThemeProvider>
+        <NotificationProvider>
+          <TaskProvider>
+            <ConfirmationModalProvider>
+              <div className="flex flex-col h-screen overflow-hidden bg-neutral-100 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 transition-colors duration-200">
+                <Navbar />
 
-              <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 custom-scrollbar isolate">
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/titles" element={<Titles />} />
-                  <Route path="/scripts" element={<Scripts />} />
-                  <Route path="/cards/map" element={<MapCard />} />
-                  <Route path="/cards/reweight" element={<ReweightCard />} />
-                  <Route path="/thumbnails/batch" element={<BatchThumbnail />} />
-                  <Route path="/thumbnails/ssrm" element={<SSRMThumbnail />} />
-                  <Route path="/playlists/playlist" element={<Playlist />} />
-                  <Route path="/playlists/playlist-thumbnail" element={<PlaylistThumbnail />} />
-                </Routes>
-              </main>
+                <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 custom-scrollbar isolate">
+                  <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/titles" element={<Titles />} />
+                    <Route path="/scripts" element={<Scripts />} />
+                    <Route path="/cards/map" element={<MapCard />} />
+                    <Route path="/cards/reweight" element={<ReweightCard />} />
+                    <Route path="/thumbnails/batch" element={<BatchThumbnail />} />
+                    <Route path="/thumbnails/ssrm" element={<SSRMThumbnail />} />
+                    <Route path="/playlists/playlist" element={<Playlist />} />
+                    <Route path="/playlists/playlist-thumbnail" element={<PlaylistThumbnail />} />
+                  </Routes>
+                </main>
 
-              <Footer
-                appVersion={appVersion}
-                latestVersion={latestVersion}
-                isVersionLoading={isLoading}
-                isDevBranch={isDevBranch}
-                getLatestVersion={getLatestVersion}
-              />
-            </div>
-            <GlobalLoadedMap />
-          </ConfirmationModalProvider>
-        </TaskProvider>
-      </NotificationProvider>
+                <Footer
+                  appVersion={appVersion}
+                  latestVersion={latestVersion}
+                  isVersionLoading={isLoading}
+                  isDevBranch={isDevBranch}
+                  getLatestVersion={getLatestVersion}
+                />
+              </div>
+              <GlobalLoadedMap />
+            </ConfirmationModalProvider>
+          </TaskProvider>
+        </NotificationProvider>
+      </ThemeProvider>
     </Router>
   );
 }
