@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { FaTimes } from 'react-icons/fa';
 import log from '../../utils/log';
 import { useConfirmationModal } from '../../contexts/ConfirmationModalContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { determineBestUpdateVersion } from '../../helpers/versionHelpers';
 import { ipcRenderer } from '../../utils/tauri-api';
 import { checkForUpdate, downloadAndInstallUpdate, UpdateProgress } from '../../services/updateService';
@@ -37,10 +38,7 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
     const [isOverlayVisible, setIsOverlayVisible] = useState(false);
 
     // Theme state
-    const [isDarkMode, setIsDarkMode] = useState(() => {
-      const savedTheme = localStorage.getItem("theme");
-      return savedTheme === "dark";
-    });
+    const { theme, setTheme } = useTheme();
 
     // Branch state
     const [isDevMode, setIsDevMode] = useState(() => {
@@ -117,15 +115,6 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
         }, 300);
       }
     }, [showUpdateTab]);
-
-    useEffect(() => {
-      if (isDarkMode) {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
-      localStorage.setItem("theme", isDarkMode ? "dark" : "light");
-    }, [isDarkMode]);
 
     useEffect(() => {
       localStorage.setItem("useDevelopmentBranch", isDevMode ? "true" : "false");
@@ -226,8 +215,6 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
         checkFfmpeg();
       }
     };
-
-    const toggleTheme = () => setIsDarkMode(!isDarkMode);
 
     const toggleBranch = () => {
       const newBranchSetting = !isDevMode;
@@ -332,8 +319,8 @@ const Settings = forwardRef<SettingsHandles, SettingsProps>(
             <div className="p-5">
               <div className="space-y-5">
                 <ThemeSection
-                  isDarkMode={isDarkMode}
-                  toggleTheme={toggleTheme}
+                  theme={theme}
+                  setTheme={setTheme}
                   sectionVariants={sectionVariants}
                 />
 
