@@ -5,24 +5,24 @@ import {
   formatStars
 } from '../utils/qualifiedScriptUtils';
 
-export const QUALIFIED_TRANSITION_PHRASES = [
-  "The first map of this batch will be",
+export const FIRST_MAP_PHRASE = "The first map of this batch will be";
+export const LAST_MAP_PHRASE = "The last map of this batch will be";
+
+export const INTERMEDIATE_TRANSITION_PHRASES = [
   "Up next is",
   "Next up is",
   "The next map will be",
-  "Up next is",
   "The next map is",
   "After that we have",
   "Following that is",
   "Following that we have",
   "And after that we have",
-  "Next up is",
-  "Up next is",
-  "The next map is",
-  "Next up is",
-  "We also have",
-  "Up next is",
-  "Following that we have"
+  "We also have"
+];
+
+export const QUALIFIED_TRANSITION_PHRASES = [
+  FIRST_MAP_PHRASE,
+  ...INTERMEDIATE_TRANSITION_PHRASES
 ];
 
 export const useQualifiedScript = (
@@ -47,13 +47,13 @@ export const useQualifiedScript = (
       let phrase: string;
 
       if (i === 0) {
-        phrase = QUALIFIED_TRANSITION_PHRASES[0];
+        phrase = FIRST_MAP_PHRASE;
       } else if (i === total - 1 && total > 1) {
-        phrase = "The last map of this batch will be";
+        phrase = LAST_MAP_PHRASE;
       } else {
-        const candidates = QUALIFIED_TRANSITION_PHRASES.filter(p => p !== lastPhrase);
+        const candidates = INTERMEDIATE_TRANSITION_PHRASES.filter(p => p !== lastPhrase);
         const randomIndex = Math.floor(Math.random() * candidates.length);
-        phrase = candidates[randomIndex] || QUALIFIED_TRANSITION_PHRASES[1];
+        phrase = candidates[randomIndex] || INTERMEDIATE_TRANSITION_PHRASES[0];
       }
       lastPhrase = phrase;
 
