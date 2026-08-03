@@ -10,6 +10,7 @@
     "frontendDist": "../dist"
   },
   "app": {
+    "macOSPrivateApi": true,
     "windows": [
       {
         "title": "SSRM Automation",
@@ -17,13 +18,14 @@
         "height": 720,
         "minWidth": 800,
         "minHeight": 600,
-        "maxWidth": 1400,
-        "maxHeight": 1000,
         "resizable": true,
-        "decorations": false,
+        "decorations": true,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
         "center": true,
         "visible": true,
-        "transparent": false,
+        "transparent": true,
+        "shadow": true,
         "fullscreen": false
       }
     ],

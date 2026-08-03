@@ -1,8 +1,6 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  FaTimes,
-  FaMinus,
   FaFileAlt,
   FaLayerGroup,
   FaImage,
@@ -11,7 +9,6 @@ import {
   FaExchangeAlt,
   FaImages,
   FaStar,
-  FaRegSquare,
 } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import { getCurrentWindow } from '@tauri-apps/api/window';
@@ -22,44 +19,9 @@ import TaskDropdown from './TaskDropdown';
 
 function Navbar() {
   const navRef = useRef<HTMLDivElement>(null);
-  const isDarkMode = localStorage.getItem('theme') === 'dark';
-
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  }, [isDarkMode]);
-
-  const minimizeWindow = async () => {
-    try {
-      const appWindow = getCurrentWindow();
-      await appWindow.minimize();
-    } catch (error) {
-      console.error('Failed to minimize window:', error);
-    }
-  };
-
-  const maximizeWindow = async () => {
-    try {
-      const appWindow = getCurrentWindow();
-      await appWindow.toggleMaximize();
-    } catch (error) {
-      console.error('Failed to maximize window:', error);
-    }
-  };
-
-  const closeWindow = async () => {
-    try {
-      const appWindow = getCurrentWindow();
-      await appWindow.close();
-    } catch (error) {
-      console.error('Failed to close window:', error);
-    }
-  };
+  const isMac = typeof window !== 'undefined' && (
+    (navigator.userAgent && navigator.userAgent.toUpperCase().includes('MAC'))
+  );
 
   const handleDragStart = async (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('button, a, .no-drag')) {
@@ -124,10 +86,10 @@ function Navbar() {
             whileTap={{ scale: 0.95 }}
             className="flex items-center"
           >
-            <Link to="/" className="flex items-center cursor-pointer">
+            <Link to="/" className={`flex cursor-pointer ${isMac ? 'items-end' : 'items-center'}`}>
               <img
                 src={logo}
-                className="h-10 mr-2"
+                className={`mr-2 ${isMac ? 'h-8 mr-6' : 'h-10'}`}
               />
 
               <div>
@@ -150,7 +112,6 @@ function Navbar() {
             ref={navRef}
           >
             <div className="z-20 flex space-x-1 bg-neutral-200/80 dark:bg-neutral-800/80 backdrop-blur-sm rounded-full px-2 py-1 shadow-inner border border-neutral-300/50 dark:border-neutral-700/50">
-              {/* Dropdown categories */}
               {navCategories.map((category) => (
                 <DropdownMenu
                   key={category.label}
@@ -167,41 +128,6 @@ function Navbar() {
           <TaskDropdown />
           <NotificationDropdown />
         </div>
-      </div>
-      <div className="absolute top-0 right-0 text-center items-center text-lg flex space-x-1">
-        <motion.button
-          onClick={minimizeWindow}
-          whileHover={{
-            scale: 1.1,
-          }}
-          whileTap={{ scale: 0.9 }}
-          className="px-3 py-1 rounded-md hover:bg-neutral-400/20 dark:hover:bg-neutral-700/50 transition-all duration-200"
-          title="Minimize"
-        >
-          <FaMinus className="text-neutral-500 dark:text-neutral-400" />
-        </motion.button>
-        <motion.button
-          onClick={maximizeWindow}
-          whileHover={{
-            scale: 1.1,
-          }}
-          whileTap={{ scale: 0.9 }}
-          className="px-3 py-1 rounded-md hover:bg-neutral-400/20 dark:hover:bg-neutral-700/50 transition-all duration-200"
-          title="Maximize"
-        >
-          <FaRegSquare className="text-neutral-500 dark:text-neutral-400" />
-        </motion.button>
-        <motion.button
-          onClick={closeWindow}
-          whileHover={{
-            scale: 1.1,
-          }}
-          whileTap={{ scale: 0.9 }}
-          className="px-3 py-1 rounded-md hover:bg-red-500/20 transition-all duration-200 group"
-          title="Close"
-        >
-          <FaTimes className="text-neutral-500 dark:text-neutral-400 group-hover:text-red-500 transition-colors" />
-        </motion.button>
       </div>
     </div>
   );
