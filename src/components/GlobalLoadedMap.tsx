@@ -147,7 +147,7 @@ const GlobalLoadedMap: React.FC = () => {
           layout
           className={`relative overflow-hidden ${isCollapsed
               ? ''
-              : 'bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md rounded-xl shadow-xl border border-neutral-200/50 dark:border-neutral-700/50 w-[290px]'
+              : 'bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md rounded-xl shadow-xl border border-neutral-200/50 dark:border-neutral-700/50 w-72.5'
             }`}
           transition={{ type: "spring", stiffness: 400, damping: 30 }}
         >

@@ -93,7 +93,7 @@ const LoadedMap: React.FC<LoadedMapProps> = ({ mapInfo }) => {
 
       {/* Map info content */}
       <motion.div
-        className="bg-neutral-300 dark:bg-neutral-800 p-3 rounded-r-lg flex items-center space-x-2 w-[225px] shadow-lg"
+        className="bg-neutral-300 dark:bg-neutral-800 p-3 rounded-r-lg flex items-center space-x-2 w-56.25 shadow-lg"
         transition={springConfig}
       >
         <motion.img
@@ -108,7 +108,7 @@ const LoadedMap: React.FC<LoadedMapProps> = ({ mapInfo }) => {
           title='Open map on BeatSaver'
           onClick={() => window.open(`https://beatsaver.com/maps/${mapInfo.id}`, '_blank')}
         />
-        <div className="flex-grow overflow-hidden">
+        <div className="grow overflow-hidden">
           <motion.h3
             className="font-bold text-sm truncate"
             custom={0}

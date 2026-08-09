@@ -156,7 +156,7 @@ const BatchThumbnail: React.FC = () => {
                                 <motion.img
                                     src={imageSrc}
                                     alt='Thumbnail Preview'
-                                    className='max-h-[160px] w-auto rounded'
+                                    className='max-h-40 w-auto rounded'
                                     onClick={() => setThumbnailPreviewModal(true)}
                                     whileHover={{ cursor: 'pointer' }}
                                 />

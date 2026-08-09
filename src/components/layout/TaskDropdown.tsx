@@ -126,7 +126,7 @@ const TaskDropdown: React.FC = () => {
                             transition={{ duration: 0.2 }}
                           />
                         </div>
-                        <span className="text-[10px] font-bold text-neutral-500 dark:text-neutral-400 min-w-[28px] text-right">
+                        <span className="text-[10px] font-bold text-neutral-500 dark:text-neutral-400 min-w-7 text-right">
                           {task.progress}%
                         </span>
                       </div>

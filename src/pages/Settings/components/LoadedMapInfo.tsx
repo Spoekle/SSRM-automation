@@ -60,7 +60,7 @@ const LoadedMapInfo: React.FC<LoadedMapInfoProps> = ({ loadedMapInfo }) => {
                         className="w-12 h-12 object-cover rounded-lg"
                     />
                 )}
-                <div className="flex-grow overflow-hidden">
+                <div className="grow overflow-hidden">
                     <h3 className="font-bold text-sm text-neutral-800 dark:text-neutral-200 truncate">
                         {songName} {songSubName}
                     </h3>

@@ -98,7 +98,7 @@ const DropdownMenu: React.FC<DropdownMenuProps> = ({
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -5 }}
                         transition={{ duration: 0.15, ease: 'easeOut' }}
-                        className="absolute top-full left-1/2 -translate-x-1/2 pt-2 min-w-[130px] z-[100]"
+                        className="absolute top-full left-1/2 -translate-x-1/2 pt-2 min-w-32.5 z-100"
                     >
                         <div className="bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md rounded-xl shadow-xl border border-neutral-200/50 dark:border-neutral-700/50">
                             {items.map((item) => {

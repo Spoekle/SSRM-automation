@@ -74,7 +74,7 @@ const ToastContainer: React.FC<{ toasts: Toast[]; removeToast: (id: number) => v
           )}`}
         >
           {getToastIcon(toast.type)}
-          <span className="text-xs font-medium max-w-[250px] truncate">{toast.message}</span>
+          <span className="text-xs font-medium max-w-62.5 truncate">{toast.message}</span>
           <button
             onClick={() => removeToast(toast.id)}
             className="text-white/75 hover:text-white transition-colors p-0.5 ml-1"

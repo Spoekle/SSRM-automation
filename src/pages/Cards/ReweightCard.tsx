@@ -141,7 +141,7 @@ const ReweightCard: React.FC = () => {
                                 transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
                                 whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
                             >
-                                <img src={imageSrc} alt='Reweight Card Preview' className='max-h-[180px] w-auto' />
+                                <img src={imageSrc} alt='Reweight Card Preview' className='max-h-45 w-auto' />
                             </motion.div>
                         </motion.div>
                     </motion.div>

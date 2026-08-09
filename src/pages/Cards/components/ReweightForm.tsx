@@ -640,7 +640,7 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
                     </div>
 
                     {/* Reweight List */}
-                    <div className='grid grid-cols-1 lg:grid-cols-2 gap-2 max-h-[350px] overflow-y-auto custom-scrollbar pr-2'>
+                    <div className='grid grid-cols-1 lg:grid-cols-2 gap-2 max-h-87.5 overflow-y-auto custom-scrollbar pr-2'>
                       {getSortedReweights().map((reweightData) => {
                         const originalIndex = parsedReweights.findIndex(r => r.songHash === reweightData.songHash && r.difficulty === reweightData.difficulty);
 
@@ -670,7 +670,7 @@ const StarRatingForm: React.FC<StarRatingFormProps> = ({
                                     {reweightData.songName}
                                   </p>
                                   <div className="flex items-center text-[10px] text-neutral-500 dark:text-neutral-400 gap-2">
-                                    <span className="truncate max-w-[100px]">{reweightData.songSubName}</span>
+                                    <span className="truncate max-w-25">{reweightData.songSubName}</span>
                                     <span>•</span>
                                     <span className="truncate">{reweightData.levelAuthorName}</span>
                                     <span>•</span>

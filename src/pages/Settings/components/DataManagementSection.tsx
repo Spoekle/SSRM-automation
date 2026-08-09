@@ -46,14 +46,14 @@ const DataManagementSection: React.FC<DataManagementSectionProps> = ({
                 <h4 className="text-base font-medium mb-2">Card Configuration:</h4>
                 <div className="flex items-center">
                     {storedCardConfigName ? (
-                        <p className="text-sm text-neutral-600 dark:text-neutral-400 flex-grow">
+                        <p className="text-sm text-neutral-600 dark:text-neutral-400 grow">
                             Loaded:{' '}
                             <span className="font-medium text-neutral-800 dark:text-neutral-200">
                                 {storedCardConfigName}
                             </span>
                         </p>
                     ) : (
-                        <p className="text-sm text-neutral-500 dark:text-neutral-400 flex-grow">
+                        <p className="text-sm text-neutral-500 dark:text-neutral-400 grow">
                             No card configuration loaded
                         </p>
                     )}
